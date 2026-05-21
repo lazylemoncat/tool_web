@@ -359,7 +359,7 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
 
   return (
     <aside className="sidebar-panel">
-      <div className="sidebar-logo">
+      <div className="sidebar-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="Home">
         Tool<span>Web</span>
       </div>
 
@@ -400,6 +400,7 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
             ))}
           </SortableContext>
         </DndContext>
+
       </nav>
 
       {adding ? (

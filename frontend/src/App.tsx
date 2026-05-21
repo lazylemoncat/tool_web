@@ -25,6 +25,8 @@ import TaskDetail from './components/todo/TaskDetail'
 import AuthPage from './components/auth/AuthPage'
 import SettingsPage from './components/settings/SettingsPage'
 import HelpPage from './pages/HelpPage'
+import FinancePage from './pages/FinancePage'
+import LandingPage from './pages/LandingPage'
 
 const AppContent: React.FC = () => {
   const { token, preferences, sessionChecked } = useAuth()
@@ -54,9 +56,11 @@ const AppContent: React.FC = () => {
   return (
     <LocaleProvider initial={lang}>
       <Routes>
-        <Route path="/" element={<TodoApp />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/todo" element={<TodoApp />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/help" element={<HelpPage />} />
+        <Route path="/finance" element={<FinancePage />} />
       </Routes>
     </LocaleProvider>
   )

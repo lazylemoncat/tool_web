@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 
 from .database import init_db
 from .middleware.logging import log_requests
-from .routers import folder, todo, auth, theme, tag
+from .routers import folder, todo, auth, theme, tag, finance
 from .utils.errors import AppError, app_error_handler
 from .utils.rate_limit import rate_limit_middleware
 
@@ -76,6 +76,7 @@ app.include_router(todo.router)
 app.include_router(auth.router)
 app.include_router(theme.router)
 app.include_router(tag.router)
+app.include_router(finance.router)
 
 
 @app.get("/api/health")

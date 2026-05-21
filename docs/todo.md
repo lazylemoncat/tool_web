@@ -2,7 +2,7 @@
 
 ## 功能概述
 
-Tool Web 提供完整的任务管理系统, 支持以下功能:
+Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功能:
 
 - **文件夹管理**: 创建嵌套文件夹, 自定义颜色, 拖拽排序, 级联删除
 - **任务 CRUD**: 创建/查看/编辑/删除任务, 支持标题、备注、优先级、截止日期
@@ -525,6 +525,33 @@ TodoApp (状态中心)
 **拖拽排序**: 触摸长按 200ms 后激活, 与滑动操作通过 `delay` 和 `tolerance` 区分.
 
 **响应式布局**: 主区域最大宽度 800px, 水平居中. PC 端工具栏单行显示, 移动端 (≤480px) 自动换行.
+
+---
+
+## 记账系统 (Finance)
+
+**概述**: 基于 Finance.md 设计文档实现的个人财务管理系统, 与 Todo 模块共享用户认证和 UI 框架.
+
+**核心模型**: Ledger (账本), Account (账户), Transaction (交易, 含拆单 SplitItem), Category (分类, 树状), Tag (标签), Event (事件), Budget (预算), Attachment (附件), ResourceRelation (关系).
+
+**页面**: `/finance` — Dashboard (资产/收支/预算卡片), Transaction List (筛选/分页), Budget (进度条), Event (聚合统计).
+
+**API 端点** (`/api/v1/finance`): 34 个端点覆盖全部 CRUD + Dashboard 汇总 + Stats 图表数据.
+
+**技术栈**: FastAPI + SQLAlchemy (后端), React + TypeScript + Recharts (前端), 与现有项目完全统一.
+
+**数据库表**: `ledgers`, `accounts`, `finance_categories`, `finance_tags`, `transaction_tags`, `transactions`, `split_items`, `events`, `budgets`, `attachments`, `transaction_attachments`, `resource_relations`.
+
+**相关文件**:
+| 文件 | 作用 |
+|------|------|
+| `Finance.md` | 产品设计文档 |
+| `backend/src/models/finance.py` | 数据模型 (10 表 + 2 关联表) |
+| `backend/src/schemas/finance.py` | Pydantic schemas |
+| `backend/src/routers/finance.py` | API 路由 (34 端点) |
+| `frontend/src/hooks/useFinance.ts` | 前端数据 hooks |
+| `frontend/src/pages/FinancePage.tsx` | 主页面 |
+| `frontend/src/components/finance/` | 组件目录 |
 
 ---
 
