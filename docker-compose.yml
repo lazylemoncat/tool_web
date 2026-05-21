@@ -1,0 +1,19 @@
+services:
+  backend:
+    build: ./backend
+    volumes:
+      - ./backend/data:/app/data
+    environment:
+      - DATABASE_URL=sqlite:///./data/tool_web.db
+      - JWT_SECRET=${JWT_SECRET}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+      - ALLOWED_ORIGINS=http://localhost:8003
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8003:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
