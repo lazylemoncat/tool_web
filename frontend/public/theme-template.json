@@ -1,0 +1,55 @@
+{
+  "name": "Default Theme",
+  "version": "1.0",
+  "global": {
+    ":root": {
+      "--bg-primary": "#faf8f5",
+      "--bg-sidebar": "#f3efe8",
+      "--bg-card": "#ffffff",
+      "--bg-hover": "#f7f3ec",
+      "--bg-input": "#faf8f5",
+      "--text-primary": "#2d2a26",
+      "--text-secondary": "#8c8478",
+      "--text-muted": "#b8b0a4",
+      "--accent": "#4a7c59",
+      "--accent-light": "#e8f0e9",
+      "--priority-high": "#e07050",
+      "--priority-high-bg": "#fdf0eb",
+      "--priority-medium": "#c4943a",
+      "--priority-medium-bg": "#fdf6eb",
+      "--priority-low": "#9c9c9c",
+      "--priority-low-bg": "#f5f5f5",
+      "--border": "#e8e0d5",
+      "--border-light": "#f0ebe2",
+      "--radius-sm": "6px",
+      "--radius-md": "10px",
+      "--radius-lg": "14px",
+      "--font-display": "'Lora', Georgia, serif",
+      "--font-body": "'DM Sans', -apple-system, sans-serif",
+      "--sidebar-width": "260px",
+      "--transition": "0.2s cubic-bezier(0.4, 0, 0.2, 1)"
+    },
+    "[data-theme=\"dark\"]": {
+      "--bg-primary": "#252320",
+      "--bg-sidebar": "#1e1c1a",
+      "--bg-card": "#2d2a26",
+      "--bg-hover": "#333028",
+      "--bg-input": "#1e1c1a",
+      "--text-primary": "#e8e4dc",
+      "--text-secondary": "#a0998c",
+      "--text-muted": "#6b6560",
+      "--accent": "#5b8f6b",
+      "--accent-light": "#2d3a30",
+      "--border": "#3d3832",
+      "--border-light": "#333028"
+    }
+  },
+  "pages": {
+    "todo": {
+      ":root": {},
+      "[data-theme=\"dark\"]": {}
+    }
+  },
+  "buttons": [],
+  "scripts": ""
+}
