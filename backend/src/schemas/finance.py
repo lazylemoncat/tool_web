@@ -1,4 +1,5 @@
 """Finance module Pydantic schemas."""
+from __future__ import annotations
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Generic, Optional, TypeVar
@@ -133,6 +134,8 @@ class TransactionCreate(BaseModel):
     sort_order: int = 0
     tag_ids: list[int] = []
     split_items: list[SplitItemCreate] = []
+    attachment_ids: list[int] = []
+    linked_todo_ids: list[int] = []
 
 
 class TransactionUpdate(BaseModel):
@@ -148,6 +151,8 @@ class TransactionUpdate(BaseModel):
     sort_order: Optional[int] = None
     tag_ids: Optional[list[int]] = None
     split_items: Optional[list[SplitItemCreate]] = None
+    attachment_ids: Optional[list[int]] = None
+    linked_todo_ids: Optional[list[int]] = None
 
 
 class TransactionOut(BaseModel):
@@ -171,6 +176,8 @@ class TransactionOut(BaseModel):
     event: Optional["EventOut"] = None
     tags: list[FinanceTagOut] = []
     split_items: list[SplitItemOut] = []
+    attachments: list[AttachmentOut] = []
+    linked_todos: list[dict] = []
     model_config = {"from_attributes": True}
 
 

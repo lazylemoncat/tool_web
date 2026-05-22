@@ -89,33 +89,35 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 四张汇总卡片: 总资产、本月收入、本月支出、预算使用率.
 
-下方展示账户列表和最近 10 笔交易.
+图表区域: 分类占比饼图 + 月度支出趋势柱状图, 支持按周/月/年切换周期.
+
+管理区域: 账户管理 (添加/删除/自定义类型) + 分类树管理 (新建/重命名/删除/子分类) + 标签管理 (新建/删除).
+
+下方展示最近 10 笔交易, 点击可查看详情.
 
 ### Transactions (交易列表)
 
 交易记录列表, 支持:
 
-- 按账户/分类/标签/事件/类型筛选
+- 按账户/分类/标签/事件/类型筛选 (可折叠筛选栏)
 - 按日期范围查询
 - 关键词搜索
-- 分页加载 (每页 50 条)
+- 无限滚动加载 (每页 50 条, 滚动到底自动加载更多)
+- 点击交易行弹出详情 Modal (完整字段、标签、拆单、附件、关联待办)
+- 详情中可直接编辑或删除交易
 - 点击 "记一笔" 打开记账表单
 
 ### Budgets (预算)
 
-预算列表, 每条显示:
+预算列表, 每条显示: 名称、进度条、花费/预算数值. 支持新建/编辑 (Modal) 和删除.
 
-- 预算名称和金额
-- 当前花费进度条
-- 花费/预算 数值
+预算字段: 名称、金额、币种、RRULE 重复规则、筛选条件 (分类/标签/事件)、结转、提醒阈值.
 
 ### Events (事件)
 
-事件列表, 显示:
+事件列表, 显示: 名称、颜色标签、关联交易数量、总金额. 支持新建/编辑 (Modal, 含色块选择器) 和删除.
 
-- 事件名称和颜色标签
-- 关联交易数量
-- 总金额
+事件字段: 名称、描述、开始/结束时间、颜色.
 
 ## 记账表单
 
@@ -132,6 +134,8 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 | 日期 | 日期时间选择器, 默认当前时间 |
 | 标签 | 多选标签 chips |
 | 备注 | 可选文本 |
+| 附件 | 多文件上传 |
+| 关联待办 | 关联 Todo 待办事项 |
 | 拆单 | 展开后可添加多个子项 |
 
 ### 拆单操作
@@ -139,6 +143,17 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 1. 点击 "+ Split Items" 展开拆单区域
 2. 为每个子项填写金额、分类
 3. 提交时子项自动关联到交易
+
+### 附件上传
+
+1. 在记账表单中选择文件 (支持多文件)
+2. 提交时文件先上传到服务器, 再关联到交易
+3. 编辑时可管理已有附件 (新增/删除)
+
+### Todo 关联
+
+1. 在记账表单中选择待办事项 (checkbox 列表)
+2. 交易详情中可查看关联的待办并跳转
 
 ## API 端点
 
@@ -168,6 +183,7 @@ Base: `/api/v1/finance`
 | Budget | `/budgets?ledger_id=` | GET |
 | | `/budgets` | POST |
 | | `/budgets/{id}` | PUT/DELETE |
+| Attachment | `/attachments/upload` | POST (multipart) |
 | Dashboard | `/dashboard?ledger_id=` | GET |
 | Stats | `/stats?ledger_id=&period=` | GET |
 | Relation | `/relations?from_type=&from_id=` | GET |
@@ -215,21 +231,32 @@ User (1) ──┬── (N) Ledger (1) ──┬── (N) Account
 backend/src/
 ├── models/finance.py        # SQLAlchemy 数据模型
 ├── schemas/finance.py       # Pydantic 请求/响应 schema
-└── routers/finance.py       # API 路由 (34 endpoints)
+└── routers/finance.py       # API 路由 (36+ endpoints)
 
 frontend/src/
 ├── hooks/useFinance.ts      # React 数据 hooks
 ├── pages/FinancePage.tsx    # 主页面容器
 └── components/finance/
     ├── FinanceDashboard.tsx  # 仪表盘组件
-    └── TransactionForm.tsx   # 记账表单
+    ├── FinanceCharts.tsx     # 图表 (饼图 + 趋势)
+    ├── TransactionForm.tsx   # 记账表单
+    ├── TransactionDetail.tsx # 交易详情 Modal
+    ├── BudgetForm.tsx        # 预算创建/编辑
+    ├── EventForm.tsx         # 事件创建/编辑
+    ├── CategoryManager.tsx   # 分类树管理
+    ├── TagManager.tsx        # 标签管理
+    └── TxFilterBar.tsx       # 交易筛选栏
 ```
+
+附件上传目录: `backend/uploads/`, 通过 `/uploads/` 路由提供静态文件服务.
 
 ## 使用流程
 
 1. 侧边栏点击 "记账" 进入 Finance 页面
 2. 首次使用需创建账本 (如 "Personal")
 3. 创建账户 (如 "微信"、"银行卡")
-4. 创建分类 (可选, 系统默认支持)
-5. 点击 "记一笔" 开始记账
-6. Dashboard 查看汇总, Transactions 查看明细
+4. 配置分类和标签 (可选, Dashboard 中管理)
+5. 创建预算和事件 (可选)
+6. 点击 "记一笔" 开始记账 (支持附件上传和待办关联)
+7. Dashboard 查看汇总与图表, Transactions 筛选与无限滚动浏览
+8. 点击交易行查看详情, 支持编辑/删除

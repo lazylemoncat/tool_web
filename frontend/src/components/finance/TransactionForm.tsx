@@ -2,9 +2,10 @@
   TransactionForm: 记账表单 (收入/支出/转账), 支持快捷金额输入.
 */
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { useLocale } from '../../i18n'
-import type { Account, FinanceCategory, FinanceTag, Transaction } from '../../hooks/useFinance'
+import type { Account, FinanceCategory, FinanceTag, Transaction, Attachment } from '../../hooks/useFinance'
+import api from '../../api/client'
 
 export interface TransactionFormData {
   type: 'expense' | 'income' | 'transfer'
@@ -15,6 +16,8 @@ export interface TransactionFormData {
   occurred_at: string
   tag_ids: number[]
   split_items: { amount: number; category_id: number | null; note: string }[]
+  attachment_ids?: number[]
+  linked_todo_ids?: number[]
 }
 
 interface Props {
@@ -52,11 +55,51 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       note: s.note ?? '',
     })) ?? [],
   )
+  const [existingAttachments, setExistingAttachments] = useState<Attachment[]>(editTx?.attachments ?? [])
+  const [newFiles, setNewFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+  const [availableTodos, setAvailableTodos] = useState<{ id: number; title: string; is_completed: boolean }[]>([])
+  const [selectedTodoIds, setSelectedTodoIds] = useState<number[]>(
+    editTx?.linked_todos?.map((t) => t.id) ?? [],
+  )
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    api.get('/todos', { params: { limit: 100 } }).then((data: any) => {
+      setAvailableTodos((data?.items || []).filter((t: any) => !t.is_completed))
+    }).catch(() => {})
+  }, [])
+
+  const handleRemoveExisting = (id: number) => {
+    setExistingAttachments((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  const handleRemoveNewFile = (idx: number) => {
+    setNewFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleSubmit = async () => {
     const numAmount = parseFloat(amount)
     if (!numAmount || numAmount <= 0) return
     if (accountId == null) return
+
+    const attachmentIds: number[] = existingAttachments.map((a) => a.id)
+
+    if (newFiles.length > 0) {
+      setUploading(true)
+      for (const file of newFiles) {
+        const formData = new FormData()
+        formData.append('file', file)
+        try {
+          const uploaded = await api.post('/finance/attachments/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          }) as Attachment
+          attachmentIds.push(uploaded.id)
+        } catch { /* upload failed, skip */ }
+      }
+      setUploading(false)
+    }
+
     onSubmit({
       type: txType,
       amount: numAmount,
@@ -68,6 +111,8 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       split_items: splitItems
         .filter((s) => s.amount && parseFloat(s.amount) > 0)
         .map((s) => ({ amount: parseFloat(s.amount), category_id: s.category_id, note: s.note })),
+      attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
+      linked_todo_ids: selectedTodoIds.length > 0 ? selectedTodoIds : undefined,
     })
   }
 
@@ -256,10 +301,64 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
           </div>
         </div>
 
+        <div className="form-group">
+          <label className="form-label">{t('finance.attachments')}</label>
+          {existingAttachments.length > 0 && (
+            <div className="finance-attachment-list">
+              {existingAttachments.map((a) => (
+                <span key={a.id} className="finance-attachment-item">
+                  {a.url.split('/').pop()}
+                  <button className="finance-type-del" onClick={() => handleRemoveExisting(a.id)}>x</button>
+                </span>
+              ))}
+            </div>
+          )}
+          {newFiles.length > 0 && (
+            <div className="finance-attachment-list">
+              {newFiles.map((f, i) => (
+                <span key={i} className="finance-attachment-item">
+                  {f.name}
+                  <button className="finance-type-del" onClick={() => handleRemoveNewFile(i)}>x</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <input
+            ref={fileRef}
+            type="file"
+            multiple
+            onChange={(e) => setNewFiles((prev) => [...prev, ...Array.from(e.target.files || [])])}
+            className="finance-file-input"
+            style={{ marginTop: 8 }}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">{t('finance.linkedTodos')}</label>
+          {availableTodos.length === 0 ? (
+            <p className="text-muted" style={{ fontSize: '0.78rem' }}>{t('finance.noLinkedTodos')}</p>
+          ) : (
+            <div className="finance-checkbox-group">
+              {availableTodos.map((todo) => (
+                <label key={todo.id} className="finance-checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={selectedTodoIds.includes(todo.id)}
+                    onChange={() => setSelectedTodoIds((prev) =>
+                      prev.includes(todo.id) ? prev.filter((id) => id !== todo.id) : [...prev, todo.id],
+                    )}
+                  />
+                  {todo.title}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>{t('app.cancel')}</button>
-          <button className="btn-submit" onClick={handleSubmit} disabled={!amount || accountId == null}>
-            {isEdit ? t('app.save') : t('app.confirm')}
+          <button className="btn-submit" onClick={handleSubmit} disabled={!amount || accountId == null || uploading}>
+            {uploading ? '...' : isEdit ? t('app.save') : t('app.confirm')}
           </button>
         </div>
       </div>

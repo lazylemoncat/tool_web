@@ -1,13 +1,16 @@
 """Finance API routes."""
+import os
+import uuid as uuid_lib
 from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..middleware.auth import get_current_user
 from ..models.user import User
+from ..models.todo import Todo
 from ..models.finance import (
     Ledger, Account, FinanceCategory, FinanceTag, Transaction, SplitItem,
     Event, Budget, Attachment, ResourceRelation, TransactionType,
@@ -56,7 +59,7 @@ def _build_category_tree(categories):
     return [build(root) for root in roots]
 
 
-def _build_transaction_out(tx):
+def _build_transaction_out(tx, db=None):
     d = TransactionOut.model_validate(tx)
     if tx.account:
         d.account = AccountOut.model_validate(tx.account)
@@ -66,6 +69,17 @@ def _build_transaction_out(tx):
         d.event = EventOut.model_validate(tx.event)
     d.tags = [FinanceTagOut.model_validate(t) for t in (tx.tags or [])]
     d.split_items = [SplitItemOut.model_validate(s) for s in (tx.split_items or [])]
+    if db:
+        rels = db.query(ResourceRelation).filter(
+            ResourceRelation.from_type == "transaction",
+            ResourceRelation.from_id == tx.id,
+            ResourceRelation.relation_type == "related_to",
+            ResourceRelation.to_type == "todo",
+        ).all()
+        todo_ids = [r.to_id for r in rels]
+        if todo_ids:
+            todos = db.query(Todo).filter(Todo.id.in_(todo_ids)).all()
+            d.linked_todos = [{"id": t.id, "title": t.title, "is_completed": t.is_completed} for t in todos]
     return d
 
 
@@ -356,7 +370,7 @@ def list_transactions(
     ).order_by(Transaction.occurred_at.desc(), Transaction.sort_order).offset(skip).limit(limit).all()
 
     return TransactionListResponse(
-        items=[_build_transaction_out(tx) for tx in txs],
+        items=[_build_transaction_out(tx, db) for tx in txs],
         total=total, skip=skip, limit=limit,
     )
 
@@ -376,7 +390,7 @@ def get_transaction(
     ).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).first()
     if not tx:
         raise HTTPException(404, "transaction not found")
-    return _build_transaction_out(tx)
+    return _build_transaction_out(tx, db)
 
 
 @router.post("/transactions", response_model=TransactionOut, status_code=201)
@@ -385,7 +399,7 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    tx_data = {k: v for k, v in body.model_dump().items() if k not in ("tag_ids", "split_items")}
+    tx_data = {k: v for k, v in body.model_dump().items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
     tx = Transaction(**tx_data, user_id=current_user.id, recorded_at=datetime.utcnow())
     db.add(tx)
     db.flush()
@@ -395,6 +409,20 @@ def create_transaction(
             FinanceTag.id.in_(body.tag_ids), FinanceTag.user_id == current_user.id,
         ).all()
         tx.tags = tags
+
+    if body.attachment_ids:
+        attachments = db.query(Attachment).filter(
+            Attachment.id.in_(body.attachment_ids), Attachment.user_id == current_user.id,
+        ).all()
+        tx.attachments = attachments
+
+    if body.linked_todo_ids:
+        for todo_id in body.linked_todo_ids:
+            rel = ResourceRelation(
+                from_type="transaction", from_id=tx.id,
+                relation_type="related_to", to_type="todo", to_id=todo_id,
+            )
+            db.add(rel)
 
     for si_data in body.split_items:
         si = SplitItem(**si_data.model_dump(), transaction_id=tx.id)
@@ -407,9 +435,10 @@ def create_transaction(
         joinedload(Transaction.category),
         joinedload(Transaction.event),
         joinedload(Transaction.tags),
+        joinedload(Transaction.attachments),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
-    return _build_transaction_out(tx)
+    return _build_transaction_out(tx, db)
 
 
 @router.put("/transactions/{tx_id}", response_model=TransactionOut)
@@ -423,7 +452,7 @@ def update_transaction(
     if not tx:
         raise HTTPException(404, "transaction not found")
 
-    update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k not in ("tag_ids", "split_items")}
+    update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
     for key, val in update_data.items():
         setattr(tx, key, val)
 
@@ -432,6 +461,26 @@ def update_transaction(
             FinanceTag.id.in_(body.tag_ids), FinanceTag.user_id == current_user.id,
         ).all()
         tx.tags = tags
+
+    if body.attachment_ids is not None:
+        attachments = db.query(Attachment).filter(
+            Attachment.id.in_(body.attachment_ids), Attachment.user_id == current_user.id,
+        ).all()
+        tx.attachments = attachments
+
+    if body.linked_todo_ids is not None:
+        db.query(ResourceRelation).filter(
+            ResourceRelation.from_type == "transaction",
+            ResourceRelation.from_id == tx.id,
+            ResourceRelation.relation_type == "related_to",
+            ResourceRelation.to_type == "todo",
+        ).delete()
+        for todo_id in body.linked_todo_ids:
+            rel = ResourceRelation(
+                from_type="transaction", from_id=tx.id,
+                relation_type="related_to", to_type="todo", to_id=todo_id,
+            )
+            db.add(rel)
 
     if body.split_items is not None:
         db.query(SplitItem).filter(SplitItem.transaction_id == tx.id).delete()
@@ -446,9 +495,10 @@ def update_transaction(
         joinedload(Transaction.category),
         joinedload(Transaction.event),
         joinedload(Transaction.tags),
+        joinedload(Transaction.attachments),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
-    return _build_transaction_out(tx)
+    return _build_transaction_out(tx, db)
 
 
 @router.delete("/transactions/{tx_id}", status_code=204)
@@ -460,6 +510,9 @@ def delete_transaction(
     tx = db.query(Transaction).filter(Transaction.id == tx_id, Transaction.user_id == current_user.id).first()
     if not tx:
         raise HTTPException(404, "transaction not found")
+    db.query(ResourceRelation).filter(
+        ResourceRelation.from_type == "transaction", ResourceRelation.from_id == tx_id,
+    ).delete()
     db.delete(tx)
     db.commit()
 
@@ -558,7 +611,7 @@ def event_summary(
 
     return EventSummary(
         event=event_out,
-        transactions=[_build_transaction_out(tx) for tx in txs],
+        transactions=[_build_transaction_out(tx, db) for tx in txs],
         total_expense=total_expense,
         total_income=total_income,
     )
@@ -649,6 +702,36 @@ def delete_budget(
         raise HTTPException(404, "budget not found")
     db.delete(budget)
     db.commit()
+
+
+# --- Attachments ---
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+
+@router.post("/attachments/upload", response_model=AttachmentOut, status_code=201)
+def upload_attachment(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ext = os.path.splitext(file.filename or "file")[1]
+    safe_name = f"{current_user.id}_{uuid_lib.uuid4().hex}{ext}"
+    file_path = os.path.join(UPLOAD_DIR, safe_name)
+    content = file.file.read()
+    with open(file_path, "wb") as f:
+        f.write(content)
+    attachment = Attachment(
+        user_id=current_user.id,
+        url=f"/uploads/{safe_name}",
+        mime_type=file.content_type or "application/octet-stream",
+        size=len(content),
+    )
+    db.add(attachment)
+    db.commit()
+    db.refresh(attachment)
+    return AttachmentOut.model_validate(attachment)
 
 
 # --- Relations ---
@@ -752,7 +835,7 @@ def get_dashboard(
         month_income=Decimal(str(month_income)),
         month_expense=Decimal(str(month_expense)),
         budget_usage_pct=max_usage,
-        recent_transactions=[_build_transaction_out(tx) for tx in recent_txs],
+        recent_transactions=[_build_transaction_out(tx, db) for tx in recent_txs],
         budgets=budget_list,
     )
 

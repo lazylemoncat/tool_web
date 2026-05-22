@@ -378,6 +378,14 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
           {t('app.allFolders')}
         </div>
 
+        <div
+          className="sidebar-item"
+          onClick={() => navigate('/finance')}
+        >
+          <span className="dot" style={{ background: '#c4943a' }} />
+          {t('sidebar.finance')}
+        </div>
+
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <SortableContext items={ids} strategy={verticalListSortingStrategy}>
             {folders.map((f) => (

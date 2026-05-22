@@ -3,14 +3,28 @@
 */
 
 import React from 'react'
-import type { DashboardSummary, Account, Budget } from '../../hooks/useFinance'
+import type { DashboardSummary, Account, Budget, StatsData, FinanceCategory, FinanceTag, Transaction } from '../../hooks/useFinance'
 import { useLocale } from '../../i18n'
+import FinanceCharts from './FinanceCharts'
+import CategoryManager from './CategoryManager'
+import TagManager from './TagManager'
 
 interface Props {
   dashboard: DashboardSummary | null
   accounts: Account[]
   budgets: Budget[]
+  categories: FinanceCategory[]
+  stats: StatsData | null
+  period: string
+  onPeriodChange: (p: string) => void
   onCreateAccount: (fields: Record<string, unknown>) => void
+  onCreateCategory: (fields: Record<string, unknown>) => void
+  onUpdateCategory: (id: number, fields: Record<string, unknown>) => void
+  onDeleteCategory: (id: number) => void
+  tags: FinanceTag[]
+  onCreateTag: (name: string) => void
+  onDeleteTag: (id: number) => void
+  onTransactionClick: (tx: Transaction) => void
 }
 
 const DEFAULT_TYPES = ['现金', '微信', '支付宝', '银行卡', '信用卡']
@@ -31,7 +45,7 @@ const fmt = (v: unknown, digits = 2): string => {
   return isNaN(n) ? '0.' + '0'.repeat(digits) : n.toFixed(digits)
 }
 
-const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, onCreateAccount }) => {
+const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categories, tags, stats, period, onPeriodChange, onCreateAccount, onCreateCategory, onUpdateCategory, onDeleteCategory, onCreateTag, onDeleteTag, onTransactionClick }) => {
   const { t } = useLocale()
   const [showNewAccount, setShowNewAccount] = React.useState(false)
   const [acctName, setAcctName] = React.useState('')
@@ -90,6 +104,8 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, onCre
           <div className="finance-summary-value">{fmt(dashboard.budget_usage_pct, 0)}%</div>
         </div>
       </div>
+
+      <FinanceCharts stats={stats} period={period} onPeriodChange={onPeriodChange} />
 
       <div className="finance-section">
         <div className="finance-section-header">
@@ -179,6 +195,19 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, onCre
         )}
       </div>
 
+      <CategoryManager
+        categories={categories}
+        onCreate={onCreateCategory}
+        onUpdate={onUpdateCategory}
+        onDelete={onDeleteCategory}
+      />
+
+      <TagManager
+        tags={tags}
+        onCreate={onCreateTag}
+        onDelete={onDeleteTag}
+      />
+
       <div className="finance-section">
         <h3>{t('finance.recentTransactions')}</h3>
         {dashboard.recent_transactions.length === 0 ? (
@@ -186,7 +215,7 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, onCre
         ) : (
           <div className="finance-tx-list">
             {dashboard.recent_transactions.map((tx) => (
-              <div key={tx.id} className="finance-tx-row">
+              <div key={tx.id} className="finance-tx-row" onClick={() => onTransactionClick(tx)}>
                 <span className={`finance-tx-type finance-tx-${tx.type}`}>
                   {tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : 'S'}
                 </span>
