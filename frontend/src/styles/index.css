@@ -880,6 +880,9 @@ input, textarea, select {
   flex: 1;
 }
 
+.sidebar-theme-btns { display: flex; gap: 4px; margin-bottom: 8px; justify-content: center; }
+.sidebar-theme-btn { width: 32px; height: 32px; padding: 0; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-card); cursor: pointer; font-size: 0.85rem; display: flex; align-items: center; justify-content: center; color: var(--text-primary); }
+.sidebar-theme-btn:hover { border-color: var(--accent); }
 .sidebar-help-btn {
   width: 36px;
   height: 36px;
@@ -2112,6 +2115,9 @@ input, textarea, select {
 .finance-tag-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 .finance-split-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .finance-split-row { display: flex; gap: 6px; align-items: center; }
+.finance-child-row { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 8px; margin-bottom: 6px; background: var(--bg-primary); }
+.finance-child-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.finance-child-fields { display: flex; gap: 4px; align-items: center; margin-bottom: 4px; }
 .form-row { display: flex; gap: 12px; }
 .finance-type-picker { display: flex; gap: 4px; align-items: center; }
 .finance-type-editor { display: flex; gap: 4px; align-items: center; }

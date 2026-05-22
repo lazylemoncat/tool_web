@@ -178,6 +178,7 @@ class TransactionOut(BaseModel):
     split_items: list[SplitItemOut] = []
     attachments: list[AttachmentOut] = []
     linked_todos: list[dict] = []
+    children: list["TransactionOut"] = []
     model_config = {"from_attributes": True}
 
 

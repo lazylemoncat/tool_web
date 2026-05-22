@@ -80,6 +80,8 @@ def _build_transaction_out(tx, db=None):
         if todo_ids:
             todos = db.query(Todo).filter(Todo.id.in_(todo_ids)).all()
             d.linked_todos = [{"id": t.id, "title": t.title, "is_completed": t.is_completed} for t in todos]
+    if tx.children:
+        d.children = [_build_transaction_out(c, db) for c in tx.children]
     return d
 
 
@@ -342,6 +344,7 @@ def list_transactions(
     q = db.query(Transaction).filter(
         Transaction.user_id == current_user.id,
         Transaction.ledger_id == ledger_id,
+        Transaction.parent_transaction_id == None,
     )
     if account_id is not None:
         q = q.filter(Transaction.account_id == account_id)
@@ -366,6 +369,7 @@ def list_transactions(
         joinedload(Transaction.category),
         joinedload(Transaction.event),
         joinedload(Transaction.tags),
+        joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).order_by(Transaction.occurred_at.desc(), Transaction.sort_order).offset(skip).limit(limit).all()
 
@@ -436,6 +440,7 @@ def create_transaction(
         joinedload(Transaction.event),
         joinedload(Transaction.tags),
         joinedload(Transaction.attachments),
+        joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
     return _build_transaction_out(tx, db)
@@ -496,6 +501,7 @@ def update_transaction(
         joinedload(Transaction.event),
         joinedload(Transaction.tags),
         joinedload(Transaction.attachments),
+        joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
     return _build_transaction_out(tx, db)

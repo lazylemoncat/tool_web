@@ -18,6 +18,7 @@ interface Props {
   period: string
   onPeriodChange: (p: string) => void
   onCreateAccount: (fields: Record<string, unknown>) => void
+  onDeleteAccount: (id: number) => void
   onCreateCategory: (fields: Record<string, unknown>) => void
   onUpdateCategory: (id: number, fields: Record<string, unknown>) => void
   onDeleteCategory: (id: number) => void
@@ -45,7 +46,7 @@ const fmt = (v: unknown, digits = 2): string => {
   return isNaN(n) ? '0.' + '0'.repeat(digits) : n.toFixed(digits)
 }
 
-const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categories, tags, stats, period, onPeriodChange, onCreateAccount, onCreateCategory, onUpdateCategory, onDeleteCategory, onCreateTag, onDeleteTag, onTransactionClick }) => {
+const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categories, tags, stats, period, onPeriodChange, onCreateAccount, onDeleteAccount, onCreateCategory, onUpdateCategory, onDeleteCategory, onCreateTag, onDeleteTag, onTransactionClick }) => {
   const { t } = useLocale()
   const [showNewAccount, setShowNewAccount] = React.useState(false)
   const [acctName, setAcctName] = React.useState('')
@@ -189,6 +190,7 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categ
                 <span className="finance-account-name">{a.name}</span>
                 <span className="finance-account-type">{a.type}</span>
                 <span className="finance-account-balance">{fmt(a.current_balance)}</span>
+                <button className="finance-type-del" onClick={() => onDeleteAccount(a.id)} title={t('app.delete')}>x</button>
               </div>
             ))}
           </div>

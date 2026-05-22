@@ -82,6 +82,7 @@ export interface Transaction {
   tags: FinanceTag[]
   split_items: SplitItem[]
   attachments: Attachment[]
+  children?: Transaction[]
   linked_todos: { id: number; title: string; is_completed: boolean }[]
 }
 
@@ -223,8 +224,8 @@ export function useCategories(ledgerId: number | null) {
   }, [fetchCategories])
 
   const createCategory = async (fields: Record<string, unknown>) => {
-    try { await api.post('/finance/categories', fields); await fetchCategories() }
-    catch (err) { handleError(err); fetchCategories() }
+    try { const cat = await api.post('/finance/categories', fields) as FinanceCategory; await fetchCategories(); return cat }
+    catch (err) { handleError(err); fetchCategories(); return null }
   }
   const updateCategory = async (id: number, fields: Record<string, unknown>) => {
     try { await api.put(`/finance/categories/${id}`, fields); await fetchCategories() }
@@ -319,8 +320,8 @@ export function useTransactions(ledgerId: number | null, filters: TransactionFil
   const hasMore = transactions.length < total
 
   const createTransaction = async (fields: Record<string, unknown>) => {
-    try { await api.post('/finance/transactions', fields); await fetchTransactions() }
-    catch (err) { handleError(err); fetchTransactions() }
+    try { const tx = await api.post('/finance/transactions', fields) as Transaction; await fetchTransactions(); return tx }
+    catch (err) { handleError(err); fetchTransactions(); return null }
   }
   const updateTransaction = async (id: number, fields: Record<string, unknown>) => {
     try { await api.put(`/finance/transactions/${id}`, fields); await fetchTransactions() }

@@ -63,6 +63,28 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
             </div>
           )}
 
+          {tx.children && tx.children.length > 0 && (
+            <div className="form-group" style={{ marginTop: 12 }}>
+              <label className="form-label">{t('finance.childTransactions')} ({tx.children.length})</label>
+              <div className="finance-split-list">
+                {tx.children.map((child) => (
+                  <div key={child.id} className="finance-split-row">
+                    <span className={`finance-tx-type finance-tx-${child.type}`}>
+                      {child.type === 'expense' ? '-' : child.type === 'income' ? '+' : 'S'}
+                    </span>
+                    <span style={{ minWidth: 80, textAlign: 'right', fontWeight: 500 }}>{fmt(child.amount)}</span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                      {child.category?.name || t('finance.uncategorized')}
+                    </span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', flex: 1 }}>
+                      {child.note || ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {tx.split_items && tx.split_items.length > 0 && (
             <div className="form-group" style={{ marginTop: 12 }}>
               <label className="form-label">{t('finance.showSplit')}</label>

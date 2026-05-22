@@ -214,6 +214,8 @@
     "optionalNote": "备注 (可选)",
     "hideSplit": "收起拆单",
     "showSplit": "+ 拆单",
+    "childTransactions": "子交易",
+    "addChildTransaction": "+ 子交易",
     "addSplitItem": "+ 添加拆单项",
     "splitHint": "拆单金额总和应与交易金额一致",
     "editTransaction": "编辑交易",

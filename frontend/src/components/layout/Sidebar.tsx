@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
 import type { Folder } from '../../hooks/useFolders'
 import { useLocale } from '../../i18n'
+import { saveTheme, type Theme } from '../../theme'
 import CustomButtons from '../common/CustomButtons'
 
 interface Props {
@@ -464,6 +465,18 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
       )}
 
       <div className="sidebar-theme-toggle">
+        <div className="sidebar-theme-btns">
+          {(['light', 'dark', 'system'] as Theme[]).map((th) => (
+            <button
+              key={th}
+              className={`sidebar-theme-btn`}
+              onClick={() => saveTheme(th)}
+              title={th}
+            >
+              {th === 'light' ? '☀' : th === 'dark' ? '☾' : '◐'}
+            </button>
+          ))}
+        </div>
         <CustomButtons position="sidebar" />
         <div className="sidebar-bottom-btns">
           <button className="sidebar-help-btn" onClick={() => navigate('/help')} title={t('app.help')}>

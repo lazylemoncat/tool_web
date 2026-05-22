@@ -33,6 +33,20 @@ const AppContent: React.FC = () => {
 
   const lang = (preferences.language as 'zh' | 'en') || 'zh'
 
+  useEffect(() => {
+    initTheme(preferences)
+  }, [preferences])
+
+  useEffect(() => {
+    const customId = (preferences as any).custom_theme_id
+    if (customId) {
+      api.get(`/themes/${customId}`).then((data: any) => {
+        try { applyThemeConfig(JSON.parse(data.config_json)) }
+        catch { /* ignore */ }
+      }).catch(() => {})
+    }
+  }, [])
+
   if (!sessionChecked) {
     return (
       <LocaleProvider initial={lang}>
@@ -83,22 +97,6 @@ const TodoApp: React.FC = () => {
   const { fetchTags } = useTags()
   const { t } = useLocale()
   const [searchParams, setSearchParams] = useSearchParams()
-
-  useEffect(() => {
-    initTheme(preferences)
-  }, [preferences])
-
-  useEffect(() => {
-    const customId = (preferences as any).custom_theme_id
-    if (customId) {
-      api.get(`/themes/${customId}`).then((data: any) => {
-        try {
-          const cfg = JSON.parse(data.config_json)
-          applyThemeConfig(cfg)
-        } catch { /* ignore invalid config */ }
-      }).catch(() => { /* ignore fetch error */ })
-    }
-  }, [])
 
   const [activeFolderId, setActiveFolderId] = useState<number | null>(
     () => searchParams.get('folder_id') ? Number(searchParams.get('folder_id')) : null

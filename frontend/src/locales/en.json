@@ -214,6 +214,8 @@
     "optionalNote": "Note (optional)",
     "hideSplit": "Hide Split",
     "showSplit": "+ Split Items",
+    "childTransactions": "Child Transactions",
+    "addChildTransaction": "+ Child Transaction",
     "addSplitItem": "+ Add Item",
     "splitHint": "Split amounts should sum to transaction total",
     "editTransaction": "Edit Transaction",

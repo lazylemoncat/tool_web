@@ -43,7 +43,7 @@ const FinancePage: React.FC = () => {
   const [editTx, setEditTx] = useState<Transaction | null>(null)
 
   const { ledgers, createLedger, deleteLedger } = useLedgers()
-  const { accounts, createAccount } = useAccounts(activeLedgerId)
+  const { accounts, createAccount, deleteAccount } = useAccounts(activeLedgerId)
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories(activeLedgerId)
   const { tags, createTag, deleteTag } = useFinanceTags(activeLedgerId)
   const { dashboard } = useDashboard(activeLedgerId)
@@ -105,10 +105,26 @@ const FinancePage: React.FC = () => {
         await updateTransaction(editTx.id, data as unknown as Record<string, unknown>)
         setEditTx(null)
       } else {
-        await createTransaction({
-          ...data,
+        const parent = await createTransaction({
+          type: data.type, amount: data.amount, account_id: data.account_id,
+          category_id: data.category_id, note: data.note,
+          occurred_at: data.occurred_at, tag_ids: data.tag_ids,
+          attachment_ids: data.attachment_ids ?? [],
+          linked_todo_ids: data.linked_todo_ids ?? [],
           ledger_id: activeLedgerId,
-        } as unknown as Record<string, unknown>)
+        } as any)
+        if (parent && data.children.length > 0) {
+          for (const child of data.children) {
+            await createTransaction({
+              type: data.type, amount: child.amount, account_id: data.account_id,
+              category_id: child.category_id, note: child.note,
+              occurred_at: data.occurred_at, tag_ids: [],
+              attachment_ids: child.attachment_ids ?? [],
+              parent_transaction_id: parent.id,
+              ledger_id: activeLedgerId,
+            } as any)
+          }
+        }
       }
       setShowTxForm(false)
     } catch {
@@ -284,6 +300,7 @@ const FinancePage: React.FC = () => {
                 period={period}
                 onPeriodChange={setPeriod}
                 onCreateAccount={(f) => createAccount({ ...f, ledger_id: activeLedgerId })}
+                onDeleteAccount={(id) => deleteAccount(id)}
                 onCreateCategory={(f) => createCategory({ ...f, ledger_id: activeLedgerId })}
                 onUpdateCategory={(id, f) => updateCategory(id, f)}
                 onDeleteCategory={(id) => deleteCategory(id)}
@@ -416,6 +433,7 @@ const FinancePage: React.FC = () => {
           editTx={editTx}
           onSubmit={handleSaveTransaction}
           onClose={() => { setShowTxForm(false); setEditTx(null) }}
+          onCreateCategory={(name) => createCategory({ name, ledger_id: activeLedgerId })}
         />
       )}
 

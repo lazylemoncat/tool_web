@@ -15,7 +15,12 @@ export interface TransactionFormData {
   note: string
   occurred_at: string
   tag_ids: number[]
-  split_items: { amount: number; category_id: number | null; note: string }[]
+  children: {
+    amount: number
+    category_id: number | null
+    note: string
+    attachment_ids?: number[]
+  }[]
   attachment_ids?: number[]
   linked_todo_ids?: number[]
 }
@@ -27,12 +32,13 @@ interface Props {
   editTx?: Transaction | null
   onSubmit: (data: TransactionFormData) => void
   onClose: () => void
+  onCreateCategory?: (name: string) => Promise<{ id: number } | null>
 }
 
 const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500]
 const TX_TYPES = ['expense', 'income', 'transfer'] as const
 
-const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tags, editTx, onSubmit, onClose }) => {
+const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tags, editTx, onSubmit, onClose, onCreateCategory }) => {
   const { t } = useLocale()
   const isEdit = !!editTx
 
@@ -47,17 +53,23 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
     editTx?.occurred_at ? editTx.occurred_at.slice(0, 16) : new Date().toISOString().slice(0, 16),
   )
   const [selectedTags, setSelectedTags] = useState<number[]>(editTx?.tags.map((t) => t.id) ?? [])
-  const [showSplit, setShowSplit] = useState((editTx?.split_items?.length ?? 0) > 0)
-  const [splitItems, setSplitItems] = useState<{ amount: string; category_id: number | null; note: string }[]>(
-    editTx?.split_items?.map((s) => ({
-      amount: String(s.amount),
-      category_id: s.category_id,
-      note: s.note ?? '',
+  const [showChildren, setShowChildren] = useState((editTx?.children?.length ?? 0) > 0)
+  interface ChildState { amount: string; category_id: number | null; note: string; files: File[]; existingId?: number; existingAttachmentIds: number[] }
+  const [children, setChildren] = useState<ChildState[]>(
+    editTx?.children?.map((c) => ({
+      amount: String(c.amount),
+      category_id: c.category_id,
+      note: c.note ?? '',
+      files: [],
+      existingId: c.id,
+      existingAttachmentIds: c.attachments?.map((a) => a.id) ?? [],
     })) ?? [],
   )
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>(editTx?.attachments ?? [])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [showNewCat, setShowNewCat] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
   const [availableTodos, setAvailableTodos] = useState<{ id: number; title: string; is_completed: boolean }[]>([])
   const [selectedTodoIds, setSelectedTodoIds] = useState<number[]>(
@@ -76,6 +88,16 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
 
   const handleRemoveNewFile = (idx: number) => {
     setNewFiles((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const handleCreateCategory = async () => {
+    if (!newCatName.trim() || !onCreateCategory) return
+    const cat = await onCreateCategory(newCatName.trim())
+    if (cat) {
+      setCategoryId(cat.id)
+      setNewCatName('')
+      setShowNewCat(false)
+    }
   }
 
   const handleSubmit = async () => {
@@ -100,6 +122,28 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       setUploading(false)
     }
 
+    const childData = await Promise.all(children
+      .filter((c) => c.amount && parseFloat(c.amount) > 0)
+      .map(async (c) => {
+        const childAttachmentIds = [...c.existingAttachmentIds]
+        for (const file of c.files) {
+          const fd = new FormData()
+          fd.append('file', file)
+          try {
+            const uploaded = await api.post('/finance/attachments/upload', fd, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            }) as Attachment
+            childAttachmentIds.push(uploaded.id)
+          } catch { /* skip */ }
+        }
+        return {
+          amount: parseFloat(c.amount),
+          category_id: c.category_id,
+          note: c.note,
+          attachment_ids: childAttachmentIds.length > 0 ? childAttachmentIds : undefined,
+        }
+      }))
+
     onSubmit({
       type: txType,
       amount: numAmount,
@@ -108,16 +152,14 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       note,
       occurred_at: new Date(occurredAt).toISOString(),
       tag_ids: selectedTags,
-      split_items: splitItems
-        .filter((s) => s.amount && parseFloat(s.amount) > 0)
-        .map((s) => ({ amount: parseFloat(s.amount), category_id: s.category_id, note: s.note })),
+      children: childData,
       attachment_ids: attachmentIds.length > 0 ? attachmentIds : undefined,
       linked_todo_ids: selectedTodoIds.length > 0 ? selectedTodoIds : undefined,
     })
   }
 
-  const addSplitItem = () => {
-    setSplitItems([...splitItems, { amount: '', category_id: null, note: '' }])
+  const addChild = () => {
+    setChildren([...children, { amount: '', category_id: null, note: '', files: [], existingAttachmentIds: [] }])
   }
 
   const toggleTag = (tagId: number) => {
@@ -202,18 +244,38 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
             </div>
             <div className="form-group" style={{ flex: 1 }}>
               <label className="form-label">Category</label>
-              <select
-                value={categoryId ?? ''}
-                onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
-                className="form-select"
-              >
-                <option value="">{t('finance.uncategorized')}</option>
-                {flatCategories(categories).map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.parent_id ? '  ' : ''}{c.icon} {c.name}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <select
+                  value={categoryId ?? ''}
+                  onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
+                  className="form-select"
+                  style={{ flex: 1 }}
+                >
+                  <option value="">{t('finance.uncategorized')}</option>
+                  {flatCategories(categories).map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.parent_id ? '  ' : ''}{c.icon} {c.name}
+                    </option>
+                  ))}
+                </select>
+                {onCreateCategory && (
+                  <button type="button" className="btn-sm" onClick={() => setShowNewCat(!showNewCat)} title={t('finance.newCategory')}>+</button>
+                )}
+              </div>
+              {showNewCat && (
+                <div className="finance-category-edit-row" style={{ marginTop: 4 }}>
+                  <input
+                    value={newCatName}
+                    onChange={(e) => setNewCatName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
+                    placeholder={t('finance.categoryName')}
+                    className="finance-input-sm"
+                    autoFocus
+                  />
+                  <button className="btn-submit" onClick={handleCreateCategory}>{t('app.confirm')}</button>
+                  <button className="btn-cancel" onClick={() => { setShowNewCat(false); setNewCatName('') }}>{t('app.cancel')}</button>
+                </div>
+              )}
             </div>
           </div>
 
@@ -257,44 +319,79 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
           </div>
 
           <div className="form-group">
-            <button className="btn-sm" onClick={() => setShowSplit(!showSplit)}>
-              {showSplit ? t('finance.hideSplit') : t('finance.showSplit')}
+            <button className="btn-sm" onClick={() => setShowChildren(!showChildren)}>
+              {showChildren ? t('finance.hideSplit') : t('finance.addChildTransaction')}
             </button>
-            {showSplit && (
+            {showChildren && (
               <div className="finance-split-list">
-                {splitItems.map((si, i) => (
-                  <div key={i} className="finance-split-row">
-                    <input
-                      type="number" value={si.amount}
-                      onChange={(e) => {
-                        const updated = [...splitItems]
-                        updated[i] = { ...updated[i], amount: e.target.value }
-                        setSplitItems(updated)
-                      }}
-                      placeholder="0.00" className="finance-input-sm" step="0.01"
-                    />
-                    <select
-                      value={si.category_id ?? ''}
-                      onChange={(e) => {
-                        const updated = [...splitItems]
-                        updated[i] = { ...updated[i], category_id: e.target.value ? Number(e.target.value) : null }
-                        setSplitItems(updated)
-                      }}
-                      className="finance-select" style={{ flex: 1 }}
-                    >
-                      <option value="">{t('finance.uncategorized')}</option>
-                      {flatCategories(categories).map((c) => (
-                        <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                      ))}
-                    </select>
-                    <button
-                      onClick={() => setSplitItems(splitItems.filter((_, idx) => idx !== i))}
-                      className="finance-tx-del"
-                    >x</button>
+                {children.map((ch, i) => (
+                  <div key={i} className="finance-child-row">
+                    <div className="finance-child-header">
+                      <span className="text-muted" style={{ fontSize: '0.78rem' }}>#{i + 1}</span>
+                      <button onClick={() => setChildren(children.filter((_, idx) => idx !== i))} className="finance-tx-del">x</button>
+                    </div>
+                    <div className="finance-child-fields">
+                      <input
+                        type="number" value={ch.amount}
+                        onChange={(e) => {
+                          const updated = [...children]
+                          updated[i] = { ...updated[i], amount: e.target.value }
+                          setChildren(updated)
+                        }}
+                        placeholder="0.00" className="finance-input-sm" step="0.01"
+                      />
+                      <select
+                        value={ch.category_id ?? ''}
+                        onChange={(e) => {
+                          const updated = [...children]
+                          updated[i] = { ...updated[i], category_id: e.target.value ? Number(e.target.value) : null }
+                          setChildren(updated)
+                        }}
+                        className="finance-select" style={{ flex: 1 }}
+                      >
+                        <option value="">{t('finance.uncategorized')}</option>
+                        {flatCategories(categories).map((c) => (
+                          <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="finance-child-fields">
+                      <input
+                        type="text" value={ch.note}
+                        onChange={(e) => {
+                          const updated = [...children]
+                          updated[i] = { ...updated[i], note: e.target.value }
+                          setChildren(updated)
+                        }}
+                        placeholder={t('finance.optionalNote')} className="finance-input-sm" style={{ flex: 1 }}
+                      />
+                      <input
+                        type="file" multiple
+                        onChange={(e) => {
+                          const updated = [...children]
+                          updated[i] = { ...updated[i], files: [...updated[i].files, ...Array.from(e.target.files || [])] }
+                          setChildren(updated)
+                        }}
+                        className="finance-file-input"
+                      />
+                    </div>
+                    {(ch.files.length > 0 || ch.existingAttachmentIds.length > 0) && (
+                      <div className="finance-attachment-list" style={{ marginTop: 2 }}>
+                        {ch.files.map((f, fi) => (
+                          <span key={fi} className="finance-attachment-item">
+                            {f.name} <button className="finance-type-del" onClick={() => {
+                              const updated = [...children]
+                              updated[i] = { ...updated[i], files: updated[i].files.filter((_, fii) => fii !== fi) }
+                              setChildren(updated)
+                            }}>x</button>
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
-                <button onClick={addSplitItem} className="btn-sm">
-                  {t('finance.addSplitItem')}
+                <button onClick={addChild} className="btn-sm">
+                  + {t('finance.addChildTransaction')}
                 </button>
               </div>
             )}
