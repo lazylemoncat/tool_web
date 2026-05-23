@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../i18n'
 import { saveTheme, type Theme } from '../../theme'
-import { clearThemeConfig } from '../../themeEngine'
 import ThemeManager from './ThemeManager'
 import AccountSettings from '../auth/AccountSettings'
 
@@ -23,10 +22,6 @@ const SettingsPage: React.FC = () => {
   useEffect(() => {
     if (saved) navigate('/')
   }, [saved, navigate])
-
-  useEffect(() => {
-    return () => { clearThemeConfig() }
-  }, [])
 
   const handleThemeChange = (newTheme: Theme, newCustomThemeId: number | null) => {
     setTheme(newTheme)

@@ -21,6 +21,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useNavigate } from 'react-router-dom'
 import type { Folder } from '../../hooks/useFolders'
 import { useLocale } from '../../i18n'
+import { saveTheme, type Theme } from '../../theme'
 import CustomButtons from '../common/CustomButtons'
 
 interface Props {
@@ -359,7 +360,7 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
 
   return (
     <aside className="sidebar-panel">
-      <div className="sidebar-logo">
+      <div className="sidebar-logo" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="Home">
         Tool<span>Web</span>
       </div>
 
@@ -376,6 +377,14 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
         >
           <span className="dot" style={{ background: '#b8b0a4' }} />
           {t('app.allFolders')}
+        </div>
+
+        <div
+          className="sidebar-item"
+          onClick={() => navigate('/finance')}
+        >
+          <span className="dot" style={{ background: '#c4943a' }} />
+          {t('sidebar.finance')}
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -400,6 +409,7 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
             ))}
           </SortableContext>
         </DndContext>
+
       </nav>
 
       {adding ? (
@@ -455,6 +465,18 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
       )}
 
       <div className="sidebar-theme-toggle">
+        <div className="sidebar-theme-btns">
+          {(['light', 'dark', 'system'] as Theme[]).map((th) => (
+            <button
+              key={th}
+              className={`sidebar-theme-btn`}
+              onClick={() => saveTheme(th)}
+              title={th}
+            >
+              {th === 'light' ? '☀' : th === 'dark' ? '☾' : '◐'}
+            </button>
+          ))}
+        </div>
         <CustomButtons position="sidebar" />
         <div className="sidebar-bottom-btns">
           <button className="sidebar-help-btn" onClick={() => navigate('/help')} title={t('app.help')}>
