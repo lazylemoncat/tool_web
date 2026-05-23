@@ -12,7 +12,7 @@ const LandingPage: React.FC = () => {
         <h1 className="landing-logo">
           Tool<span>Web</span>
         </h1>
-        <p className="landing-subtitle">Personal productivity & finance hub</p>
+        <p className="landing-subtitle">{t('landing.subtitle')}</p>
       </div>
 
       <div className="landing-cards">

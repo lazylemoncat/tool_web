@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useLocale } from '../../i18n'
+import { EmptyState } from '../ui'
 import TodoItem from './TodoItem'
 import type { Todo } from '../../hooks/useTodos'
 
@@ -93,9 +94,10 @@ const TodoList: React.FC<Props> = React.memo(({ todos, onToggle, onDelete, onAdd
 
   if (todos.length === 0) {
     return (
-      <div className="empty-state">
-        <p>{t('todo.emptyState')}</p>
-      </div>
+      <EmptyState
+        icon="📋"
+        title={t('todo.emptyState')}
+      />
     )
   }
 

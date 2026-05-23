@@ -1,0 +1,31 @@
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.ui-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-fg);
+  margin-bottom: var(--space-1);
+}
+.ui-field-required {
+  color: var(--color-danger);
+  margin-left: 2px;
+}
+.ui-field-hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-fg-muted);
+  margin: 0;
+}
+.ui-field-error {
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}

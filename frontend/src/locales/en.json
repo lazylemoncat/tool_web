@@ -1,4 +1,19 @@
 {
+  "ui": {
+    "confirm": {
+      "defaultTitle": "Please confirm",
+      "confirm": "Confirm",
+      "cancel": "Cancel"
+    },
+    "empty": {
+      "noResults": "No results"
+    },
+    "form": {
+      "required": "Required",
+      "invalid": "Invalid format"
+    },
+    "loading": "Loading"
+  },
   "app": {
     "logo": "ToolWeb",
     "allTasks": "All Tasks",
@@ -15,7 +30,11 @@
     "close": "Close",
     "back": "Back",
     "saving": "Saving...",
-    "save": "Save"
+    "save": "Save",
+    "bulkSelect": "Multi-select",
+    "openMenu": "Open menu",
+    "search": "Search",
+    "selectedCount": "{n} selected"
   },
   "auth": {
     "login": "Login",
@@ -70,6 +89,9 @@
     "unknownError": "Unknown error, please retry",
     "passwordTooShort": "Password must be at least 8 characters",
     "passwordWeak": "Password must contain at least 1 letter and 1 digit",
+    "unexpectedTitle": "Something went wrong",
+    "unexpectedMessage": "An unexpected error occurred",
+    "reload": "Reload",
     "accountLocked": "Account locked due to too many failed attempts, please try again in {n} minutes",
     "passwordTooLong": "Password must be at most 100 characters",
     "usernameTooShort": "Username must be at least 2 characters",
@@ -107,6 +129,8 @@
     "folderName": "Folder Name",
     "deleteFolder": "Delete Folder",
     "deleteFolderConfirm": "Confirm delete folder",
+    "deleteFolderDescription": "Delete folder '{name}'? It contains {count} task(s){children}. This cannot be undone.",
+    "renameFolder": "Rename folder",
     "finance": "Finance"
   },
   "settings": {
@@ -175,6 +199,28 @@
     "daysLater": "{n} days later"
   },
   "finance": {
+    "defaultAccountTypes": "Cash|WeChat|Alipay|Debit Card|Credit Card",
+    "noLedgerHint": "A ledger is a container for your accounts. Create one to begin.",
+    "noTransactionsHint": "Record your first income or expense to track cash flow.",
+    "noBudgetsHint": "Set budgets per category or event to stay on top of spending.",
+    "noEventsHint": "Events aggregate spending over a period or theme — e.g. trips, renovation.",
+    "confirmDeleteLedger": "Delete ledger?",
+    "deleteLedgerDescription": "All accounts, transactions, budgets and events under it will be permanently deleted.",
+    "confirmDeleteTransaction": "Delete transaction?",
+    "deleteTransactionDescription": "This transaction and its attachments / sub-items will be removed.",
+    "confirmDeleteBudget": "Delete budget?",
+    "confirmDeleteEvent": "Delete event?",
+    "confirmDeleteAccount": "Delete account?",
+    "confirmDeleteCategory": "Delete category?",
+    "confirmDeleteTag": "Delete tag?",
+    "deleteAccountDescription": "This account and its transactions will be permanently deleted.",
+    "deleteCategoryDescription": "This category and its subcategories will be removed. Transactions will become uncategorized.",
+    "deleteTagDescription": "This tag will be removed from all associated transactions.",
+    "loadingTransactions": "Loading transactions...",
+    "endBeforeStart": "End time must be later than start time",
+    "amountRequired": "Please enter a valid amount",
+    "accountRequired": "Please select an account",
+    "nameRequired": "Please enter a name",
     "newLedger": "New Ledger",
     "createFirstLedger": "Create First Ledger",
     "noLedger": "No ledger yet, create one",
@@ -285,6 +331,7 @@
     "accountCreateFailed": "Failed to create account"
   },
   "landing": {
+    "subtitle": "Personal productivity & finance hub",
     "todoDesc": "Manage tasks, folders and tags",
     "financeDesc": "Track expenses, budgets and financial analysis"
   }

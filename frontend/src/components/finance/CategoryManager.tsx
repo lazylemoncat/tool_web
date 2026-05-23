@@ -3,7 +3,7 @@
 */
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import type { FinanceCategory } from '../../hooks/useFinance'
+import type { FinanceCategory } from '../../hooks/finance'
 
 interface Props {
   categories: FinanceCategory[]
@@ -90,7 +90,7 @@ const CategoryManager: React.FC<Props> = ({ categories, onCreate, onUpdate, onDe
       <React.Fragment key={cat.id}>
         <div className="finance-category-node" style={{ paddingLeft: depth * 20 }}>
           {hasChildren ? (
-            <button className="finance-category-toggle" onClick={() => toggle(cat.id)} type="button">
+            <button className="finance-category-toggle" onClick={() => toggle(cat.id)} type="button" aria-label={isCollapsed ? t('todo.expand') : t('todo.collapse')}>
               {isCollapsed ? '▶' : '▼'}
             </button>
           ) : (
@@ -123,9 +123,9 @@ const CategoryManager: React.FC<Props> = ({ categories, onCreate, onUpdate, onDe
             <>
               <span className="finance-category-name">{cat.icon} {cat.name}</span>
               <div className="finance-category-actions">
-                <button className="btn-sm" onClick={() => startAddChild(cat.id)}>+</button>
+                <button className="btn-sm" onClick={() => startAddChild(cat.id)} aria-label={t('finance.addSubCategory')}>+</button>
                 <button className="btn-sm" onClick={() => startEdit(cat)}>{t('app.edit')}</button>
-                <button className="btn-sm btn-danger" onClick={() => onDelete(cat.id)}>x</button>
+                <button className="btn-sm btn-danger" onClick={() => onDelete(cat.id)} aria-label={t('app.delete')}>x</button>
               </div>
             </>
           )}

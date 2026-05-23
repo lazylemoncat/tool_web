@@ -3,7 +3,7 @@
 */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { Routes, Route, useSearchParams } from 'react-router-dom'
+import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LocaleProvider, useLocale } from './i18n'
 import { initTheme } from './theme'
@@ -14,7 +14,13 @@ import { useFolders } from './hooks/useFolders'
 import { useTags } from './hooks/useTags'
 import ErrorBoundary from './components/common/ErrorBoundary'
 import { ToastProvider, useToast } from './components/common/Toast'
+import {
+  ToastProvider as UIToastProvider,
+  TooltipProvider,
+  ConfirmDialogProvider,
+} from './components/ui'
 import { useErrorDisplay } from './hooks/useErrorDisplay'
+import { useConfirm, Skeleton, Button } from './components/ui'
 import CustomButtons from './components/common/CustomButtons'
 import Sidebar from './components/layout/Sidebar'
 import Header from './components/layout/Header'
@@ -25,8 +31,13 @@ import TaskDetail from './components/todo/TaskDetail'
 import AuthPage from './components/auth/AuthPage'
 import SettingsPage from './components/settings/SettingsPage'
 import HelpPage from './pages/HelpPage'
-import FinancePage from './pages/FinancePage'
+import FinanceLayout from './pages/finance/FinanceLayout'
+import DashboardPage from './pages/finance/DashboardPage'
+import TransactionsPage from './pages/finance/TransactionsPage'
+import BudgetsPage from './pages/finance/BudgetsPage'
+import EventsPage from './pages/finance/EventsPage'
 import LandingPage from './pages/LandingPage'
+import UIPreviewPage from './pages/UIPreviewPage'
 
 const AppContent: React.FC = () => {
   const { token, preferences, sessionChecked } = useAuth()
@@ -60,6 +71,16 @@ const AppContent: React.FC = () => {
   }
 
   if (!token) {
+    // Dev: 不强制登录访问 /ui-preview
+    if (import.meta.env.DEV && window.location.pathname === '/ui-preview') {
+      return (
+        <LocaleProvider initial={lang}>
+          <ConfirmDialogProvider>
+            <UIPreviewPage />
+          </ConfirmDialogProvider>
+        </LocaleProvider>
+      )
+    }
     return (
       <LocaleProvider initial={lang}>
         <AuthPage />
@@ -69,13 +90,22 @@ const AppContent: React.FC = () => {
 
   return (
     <LocaleProvider initial={lang}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/todo" element={<TodoApp />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/help" element={<HelpPage />} />
-        <Route path="/finance" element={<FinancePage />} />
-      </Routes>
+      <ConfirmDialogProvider>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/todo" element={<TodoApp />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/help" element={<HelpPage />} />
+          <Route path="/finance" element={<FinanceLayout />}>
+            <Route index element={<Navigate to="/finance/dashboard" replace />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="transactions" element={<TransactionsPage />} />
+            <Route path="budgets" element={<BudgetsPage />} />
+            <Route path="events" element={<EventsPage />} />
+          </Route>
+          {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
+        </Routes>
+      </ConfirmDialogProvider>
     </LocaleProvider>
   )
 }
@@ -171,6 +201,7 @@ const TodoApp: React.FC = () => {
   const { todos, loading, createTodo, updateTodo, deleteTodo, toggleTodo, reorderTodos, refresh } = useTodos(filters)
   const { toast } = useToast()
   const { displayError } = useErrorDisplay()
+  const confirm = useConfirm()
 
   const activeFolderName = activeFolderId !== null
     ? findFolderById(folders, activeFolderId)?.name || t('todo.folder')
@@ -335,13 +366,13 @@ const TodoApp: React.FC = () => {
             ))}
           </select>
 
-          <button className="add-btn" onClick={() => setShowForm(true)}>
+          <Button onClick={() => setShowForm(true)}>
             ＋ {t('todo.newTask')}
-          </button>
+          </Button>
 
           <div className="filter-group">
             <button className={`filter-btn ${selectMode ? 'active' : ''}`} onClick={() => { setSelectMode(!selectMode); setSelectedIds(new Set()) }}>
-              {selectMode ? t('app.cancel') : '多选'}
+              {selectMode ? t('app.cancel') : t('app.bulkSelect')}
             </button>
           </div>
 
@@ -350,7 +381,14 @@ const TodoApp: React.FC = () => {
         </div>
 
         {loading ? (
-          <div className="empty-state"><p>{t('todo.loading')}</p></div>
+          <div className="todo-list">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="todo-item" style={{ pointerEvents: 'none' }}>
+                <Skeleton variant="circle" width={22} height={22} />
+                <Skeleton variant="text" width="60%" />
+              </div>
+            ))}
+          </div>
         ) : (
           <TodoList
             todos={todos}
@@ -367,9 +405,12 @@ const TodoApp: React.FC = () => {
         )}
         {selectMode && selectedIds.size > 0 && (
           <div className="bulk-bar">
-            <span>{selectedIds.size} selected</span>
+            <span>{t('app.selectedCount', { n: selectedIds.size })}</span>
             <button className="btn-submit" onClick={() => handleBulkAction('complete')}>✓ {t('todo.completed')}</button>
-            <button className="btn-danger" onClick={() => handleBulkAction('delete')}>{t('app.delete')}</button>
+            <button className="btn-danger" onClick={async () => {
+              const ok = await confirm({ title: t('app.confirmDelete'), danger: true })
+              if (ok) handleBulkAction('delete')
+            }}>{t('app.delete')}</button>
           </div>
         )}
       </main>
@@ -415,11 +456,15 @@ const TodoApp: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ErrorBoundary>
-      <ToastProvider>
-        <AuthProvider>
-          <AppContent />
-        </AuthProvider>
-      </ToastProvider>
+      <TooltipProvider>
+        <UIToastProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </ToastProvider>
+        </UIToastProvider>
+      </TooltipProvider>
     </ErrorBoundary>
   )
 }

@@ -27,11 +27,11 @@ const ThemeManager: React.FC<Props> = ({ theme, customThemeId, onThemeChange }) 
     const template: ThemeConfig = {
       name: 'My Theme',
       version: '1.0',
-      global: {
-        ':root': vars[':root'] || {},
-        '[data-theme="dark"]': {},
+      tokens: {
+        light: vars,
+        dark: {},
       },
-      pages: { todo: { ':root': {}, '[data-theme="dark"]': {} } },
+      pages: { todo: { light: {}, dark: {} } },
       buttons: [],
       scripts: '',
     }
@@ -53,7 +53,7 @@ const ThemeManager: React.FC<Props> = ({ theme, customThemeId, onThemeChange }) 
     reader.onload = async () => {
       try {
         const cfg = JSON.parse(reader.result as string) as ThemeConfig
-        if (!cfg.global && !cfg.pages) {
+        if (!cfg.tokens && !cfg.pages && !cfg.buttons && !cfg.scripts) {
           setUploadError(t('settings.invalidThemeFile'))
           return
         }

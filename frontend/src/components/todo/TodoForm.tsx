@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
+import { FormField, Input, Textarea, Button, IconButton } from '../ui'
 import type { Folder } from '../../hooks/useFolders'
 import type { Todo } from '../../hooks/useTodos'
 import TagInput from './TagInput'
@@ -43,6 +44,7 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
   const [dueDate, setDueDate] = useState(editTodo?.due_date?.replace(/-/g, '/') ?? '')
   const [note, setNote] = useState(editTodo?.note ?? '')
   const [tags, setTags] = useState<Tag[]>(editTodo?.tags ?? [])
+  const [titleError, setTitleError] = useState('')
 
   // Recurrence state
   const [recurrenceEnabled, setRecurrenceEnabled] = useState(
@@ -76,7 +78,11 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title.trim()) return
+    if (!title.trim()) {
+      setTitleError(t('ui.form.required'))
+      return
+    }
+    setTitleError('')
     onSubmit({
       title: title.trim(),
       folder_id: folderId,
@@ -96,15 +102,14 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h2>{heading}</h2>
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>{t('todo.taskName')}</label>
-            <input
+          <FormField label={t('todo.taskName')} error={titleError} required>
+            <Input
               value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              onChange={(e) => { setTitle(e.target.value); if (titleError) setTitleError('') }}
               placeholder={t('todo.enterTask')}
               autoFocus
             />
-          </div>
+          </FormField>
 
           <div className="form-row">
             <div className="form-group">
@@ -132,8 +137,7 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
 
           <div className="form-group">
             <label>{t('todo.dueDate')}</label>
-            <input
-              type="text"
+            <Input
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
               placeholder={locale === 'zh' ? '年/月/日' : 'yyyy/mm/dd'}
@@ -173,13 +177,13 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
                     onChange={(e) => updateRecurrenceRule(i, e.target.value)}
                     placeholder="FREQ=WEEKLY;BYDAY=MO,WE,FR"
                   />
-                  <button
+                  <IconButton
+                    aria-label={t('app.delete')}
+                    size="sm"
+                    variant="danger"
                     type="button"
-                    className="recurrence-remove-btn"
                     onClick={() => removeRecurrenceRule(i)}
-                  >
-                    ✕
-                  </button>
+                  >✕</IconButton>
                 </div>
               ))}
               <button
@@ -194,7 +198,7 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
 
           <div className="form-group">
             <label>{t('todo.note')}</label>
-            <textarea
+            <Textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
               placeholder={t('todo.optional')}
@@ -208,8 +212,8 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
           </div>
 
           <div className="form-actions">
-            <button type="button" className="btn-cancel" onClick={onClose}>{t('app.cancel')}</button>
-            <button type="submit" className="btn-submit">{isEdit ? t('app.save') : t('todo.create')}</button>
+            <Button type="button" variant="secondary" onClick={onClose}>{t('app.cancel')}</Button>
+            <Button type="submit">{isEdit ? t('app.save') : t('todo.create')}</Button>
           </div>
         </form>
       </div>

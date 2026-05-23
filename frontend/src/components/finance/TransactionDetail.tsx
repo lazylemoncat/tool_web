@@ -4,7 +4,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocale } from '../../i18n'
-import type { Transaction } from '../../hooks/useFinance'
+import type { Transaction } from '../../hooks/finance'
 
 interface Props {
   transaction: Transaction
@@ -29,7 +29,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{t('finance.transactionDetail')}</h3>
-          <button className="modal-close" onClick={onClose}>x</button>
+          <button className="modal-close" onClick={onClose} aria-label={t('app.close')}>x</button>
         </div>
 
         <div className="modal-body">
@@ -53,7 +53,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           </div>
 
           {tx.tags && tx.tags.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.tags')}</label>
               <div className="finance-tag-chips">
                 {tx.tags.map((tag) => (
@@ -64,7 +64,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           )}
 
           {tx.children && tx.children.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.childTransactions')} ({tx.children.length})</label>
               <div className="finance-split-list">
                 {tx.children.map((child) => (
@@ -72,11 +72,11 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
                     <span className={`finance-tx-type finance-tx-${child.type}`}>
                       {child.type === 'expense' ? '-' : child.type === 'income' ? '+' : 'S'}
                     </span>
-                    <span style={{ minWidth: 80, textAlign: 'right', fontWeight: 500 }}>{fmt(child.amount)}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    <span className="tx-split-amount">{fmt(child.amount)}</span>
+                    <span className="tx-split-meta">
                       {child.category?.name || t('finance.uncategorized')}
                     </span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', flex: 1 }}>
+                    <span className="tx-split-note">
                       {child.note || ''}
                     </span>
                   </div>
@@ -86,16 +86,16 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           )}
 
           {tx.split_items && tx.split_items.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.showSplit')}</label>
               <div className="finance-split-list">
                 {tx.split_items.map((s) => (
                   <div key={s.id} className="finance-split-row">
-                    <span style={{ minWidth: 80, textAlign: 'right' }}>{fmt(s.amount)}</span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                    <span className="tx-split-amount">{fmt(s.amount)}</span>
+                    <span className="tx-split-meta">
                       {s.category?.name || t('finance.uncategorized')}
                     </span>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', flex: 1 }}>
+                    <span className="tx-split-note">
                       {s.note || ''}
                     </span>
                   </div>
@@ -105,7 +105,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           )}
 
           {tx.attachments && tx.attachments.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.attachments')}</label>
               <div className="finance-attachment-list">
                 {tx.attachments.map((a) => (
@@ -118,7 +118,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           )}
 
           {tx.linked_todos && tx.linked_todos.length > 0 && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.linkedTodos')}</label>
               <div className="finance-attachment-list">
                 {tx.linked_todos.map((todo) => (
@@ -135,7 +135,7 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
           )}
 
           {tx.event_id && (
-            <div className="form-group" style={{ marginTop: 12 }}>
+            <div className="form-group mt-3">
               <label className="form-label">{t('finance.event')}</label>
               <div className="finance-detail-value">{tx.event_id}</div>
             </div>

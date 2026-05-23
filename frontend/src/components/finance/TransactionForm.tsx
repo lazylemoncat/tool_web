@@ -1,11 +1,15 @@
 /*
-  TransactionForm: 记账表单 (收入/支出/转账), 支持快捷金额输入.
+  TransactionForm: 记账表单容器. 子组件处理各区域渲染.
 */
-
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLocale } from '../../i18n'
-import type { Account, FinanceCategory, FinanceTag, Transaction, Attachment } from '../../hooks/useFinance'
+import type { Account, FinanceCategory, FinanceTag, Transaction, Attachment } from '../../hooks/finance'
 import api from '../../api/client'
+import TxAmountInput from './transactionForm/TxAmountInput'
+import TxBasicFields from './transactionForm/TxBasicFields'
+import TxSplitSection from './transactionForm/TxSplitSection'
+import TxAttachmentsSection from './transactionForm/TxAttachmentsSection'
+import TxTodoLinks from './transactionForm/TxTodoLinks'
 
 export interface TransactionFormData {
   type: 'expense' | 'income' | 'transfer'
@@ -35,7 +39,11 @@ interface Props {
   onCreateCategory?: (name: string) => Promise<{ id: number } | null>
 }
 
-const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500]
+interface ChildState {
+  amount: string; category_id: number | null; note: string
+  files: File[]; existingId?: number; existingAttachmentIds: number[]
+}
+
 const TX_TYPES = ['expense', 'income', 'transfer'] as const
 
 const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tags, editTx, onSubmit, onClose, onCreateCategory }) => {
@@ -54,7 +62,6 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
   )
   const [selectedTags, setSelectedTags] = useState<number[]>(editTx?.tags.map((t) => t.id) ?? [])
   const [showChildren, setShowChildren] = useState((editTx?.children?.length ?? 0) > 0)
-  interface ChildState { amount: string; category_id: number | null; note: string; files: File[]; existingId?: number; existingAttachmentIds: number[] }
   const [children, setChildren] = useState<ChildState[]>(
     editTx?.children?.map((c) => ({
       amount: String(c.amount),
@@ -68,13 +75,12 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
   const [existingAttachments, setExistingAttachments] = useState<Attachment[]>(editTx?.attachments ?? [])
   const [newFiles, setNewFiles] = useState<File[]>([])
   const [uploading, setUploading] = useState(false)
-  const [newCatName, setNewCatName] = useState('')
-  const [showNewCat, setShowNewCat] = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
   const [availableTodos, setAvailableTodos] = useState<{ id: number; title: string; is_completed: boolean }[]>([])
   const [selectedTodoIds, setSelectedTodoIds] = useState<number[]>(
     editTx?.linked_todos?.map((t) => t.id) ?? [],
   )
+  const [amountError, setAmountError] = useState('')
+  const [accountError, setAccountError] = useState('')
 
   useEffect(() => {
     api.get('/todos', { params: { limit: 100 } }).then((data: any) => {
@@ -82,28 +88,14 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
     }).catch(() => {})
   }, [])
 
-  const handleRemoveExisting = (id: number) => {
-    setExistingAttachments((prev) => prev.filter((a) => a.id !== id))
-  }
-
-  const handleRemoveNewFile = (idx: number) => {
-    setNewFiles((prev) => prev.filter((_, i) => i !== idx))
-  }
-
-  const handleCreateCategory = async () => {
-    if (!newCatName.trim() || !onCreateCategory) return
-    const cat = await onCreateCategory(newCatName.trim())
-    if (cat) {
-      setCategoryId(cat.id)
-      setNewCatName('')
-      setShowNewCat(false)
-    }
-  }
-
   const handleSubmit = async () => {
+    let valid = true
     const numAmount = parseFloat(amount)
-    if (!numAmount || numAmount <= 0) return
-    if (accountId == null) return
+    if (!numAmount || numAmount <= 0) { setAmountError(t('finance.amountRequired')); valid = false }
+    else setAmountError('')
+    if (accountId == null) { setAccountError(t('finance.accountRequired')); valid = false }
+    else setAccountError('')
+    if (!valid) return
 
     const attachmentIds: number[] = existingAttachments.map((a) => a.id)
 
@@ -117,7 +109,7 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
             headers: { 'Content-Type': 'multipart/form-data' },
           }) as Attachment
           attachmentIds.push(uploaded.id)
-        } catch { /* upload failed, skip */ }
+        } catch { /* skip */ }
       }
       setUploading(false)
     }
@@ -158,26 +150,14 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
     })
   }
 
-  const addChild = () => {
-    setChildren([...children, { amount: '', category_id: null, note: '', files: [], existingAttachmentIds: [] }])
-  }
-
   const toggleTag = (tagId: number) => {
     setSelectedTags((prev) =>
       prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId],
     )
   }
 
-  const flatCategories = (cats: FinanceCategory[]): FinanceCategory[] => {
-    const result: FinanceCategory[] = []
-    const walk = (list: FinanceCategory[], depth: number) => {
-      for (const c of list) {
-        result.push(c)
-        if (c.children?.length) walk(c.children, depth + 1)
-      }
-    }
-    walk(cats, 0)
-    return result
+  const addChild = () => {
+    setChildren([...children, { amount: '', category_id: null, note: '', files: [], existingAttachmentIds: [] }])
   }
 
   const typeLabel = (tp: string) => t(`finance.${tp}`)
@@ -187,7 +167,7 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEdit ? t('finance.editTransaction') : t('finance.newTransaction')}</h3>
-          <button className="modal-close" onClick={onClose}>x</button>
+          <button className="modal-close" onClick={onClose} aria-label={t('app.close')}>x</button>
         </div>
 
         <div className="modal-body">
@@ -205,92 +185,25 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Amount</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="finance-amount-input"
-              autoFocus
-              step="0.01"
-              min="0"
-            />
-            <div className="finance-quick-amounts">
-              {QUICK_AMOUNTS.map((qa) => (
-                <button
-                  key={qa}
-                  className="finance-quick-btn"
-                  onClick={() => setAmount(String(qa))}
-                >{qa}</button>
-              ))}
-            </div>
-          </div>
+          <TxAmountInput value={amount} onChange={(v) => { setAmount(v); if (amountError) setAmountError('') }} error={amountError} />
 
-          <div className="form-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">Account</label>
-              <select
-                value={accountId ?? ''}
-                onChange={(e) => setAccountId(e.target.value ? Number(e.target.value) : null)}
-                className="form-select"
-              >
-                <option value="">{t('finance.selectAccount')}</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>{a.name} ({fmt(a.current_balance)})</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">Category</label>
-              <div style={{ display: 'flex', gap: 4 }}>
-                <select
-                  value={categoryId ?? ''}
-                  onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : null)}
-                  className="form-select"
-                  style={{ flex: 1 }}
-                >
-                  <option value="">{t('finance.uncategorized')}</option>
-                  {flatCategories(categories).map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.parent_id ? '  ' : ''}{c.icon} {c.name}
-                    </option>
-                  ))}
-                </select>
-                {onCreateCategory && (
-                  <button type="button" className="btn-sm" onClick={() => setShowNewCat(!showNewCat)} title={t('finance.newCategory')}>+</button>
-                )}
-              </div>
-              {showNewCat && (
-                <div className="finance-category-edit-row" style={{ marginTop: 4 }}>
-                  <input
-                    value={newCatName}
-                    onChange={(e) => setNewCatName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleCreateCategory()}
-                    placeholder={t('finance.categoryName')}
-                    className="finance-input-sm"
-                    autoFocus
-                  />
-                  <button className="btn-submit" onClick={handleCreateCategory}>{t('app.confirm')}</button>
-                  <button className="btn-cancel" onClick={() => { setShowNewCat(false); setNewCatName('') }}>{t('app.cancel')}</button>
-                </div>
-              )}
-            </div>
-          </div>
+          <TxBasicFields
+            accounts={accounts}
+            categories={categories}
+            accountId={accountId}
+            onAccountChange={(id) => { setAccountId(id); if (accountError) setAccountError('') }}
+            accountError={accountError}
+            categoryId={categoryId}
+            onCategoryChange={setCategoryId}
+            occurredAt={occurredAt}
+            onOccurredAtChange={setOccurredAt}
+            note={note}
+            onNoteChange={setNote}
+            onCreateCategory={onCreateCategory}
+          />
 
           <div className="form-group">
-            <label className="form-label">Date</label>
-            <input
-              type="datetime-local"
-              value={occurredAt}
-              onChange={(e) => setOccurredAt(e.target.value)}
-              className="form-input"
-            />
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">Tags</label>
+            <label className="form-label">{t('finance.tags')}</label>
             {tags.length === 0 ? (
               <span className="text-muted" style={{ fontSize: '0.8rem' }}>—</span>
             ) : (
@@ -306,151 +219,36 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
             )}
           </div>
 
-          <div className="form-group">
-            <label className="form-label">Note</label>
-            <input
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder={t('finance.optionalNote')}
-              className="form-input"
-              maxLength={2000}
-            />
-          </div>
-
-          <div className="form-group">
-            <button className="btn-sm" onClick={() => setShowChildren(!showChildren)}>
-              {showChildren ? t('finance.hideSplit') : t('finance.addChildTransaction')}
-            </button>
-            {showChildren && (
-              <div className="finance-split-list">
-                {children.map((ch, i) => (
-                  <div key={i} className="finance-child-row">
-                    <div className="finance-child-header">
-                      <span className="text-muted" style={{ fontSize: '0.78rem' }}>#{i + 1}</span>
-                      <button onClick={() => setChildren(children.filter((_, idx) => idx !== i))} className="finance-tx-del">x</button>
-                    </div>
-                    <div className="finance-child-fields">
-                      <input
-                        type="number" value={ch.amount}
-                        onChange={(e) => {
-                          const updated = [...children]
-                          updated[i] = { ...updated[i], amount: e.target.value }
-                          setChildren(updated)
-                        }}
-                        placeholder="0.00" className="finance-input-sm" step="0.01"
-                      />
-                      <select
-                        value={ch.category_id ?? ''}
-                        onChange={(e) => {
-                          const updated = [...children]
-                          updated[i] = { ...updated[i], category_id: e.target.value ? Number(e.target.value) : null }
-                          setChildren(updated)
-                        }}
-                        className="finance-select" style={{ flex: 1 }}
-                      >
-                        <option value="">{t('finance.uncategorized')}</option>
-                        {flatCategories(categories).map((c) => (
-                          <option key={c.id} value={c.id}>{c.icon} {c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="finance-child-fields">
-                      <input
-                        type="text" value={ch.note}
-                        onChange={(e) => {
-                          const updated = [...children]
-                          updated[i] = { ...updated[i], note: e.target.value }
-                          setChildren(updated)
-                        }}
-                        placeholder={t('finance.optionalNote')} className="finance-input-sm" style={{ flex: 1 }}
-                      />
-                      <input
-                        type="file" multiple
-                        onChange={(e) => {
-                          const updated = [...children]
-                          updated[i] = { ...updated[i], files: [...updated[i].files, ...Array.from(e.target.files || [])] }
-                          setChildren(updated)
-                        }}
-                        className="finance-file-input"
-                      />
-                    </div>
-                    {(ch.files.length > 0 || ch.existingAttachmentIds.length > 0) && (
-                      <div className="finance-attachment-list" style={{ marginTop: 2 }}>
-                        {ch.files.map((f, fi) => (
-                          <span key={fi} className="finance-attachment-item">
-                            {f.name} <button className="finance-type-del" onClick={() => {
-                              const updated = [...children]
-                              updated[i] = { ...updated[i], files: updated[i].files.filter((_, fii) => fii !== fi) }
-                              setChildren(updated)
-                            }}>x</button>
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ))}
-                <button onClick={addChild} className="btn-sm">
-                  + {t('finance.addChildTransaction')}
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">{t('finance.attachments')}</label>
-          {existingAttachments.length > 0 && (
-            <div className="finance-attachment-list">
-              {existingAttachments.map((a) => (
-                <span key={a.id} className="finance-attachment-item">
-                  {a.url.split('/').pop()}
-                  <button className="finance-type-del" onClick={() => handleRemoveExisting(a.id)}>x</button>
-                </span>
-              ))}
-            </div>
-          )}
-          {newFiles.length > 0 && (
-            <div className="finance-attachment-list">
-              {newFiles.map((f, i) => (
-                <span key={i} className="finance-attachment-item">
-                  {f.name}
-                  <button className="finance-type-del" onClick={() => handleRemoveNewFile(i)}>x</button>
-                </span>
-              ))}
-            </div>
-          )}
-          <input
-            ref={fileRef}
-            type="file"
-            multiple
-            onChange={(e) => setNewFiles((prev) => [...prev, ...Array.from(e.target.files || [])])}
-            className="finance-file-input"
-            style={{ marginTop: 8 }}
+          <TxSplitSection
+            children={children}
+            categories={categories}
+            show={showChildren}
+            onToggle={() => setShowChildren(!showChildren)}
+            onAdd={addChild}
+            onUpdate={(i, patch) => {
+              const updated = [...children]
+              updated[i] = { ...updated[i], ...patch }
+              setChildren(updated)
+            }}
+            onRemove={(i) => setChildren(children.filter((_, idx) => idx !== i))}
           />
         </div>
 
-        <div className="form-group">
-          <label className="form-label">{t('finance.linkedTodos')}</label>
-          {availableTodos.length === 0 ? (
-            <p className="text-muted" style={{ fontSize: '0.78rem' }}>{t('finance.noLinkedTodos')}</p>
-          ) : (
-            <div className="finance-checkbox-group">
-              {availableTodos.map((todo) => (
-                <label key={todo.id} className="finance-checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={selectedTodoIds.includes(todo.id)}
-                    onChange={() => setSelectedTodoIds((prev) =>
-                      prev.includes(todo.id) ? prev.filter((id) => id !== todo.id) : [...prev, todo.id],
-                    )}
-                  />
-                  {todo.title}
-                </label>
-              ))}
-            </div>
+        <TxAttachmentsSection
+          existingAttachments={existingAttachments}
+          newFiles={newFiles}
+          onRemoveExisting={(id) => setExistingAttachments((prev) => prev.filter((a) => a.id !== id))}
+          onAddFiles={(files) => setNewFiles((prev) => [...prev, ...files])}
+          onRemoveNewFile={(idx) => setNewFiles((prev) => prev.filter((_, i) => i !== idx))}
+        />
+
+        <TxTodoLinks
+          todos={availableTodos}
+          selectedIds={selectedTodoIds}
+          onToggle={(id) => setSelectedTodoIds((prev) =>
+            prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
           )}
-        </div>
+        />
 
         <div className="modal-footer">
           <button className="btn-cancel" onClick={onClose}>{t('app.cancel')}</button>
@@ -462,10 +260,5 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
     </div>
   )
 })
-
-const fmt = (v: unknown): string => {
-  const n = Number(v)
-  return isNaN(n) ? '0' : n.toFixed(0)
-}
 
 export default TransactionForm

@@ -3,7 +3,7 @@
 */
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import type { FinanceTag } from '../../hooks/useFinance'
+import type { FinanceTag } from '../../hooks/finance'
 
 interface Props {
   tags: FinanceTag[]
@@ -53,7 +53,7 @@ const TagManager: React.FC<Props> = ({ tags, onCreate, onDelete }) => {
           {tags.map((tag) => (
             <span key={tag.id} className="finance-type-tag">
               {tag.name}
-              <button className="finance-type-del" onClick={() => onDelete(tag.id)}>x</button>
+              <button className="finance-type-del" onClick={() => onDelete(tag.id)} aria-label={t('app.delete')}>x</button>
             </span>
           ))}
         </div>

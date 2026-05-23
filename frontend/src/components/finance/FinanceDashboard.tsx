@@ -3,11 +3,12 @@
 */
 
 import React from 'react'
-import type { DashboardSummary, Account, Budget, StatsData, FinanceCategory, FinanceTag, Transaction } from '../../hooks/useFinance'
+import type { DashboardSummary, Account, Budget, StatsData, FinanceCategory, FinanceTag, Transaction } from '../../hooks/finance'
 import { useLocale } from '../../i18n'
 import FinanceCharts from './FinanceCharts'
 import CategoryManager from './CategoryManager'
 import TagManager from './TagManager'
+import { Skeleton, EmptyState, Button, IconButton, useConfirm } from '../ui'
 
 interface Props {
   dashboard: DashboardSummary | null
@@ -28,13 +29,13 @@ interface Props {
   onTransactionClick: (tx: Transaction) => void
 }
 
-const DEFAULT_TYPES = ['现金', '微信', '支付宝', '银行卡', '信用卡']
-
-const loadTypes = (): string[] => {
+const loadTypes = (t: (k: string) => string): string[] => {
   try {
     const saved = localStorage.getItem('finance-account-types')
-    return saved ? JSON.parse(saved) : DEFAULT_TYPES
-  } catch { return DEFAULT_TYPES }
+    if (saved) return JSON.parse(saved)
+  } catch { /* ignore */ }
+  // i18n value 用 | 分隔, 便于多语言切换默认账户类型列表
+  return t('finance.defaultAccountTypes').split('|').filter(Boolean)
 }
 
 const saveTypes = (types: string[]) => {
@@ -50,9 +51,9 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categ
   const { t } = useLocale()
   const [showNewAccount, setShowNewAccount] = React.useState(false)
   const [acctName, setAcctName] = React.useState('')
-  const [acctType, setAcctType] = React.useState('现金')
+  const [types, setTypes] = React.useState<string[]>(() => loadTypes(t))
+  const [acctType, setAcctType] = React.useState(() => loadTypes(t)[0] ?? '')
   const [editTypes, setEditTypes] = React.useState(false)
-  const [types, setTypes] = React.useState<string[]>(loadTypes)
   const [newType, setNewType] = React.useState('')
 
   const addType = () => {
@@ -71,7 +72,7 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categ
     const updated = types.filter((t) => t !== name)
     setTypes(updated)
     saveTypes(updated)
-    if (acctType === name) setAcctType(updated[0] || '现金')
+    if (acctType === name) setAcctType(updated[0] ?? '')
   }
 
   const handleCreateAccount = async () => {
@@ -82,7 +83,18 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categ
   }
 
   if (!dashboard) {
-    return <div className="finance-loading"><p>{t('finance.loading')}</p></div>
+    return (
+      <div className="finance-dashboard">
+        <div className="finance-summary-cards">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="finance-summary-card">
+              <Skeleton variant="text" width={80} />
+              <Skeleton variant="text" width={120} height={28} />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -169,7 +181,7 @@ const FinanceDashboard: React.FC<Props> = ({ dashboard, accounts, budgets, categ
                 )}
               </span>
             ))}
-            <div className="finance-type-editor" style={{ display: 'inline-flex', marginTop: 4 }}>
+            <div className="finance-type-editor mt-1">
               <input
                 value={newType}
                 onChange={(e) => setNewType(e.target.value)}

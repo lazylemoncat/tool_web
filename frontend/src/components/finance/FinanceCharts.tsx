@@ -6,7 +6,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer,
 } from 'recharts'
-import type { StatsData } from '../../hooks/useFinance'
+import type { StatsData } from '../../hooks/finance'
 import { useLocale } from '../../i18n'
 
 const PIE_COLORS = ['#4a7c59', '#e07050', '#6b8cce', '#c4943a', '#9c7cb0', '#5b9e9e', '#d4876b', '#7c8c6e']
@@ -79,7 +79,7 @@ const FinanceCharts: React.FC<Props> = ({ stats, period, onPeriodChange }) => {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-muted" style={{ fontSize: '0.85rem', padding: 40, textAlign: 'center' }}>
+            <p className="chart-empty">
               {t('finance.noTransactions')}
             </p>
           )}
@@ -98,7 +98,7 @@ const FinanceCharts: React.FC<Props> = ({ stats, period, onPeriodChange }) => {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-muted" style={{ fontSize: '0.85rem', padding: 40, textAlign: 'center' }}>
+            <p className="chart-empty">
               {t('finance.noTransactions')}
             </p>
           )}

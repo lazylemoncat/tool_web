@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
+import { useConfirm, IconButton } from '../ui'
 import PriorityTag from '../common/PriorityTag'
 import SubTaskList from './SubTaskList'
 import CustomButtons from '../common/CustomButtons'
@@ -17,8 +18,8 @@ interface Props {
 
 const TodoItem: React.FC<Props> = React.memo(({ todo, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail }) => {
   const { t, locale } = useLocale()
+  const confirm = useConfirm()
   const [expanded, setExpanded] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Swipe gesture state (touch devices)
   const [swipeX, setSwipeX] = useState(0)
@@ -78,9 +79,14 @@ const TodoItem: React.FC<Props> = React.memo(({ todo, onToggle, onDelete, onAddS
     onEdit(todo)
   }
 
-  const handleDelete = (e: React.MouseEvent) => {
+  const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation()
-    setShowDeleteConfirm(true)
+    const ok = await confirm({
+      title: t('app.confirmDelete'),
+      description: `"${todo.title}"`,
+      danger: true,
+    })
+    if (ok) onDelete(todo.id)
   }
 
   const handleAddSub = (e: React.MouseEvent) => {
@@ -97,7 +103,7 @@ const TodoItem: React.FC<Props> = React.memo(({ todo, onToggle, onDelete, onAddS
     >
       <div className="todo-swipe-actions">
         <button className="swipe-btn swipe-edit" onClick={(e) => { e.stopPropagation(); onEdit(todo) }}>{t('app.edit')}</button>
-        <button className="swipe-btn swipe-delete" onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true) }}>{t('app.delete')}</button>
+        <button className="swipe-btn swipe-delete" onClick={handleDelete}>{t('app.delete')}</button>
       </div>
 
       <div
@@ -134,7 +140,6 @@ const TodoItem: React.FC<Props> = React.memo(({ todo, onToggle, onDelete, onAddS
                 <span
                   className="subtask-hint"
                   onClick={(e) => { e.stopPropagation(); setExpanded(!expanded) }}
-                  style={{ cursor: 'pointer' }}
                 >
                   {expanded ? '▾' : '▸'} {expanded ? t('todo.collapse') : t('todo.expand')} ({completedCount}/{todo.children.length})
                 </span>
@@ -151,19 +156,12 @@ const TodoItem: React.FC<Props> = React.memo(({ todo, onToggle, onDelete, onAddS
 
           <div className="todo-actions">
             <CustomButtons position="todoItem" />
-            <button title={t('app.edit')} onClick={handleEdit}>✎</button>
-            <button title={t('app.addSubtask')} onClick={handleAddSub}>＋</button>
+            <IconButton aria-label={t('app.edit')} size="sm" onClick={handleEdit}>✎</IconButton>
+            <IconButton aria-label={t('app.addSubtask')} size="sm" onClick={handleAddSub}>＋</IconButton>
             {onDetail && (
-              <button className="todo-action-btn" onClick={(e) => { e.stopPropagation(); onDetail(todo) }} title={t('auth.taskDetail')}>?</button>
+              <IconButton aria-label={t('auth.taskDetail')} size="sm" onClick={(e) => { e.stopPropagation(); onDetail(todo) }}>?</IconButton>
             )}
-            {showDeleteConfirm ? (
-              <>
-                <button className="danger" onClick={(e) => { e.stopPropagation(); onDelete(todo.id); setShowDeleteConfirm(false) }}>{t('app.confirm')}</button>
-                <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false) }}>{t('app.cancel')}</button>
-              </>
-            ) : (
-              <button className="danger" title={t('app.delete')} onClick={handleDelete}>✕</button>
-            )}
+            <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={handleDelete}>✕</IconButton>
           </div>
         </div>
 

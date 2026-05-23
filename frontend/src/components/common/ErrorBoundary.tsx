@@ -1,4 +1,6 @@
-import React from 'react'
+import React, { Component } from 'react'
+import { useLocale } from '../../i18n'
+import { Button } from '../ui'
 
 interface Props {
   children: React.ReactNode
@@ -9,7 +11,7 @@ interface State {
   error: Error | null
 }
 
-class ErrorBoundary extends React.Component<Props, State> {
+class ErrorBoundaryInner extends Component<Props & { t: (key: string) => string }, State> {
   state: State = { hasError: false, error: null }
 
   static getDerivedStateFromError(error: Error): State {
@@ -29,31 +31,28 @@ class ErrorBoundary extends React.Component<Props, State> {
           padding: 24,
           textAlign: 'center',
         }}>
-          <h2>Something went wrong</h2>
-          <p style={{ color: 'var(--text-secondary)' }}>
-            {this.state.error?.message || 'An unexpected error occurred'}
+          <h2>{this.props.t('errors.unexpectedTitle')}</h2>
+          <p style={{ color: 'var(--color-fg-muted)' }}>
+            {this.state.error?.message || this.props.t('errors.unexpectedMessage')}
           </p>
-          <button
+          <Button
             onClick={() => {
               this.setState({ hasError: false, error: null })
               window.location.reload()
             }}
-            style={{
-              padding: '10px 24px',
-              background: 'var(--accent)',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              cursor: 'pointer',
-            }}
           >
-            Reload
-          </button>
+            {this.props.t('errors.reload')}
+          </Button>
         </div>
       )
     }
-    return this.props.children
+    return this.props.children as React.ReactNode
   }
+}
+
+const ErrorBoundary: React.FC<Props> = ({ children }) => {
+  const { t } = useLocale()
+  return <ErrorBoundaryInner t={t}>{children}</ErrorBoundaryInner>
 }
 
 export default ErrorBoundary

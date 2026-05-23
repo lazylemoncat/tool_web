@@ -148,19 +148,19 @@ const FolderItemContent: React.FC<{
             {confirmDelete ? (
               <>
                 <span style={{ fontSize: '0.7rem', color: 'var(--priority-high)', marginLeft: 4 }}>
-                  确定删除文件夹 '{folder.name}'? 该文件夹包含 {folder.todo_count} 个任务{childrenCount > 0 ? `和 ${childrenCount} 个子文件夹` : ''}, 删除后不可恢复.
+                  {t('sidebar.deleteFolderDescription', { name: folder.name, count: folder.todo_count, children: childrenCount > 0 ? `, ${childrenCount} subfolder(s)` : '' })}
                 </span>
                 <button
                   style={{ fontSize: '0.7rem', padding: '2px 5px', color: 'var(--priority-high)' }}
                   onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); setConfirmDelete(false) }}
                 >
-                  确认
+                  {t('app.confirm')}
                 </button>
                 <button
                   style={{ fontSize: '0.7rem', padding: '2px 5px', color: 'var(--text-muted)' }}
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
                 >
-                  取消
+                  {t('app.cancel')}
                 </button>
               </>
             ) : (
@@ -175,7 +175,7 @@ const FolderItemContent: React.FC<{
                 <button
                   className="sidebar-edit-btn"
                   onClick={(e) => { e.stopPropagation(); setEditingFolderId(folder.id); setEditName(folder.name) }}
-                  title="重命名文件夹"
+                  title={t('sidebar.renameFolder')}
                 >
                   ✎
                 </button>
@@ -370,7 +370,7 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
         </button>
       )}
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label={t('app.allFolders')}>
         <div
           className={`sidebar-item ${activeFolderId === null ? 'active' : ''}`}
           onClick={() => onSelectFolder(null)}

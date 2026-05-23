@@ -1,4 +1,19 @@
 {
+  "ui": {
+    "confirm": {
+      "defaultTitle": "请确认",
+      "confirm": "确定",
+      "cancel": "取消"
+    },
+    "empty": {
+      "noResults": "暂无结果"
+    },
+    "form": {
+      "required": "必填项",
+      "invalid": "格式不正确"
+    },
+    "loading": "加载中"
+  },
   "app": {
     "logo": "ToolWeb",
     "allTasks": "全部任务",
@@ -15,7 +30,11 @@
     "close": "关闭",
     "back": "返回",
     "saving": "保存中...",
-    "save": "保存"
+    "save": "保存",
+    "bulkSelect": "多选",
+    "openMenu": "打开菜单",
+    "search": "搜索",
+    "selectedCount": "已选 {n} 项"
   },
   "auth": {
     "login": "登录",
@@ -70,6 +89,9 @@
     "unknownError": "未知错误, 请重试",
     "passwordTooShort": "密码至少需要 8 个字符",
     "passwordWeak": "密码需包含至少1个字母和1个数字",
+    "unexpectedTitle": "出了点问题",
+    "unexpectedMessage": "发生了意外错误",
+    "reload": "重新加载",
     "accountLocked": "账户因多次登录失败已被锁定, 请{n}分钟后再试",
     "passwordTooLong": "密码不能超过 100 个字符",
     "usernameTooShort": "用户名至少需要 2 个字符",
@@ -107,6 +129,8 @@
     "folderName": "文件夹名",
     "deleteFolder": "删除文件夹",
     "deleteFolderConfirm": "确定删除文件夹",
+    "deleteFolderDescription": "确定删除文件夹 '{name}'? 该文件夹包含 {count} 个任务{children}, 删除后不可恢复.",
+    "renameFolder": "重命名文件夹",
     "finance": "记账"
   },
   "settings": {
@@ -175,6 +199,28 @@
     "daysLater": "{n}天后"
   },
   "finance": {
+    "defaultAccountTypes": "现金|微信|支付宝|银行卡|信用卡",
+    "noLedgerHint": "账本是记账的容器, 创建一个开始记账",
+    "noTransactionsHint": "记下第一笔收支, 开始追踪你的资金流向",
+    "noBudgetsHint": "为分类或事件设预算, 控制超支风险",
+    "noEventsHint": "事件可聚合一段时间或一组分类的支出, 例如旅行 / 装修",
+    "confirmDeleteLedger": "删除账本?",
+    "deleteLedgerDescription": "账本下所有账户/交易/预算/事件将一并永久删除, 无法恢复.",
+    "confirmDeleteTransaction": "删除交易?",
+    "deleteTransactionDescription": "该交易及其附件/子项将永久删除.",
+    "confirmDeleteBudget": "删除预算?",
+    "confirmDeleteEvent": "删除事件?",
+    "confirmDeleteAccount": "删除账户?",
+    "confirmDeleteCategory": "删除分类?",
+    "confirmDeleteTag": "删除标签?",
+    "deleteAccountDescription": "该账户及其交易记录将被永久删除.",
+    "deleteCategoryDescription": "该分类及其子分类将被移除, 相关交易将变为未分类.",
+    "deleteTagDescription": "该标签将从所有关联交易中移除.",
+    "loadingTransactions": "加载交易记录...",
+    "endBeforeStart": "结束时间需晚于开始时间",
+    "amountRequired": "请输入有效金额",
+    "accountRequired": "请选择账户",
+    "nameRequired": "请输入名称",
     "newLedger": "新建账本",
     "createFirstLedger": "创建第一个账本",
     "noLedger": "暂无账本, 请创建一个",
@@ -285,6 +331,7 @@
     "accountCreateFailed": "创建账户失败"
   },
   "landing": {
+    "subtitle": "个人效率与财务中枢",
     "todoDesc": "管理任务清单, 文件夹和标签",
     "financeDesc": "记账管理, 预算控制和财务分析"
   }

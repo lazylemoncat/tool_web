@@ -1,0 +1,60 @@
+.tx-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color var(--transition-base), background var(--transition-base);
+}
+.tx-card:hover { border-color: var(--color-border-strong); background: var(--color-bg-hover); }
+.tx-card:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+
+.tx-card-row1, .tx-card-row2 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.tx-card-cat {
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-fg);
+  font-size: var(--font-size-md);
+}
+.tx-card-amount {
+  font-weight: var(--font-weight-semibold);
+  font-size: var(--font-size-lg);
+  font-variant-numeric: tabular-nums;
+}
+.tx-card-amount-expense { color: var(--color-expense); }
+.tx-card-amount-income  { color: var(--color-income); }
+.tx-card-amount-transfer { color: var(--color-info); }
+
+.tx-card-meta {
+  font-size: var(--font-size-xs);
+  color: var(--color-fg-muted);
+}
+.tx-card-note {
+  font-size: var(--font-size-sm);
+  color: var(--color-fg-muted);
+  margin: var(--space-1) 0 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tx-card-actions {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--transition-base);
+}
+.tx-card:hover .tx-card-actions,
+.tx-card:focus-within .tx-card-actions { opacity: 1; }
+
+@media (max-width: 768px) {
+  .tx-card-actions { opacity: 1; } /* 移动端不靠 hover, 默认显示 */
+}

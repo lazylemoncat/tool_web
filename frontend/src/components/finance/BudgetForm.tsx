@@ -3,7 +3,8 @@
 */
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import type { Budget, FinanceCategory, FinanceTag, FinanceEvent } from '../../hooks/useFinance'
+import { FormField, NumberInput } from '../../components/ui'
+import type { Budget, FinanceCategory, FinanceTag, FinanceEvent } from '../../hooks/finance'
 
 interface Props {
   editBudget?: Budget | null
@@ -45,6 +46,8 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
   )
   const [rollover, setRollover] = useState(editBudget?.rollover ?? false)
   const [alertThreshold, setAlertThreshold] = useState(editBudget?.alert_threshold ?? 80)
+  const [nameError, setNameError] = useState('')
+  const [amountError, setAmountError] = useState('')
 
   const allCats = flatCategories(categories)
 
@@ -61,8 +64,13 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
   }
 
   const handleSubmit = () => {
+    let valid = true
+    if (!name.trim()) { setNameError(t('finance.nameRequired')); valid = false }
+    else setNameError('')
     const numAmount = parseFloat(amount)
-    if (!name.trim() || !numAmount || numAmount <= 0) return
+    if (!numAmount || numAmount <= 0) { setAmountError(t('finance.amountRequired')); valid = false }
+    else setAmountError('')
+    if (!valid) return
     onSubmit({
       name: name.trim(),
       amount: numAmount,
@@ -79,47 +87,50 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEdit ? t('finance.editBudget') : t('finance.newBudget')}</h3>
-          <button className="modal-close" onClick={onClose}>x</button>
+          <button className="modal-close" onClick={onClose} aria-label={t('app.close')}>x</button>
         </div>
 
         <div className="modal-body">
           <div className="form-row">
-            <div className="form-group" style={{ flex: 2 }}>
-              <label className="form-label">{t('finance.budgetName')}</label>
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder={t('finance.budgetName')}
-                autoFocus
-              />
+            <div className="flex-2">
+              <FormField label={t('finance.budgetName')} error={nameError} required>
+                <input
+                  value={name}
+                  onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }}
+                  placeholder={t('finance.budgetName')}
+                  autoFocus
+                />
+              </FormField>
             </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">{t('finance.currency')}</label>
-              <input value={currency} onChange={(e) => setCurrency(e.target.value)} />
+            <div className="flex-1">
+              <FormField label={t('finance.currency')}>
+                <input value={currency} onChange={(e) => setCurrency(e.target.value)} />
+              </FormField>
             </div>
           </div>
 
           <div className="form-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">{t('finance.budgetAmount')}</label>
-              <input
-                type="number"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-              />
+            <div className="flex-1">
+              <FormField label={t('finance.budgetAmount')} error={amountError} required>
+                <NumberInput
+                  value={amount ? parseFloat(amount) : null}
+                  onChange={(v) => { setAmount(v !== null ? String(v) : ''); if (amountError) setAmountError('') }}
+                  decimals={2}
+                  min={0}
+                  placeholder="0.00"
+                />
+              </FormField>
             </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">{t('finance.alertThreshold')} (%)</label>
-              <input
-                type="number"
-                value={alertThreshold}
-                onChange={(e) => setAlertThreshold(Math.min(100, Math.max(1, Number(e.target.value) || 80)))}
-                min="1"
-                max="100"
-              />
+            <div className="flex-1">
+              <FormField label={`${t('finance.alertThreshold')} (%)`}>
+                <input
+                  type="number"
+                  value={alertThreshold}
+                  onChange={(e) => setAlertThreshold(Math.min(100, Math.max(1, Number(e.target.value) || 80)))}
+                  min="1"
+                  max="100"
+                />
+              </FormField>
             </div>
           </div>
 

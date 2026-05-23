@@ -3,7 +3,8 @@
 */
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import type { FinanceEvent } from '../../hooks/useFinance'
+import { FormField } from '../../components/ui'
+import type { FinanceEvent } from '../../hooks/finance'
 
 const COLORS = ['#e07050', '#4a7c59', '#6b8cce', '#c4943a', '#9c7cb0', '#5b9e9e', '#d4876b']
 
@@ -22,9 +23,17 @@ const EventForm: React.FC<Props> = ({ editEvent, onSubmit, onClose }) => {
   const [startAt, setStartAt] = useState(editEvent?.start_at?.slice(0, 16) ?? '')
   const [endAt, setEndAt] = useState(editEvent?.end_at?.slice(0, 16) ?? '')
   const [color, setColor] = useState(editEvent?.color ?? COLORS[0])
+  const [nameError, setNameError] = useState('')
+  const [dateError, setDateError] = useState('')
 
   const handleSubmit = () => {
-    if (!name.trim()) return
+    let valid = true
+    if (!name.trim()) { setNameError(t('finance.nameRequired')); valid = false }
+    else setNameError('')
+    if (startAt && endAt && new Date(endAt) < new Date(startAt)) {
+      setDateError(t('finance.endBeforeStart')); valid = false
+    } else setDateError('')
+    if (!valid) return
     onSubmit({
       name: name.trim(),
       description: description.trim() || null,
@@ -39,19 +48,18 @@ const EventForm: React.FC<Props> = ({ editEvent, onSubmit, onClose }) => {
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3>{isEdit ? t('finance.editEvent') : t('finance.newEvent')}</h3>
-          <button className="modal-close" onClick={onClose}>x</button>
+          <button className="modal-close" onClick={onClose} aria-label={t('app.close')}>x</button>
         </div>
 
         <div className="modal-body">
-          <div className="form-group">
-            <label className="form-label">{t('finance.eventName')}</label>
+          <FormField label={t('finance.eventName')} error={nameError} required>
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }}
               placeholder={t('finance.eventName')}
               autoFocus
             />
-          </div>
+          </FormField>
 
           <div className="form-group">
             <label className="form-label">{t('finance.description')}</label>
@@ -64,21 +72,23 @@ const EventForm: React.FC<Props> = ({ editEvent, onSubmit, onClose }) => {
           </div>
 
           <div className="form-row">
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">{t('finance.startAt')}</label>
-              <input
-                type="datetime-local"
-                value={startAt}
-                onChange={(e) => setStartAt(e.target.value)}
-              />
+            <div className="flex-1">
+              <FormField label={t('finance.startAt')}>
+                <input
+                  type="datetime-local"
+                  value={startAt}
+                  onChange={(e) => { setStartAt(e.target.value); if (dateError) setDateError('') }}
+                />
+              </FormField>
             </div>
-            <div className="form-group" style={{ flex: 1 }}>
-              <label className="form-label">{t('finance.endAt')}</label>
-              <input
-                type="datetime-local"
-                value={endAt}
-                onChange={(e) => setEndAt(e.target.value)}
-              />
+            <div className="flex-1">
+              <FormField label={t('finance.endAt')} error={dateError}>
+                <input
+                  type="datetime-local"
+                  value={endAt}
+                  onChange={(e) => { setEndAt(e.target.value); if (dateError) setDateError('') }}
+                />
+              </FormField>
             </div>
           </div>
 

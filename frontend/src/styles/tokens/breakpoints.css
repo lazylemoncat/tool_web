@@ -1,0 +1,13 @@
+/*
+ breakpoints.css - 响应式断点
+ 这些 CSS 变量供 JS 读取 (用 getComputedStyle), 媒体查询本身仍写字面值,
+ 因为 @media 不支持 var().
+*/
+
+:root {
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+  --bp-2xl: 1536px;
+}

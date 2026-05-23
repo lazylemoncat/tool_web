@@ -3,6 +3,7 @@
 */
 
 import React from 'react'
+import { useLocale } from '../../i18n'
 
 interface Props {
   title: string
@@ -10,9 +11,10 @@ interface Props {
 }
 
 const Header: React.FC<Props> = ({ title, onMenuClick }) => {
+  const { t } = useLocale()
   return (
     <div className="top-bar">
-      <button className="menu-btn" onClick={onMenuClick}>
+      <button className="menu-btn" onClick={onMenuClick} aria-label={t('app.openMenu')}>
         ☰
       </button>
       <h1>{title}</h1>

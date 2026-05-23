@@ -1,0 +1,99 @@
+/*
+ atoms.css - 原子 token (颜色/间距/圆角/阴影/层级)
+ 这一层不应被主题文件覆盖, 仅作为语义 token 的取色取数来源.
+ - 灰阶取 Radix Slate (cool neutral), 12 阶
+ - accent 取 Radix Indigo, 12 阶
+ - 间距 4px 阶梯
+*/
+
+:root {
+  /* ── Gray (cool slate) ───────────────────────────── */
+  --color-gray-1: #fcfcfd;
+  --color-gray-2: #f9f9fb;
+  --color-gray-3: #eff0f3;
+  --color-gray-4: #e7e8ec;
+  --color-gray-5: #e0e1e6;
+  --color-gray-6: #d8d9e0;
+  --color-gray-7: #cdced7;
+  --color-gray-8: #b9bbc6;
+  --color-gray-9: #8b8d98;
+  --color-gray-10: #80828d;
+  --color-gray-11: #62636c;
+  --color-gray-12: #1e1f24;
+
+  /* ── Accent (indigo) ─────────────────────────────── */
+  --color-accent-1: #fdfdff;
+  --color-accent-2: #f7f9ff;
+  --color-accent-3: #edf2fe;
+  --color-accent-4: #dfe9ff;
+  --color-accent-5: #d0deff;
+  --color-accent-6: #bdcdff;
+  --color-accent-7: #a6b8f5;
+  --color-accent-8: #8da4ef;
+  --color-accent-9: #3e63dd;
+  --color-accent-10: #3358d4;
+  --color-accent-11: #3a5bc7;
+  --color-accent-12: #1f2d5c;
+
+  /* ── Semantic palette atoms ──────────────────────── */
+  --color-red-9: #dc3b5d;
+  --color-red-10: #cd2e54;
+  --color-red-11: #ca244d;
+  --color-green-9: #30a46c;
+  --color-green-10: #2b9a66;
+  --color-green-11: #218358;
+  --color-amber-9: #ffb224;
+  --color-amber-10: #ffa01c;
+  --color-amber-11: #ad5700;
+  --color-blue-9: #0090ff;
+  --color-blue-10: #0588f0;
+  --color-blue-11: #0d74ce;
+
+  /* ── Spacing (4px grid) ──────────────────────────── */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+  --space-11: 80px;
+  --space-12: 96px;
+
+  /* ── Radius ──────────────────────────────────────── */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* ── Shadow (elevation) ─────────────────────────── */
+  --shadow-1: 0 1px 2px rgba(15, 17, 25, 0.04);
+  --shadow-2: 0 2px 6px rgba(15, 17, 25, 0.06), 0 1px 2px rgba(15, 17, 25, 0.04);
+  --shadow-3: 0 4px 12px rgba(15, 17, 25, 0.08), 0 2px 4px rgba(15, 17, 25, 0.04);
+  --shadow-4: 0 8px 24px rgba(15, 17, 25, 0.10), 0 4px 8px rgba(15, 17, 25, 0.05);
+  --shadow-5: 0 16px 40px rgba(15, 17, 25, 0.14), 0 8px 16px rgba(15, 17, 25, 0.06);
+
+  /* ── Z-index layers ──────────────────────────────── */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-fixed: 200;
+  --z-overlay: 1000;
+  --z-modal: 1100;
+  --z-popover: 1200;
+  --z-tooltip: 1300;
+  --z-toast: 1400;
+}
+
+/* Dark mode shadows: amplified for visibility on dark bg */
+[data-theme="dark"] {
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+  --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow-3: 0 4px 12px rgba(0, 0, 0, 0.40), 0 2px 4px rgba(0, 0, 0, 0.25);
+  --shadow-4: 0 8px 24px rgba(0, 0, 0, 0.45), 0 4px 8px rgba(0, 0, 0, 0.30);
+  --shadow-5: 0 16px 40px rgba(0, 0, 0, 0.55), 0 8px 16px rgba(0, 0, 0, 0.35);
+}

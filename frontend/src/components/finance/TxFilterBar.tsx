@@ -3,7 +3,7 @@
 */
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import type { Account, FinanceCategory, FinanceTag, FinanceEvent, TransactionFilters } from '../../hooks/useFinance'
+import type { Account, FinanceCategory, FinanceTag, FinanceEvent, TransactionFilters } from '../../hooks/finance'
 
 interface Props {
   accounts: Account[]
@@ -113,8 +113,7 @@ const TxFilterBar: React.FC<Props> = ({ accounts, categories, tags, events, filt
               value={filters.search || ''}
               onChange={(e) => set({ search: e.target.value || undefined })}
               placeholder={`${t('finance.search')}...`}
-              className="finance-input-sm"
-              style={{ flex: 1 }}
+              className="finance-input-sm flex-1"
             />
             <button className="btn-cancel" onClick={clear}>{t('finance.clearFilters')}</button>
           </div>
