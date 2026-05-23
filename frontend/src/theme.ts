@@ -2,7 +2,7 @@
  主题管理: 支持 light / dark / system, 从 preferences 初始化.
 */
 
-export type Theme = 'light' | 'dark' | 'system'
+export type Theme = 'light' | 'dark' | 'soft-dark' | 'system'
 
 function resolveSystem(): 'light' | 'dark' {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'

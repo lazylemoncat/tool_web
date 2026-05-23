@@ -466,14 +466,14 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
 
       <div className="sidebar-theme-toggle">
         <div className="sidebar-theme-btns">
-          {(['light', 'dark', 'system'] as Theme[]).map((th) => (
+          {(['light', 'dark', 'soft-dark', 'system'] as Theme[]).map((th) => (
             <button
               key={th}
               className={`sidebar-theme-btn`}
               onClick={() => saveTheme(th)}
               title={th}
             >
-              {th === 'light' ? '☀' : th === 'dark' ? '☾' : '◐'}
+              {th === 'light' ? '☀' : th === 'dark' ? '☾' : th === 'soft-dark' ? '🌿' : '◐'}
             </button>
           ))}
         </div>

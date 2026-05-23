@@ -114,7 +114,7 @@ const ThemeManager: React.FC<Props> = ({ theme, customThemeId, onThemeChange }) 
       <div className="settings-section">
         <label>{t('settings.theme')}</label>
         <div className="settings-radio-group">
-          {(['light', 'dark', 'system'] as Theme[]).map((v) => (
+          {(['light', 'dark', 'soft-dark', 'system'] as Theme[]).map((v) => (
             <label key={v} className="settings-radio">
               <input
                 type="radio"

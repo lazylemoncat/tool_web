@@ -139,6 +139,7 @@
     "theme": "Theme",
     "light": "Light",
     "dark": "Dark",
+    "soft-dark": "Soft Dark",
     "system": "System",
     "language": "Language",
     "save": "Save Settings",
