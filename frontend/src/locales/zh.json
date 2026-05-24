@@ -131,7 +131,8 @@
     "deleteFolderConfirm": "确定删除文件夹",
     "deleteFolderDescription": "确定删除文件夹 '{name}'? 该文件夹包含 {count} 个任务{children}, 删除后不可恢复.",
     "renameFolder": "重命名文件夹",
-    "finance": "记账"
+    "finance": "记账",
+    "todo": "任务"
   },
   "settings": {
     "title": "设置",
@@ -157,7 +158,26 @@
     "noCustomThemes": "暂无自定义主题",
     "invalidThemeFile": "无效的主题文件格式",
     "uploadFailed": "上传失败，请重试",
-    "loading": "加载中..."
+    "loading": "加载中...",
+    "description": "管理账号、外观、语言和数据",
+    "account": "账号",
+    "appearance": "外观",
+    "locale": "语言与地区",
+    "notifications": "通知",
+    "data": "数据管理",
+    "accountSummary": "账号概要",
+    "changePasswordHint": "修改登录密码, 建议定期更换",
+    "managePassword": "管理密码",
+    "manageCustomThemes": "管理自定义主题",
+    "revertToDefault": "恢复默认",
+    "customThemeActive": "自定义主题已激活",
+    "exportData": "导出数据",
+    "exportDataHint": "导出所有数据为 JSON 格式",
+    "importData": "导入数据",
+    "importDataHint": "从 JSON 文件恢复数据",
+    "export": "导出",
+    "import": "导入",
+    "notificationsHint": "通知偏好设置即将推出"
   },
   "priority": {
     "high": "高",
@@ -190,7 +210,8 @@
     "api": "API 接口",
     "settings": "设置说明",
     "loading": "加载中...",
-    "notFound": "文档未找到"
+    "notFound": "文档未找到",
+    "description": "查看功能文档和使用指南"
   },
   "date": {
     "today": "今天",
@@ -263,6 +284,14 @@
     "showSplit": "+ 拆单",
     "childTransactions": "子交易",
     "addChildTransaction": "+ 子交易",
+    "newChildTransaction": "新增子账单",
+    "editChildTransaction": "编辑子账单",
+    "hideChildTx": "收起子账单",
+    "noChildTx": "暂无子账单",
+    "saveParentFirst": "请先保存父账单",
+    "childTxCreated": "子账单创建成功",
+    "childTxUpdated": "子账单更新成功",
+    "transactionDeleted": "交易已删除",
     "addSplitItem": "+ 添加拆单项",
     "splitHint": "拆单金额总和应与交易金额一致",
     "editTransaction": "编辑交易",
@@ -329,7 +358,30 @@
     "uploadAttachment": "上传附件",
     "noAttachments": "无附件",
     "loading": "加载中...",
-    "accountCreateFailed": "创建账户失败"
+    "accountCreateFailed": "创建账户失败",
+    "noLedgers": "暂无账本, 请先创建",
+    "items": "项",
+    "openSplitDrawer": "在抽屉中编辑拆分",
+    "splitDetails": "拆分明细",
+    "splitTotal": "{n} 项, 合计 ¥{total}",
+    "basic": "基础",
+    "extended": "扩展",
+    "linked": "关联",
+    "thisMonth": "本月",
+    "lastMonth": "上月",
+    "last7Days": "最近7天",
+    "thisYear": "今年",
+    "clearAll": "清除全部",
+    "from": "从",
+    "to": "至",
+    "balance": "结余"
+  },
+  "theme": {
+    "switchTo": "切换到 {name}"
+  },
+  "home": {
+    "recentTodos": "最近任务",
+    "monthlyFinance": "本月收支"
   },
   "landing": {
     "subtitle": "个人效率与财务中枢",

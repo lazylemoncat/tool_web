@@ -42,6 +42,7 @@
   padding: var(--space-5);
   border-bottom: 1px solid var(--color-border);
 }
+.modal-close { flex-shrink: 0; }
 .ui-drawer-titles { flex: 1; min-width: 0; }
 .ui-drawer-title {
   font-size: var(--font-size-lg);

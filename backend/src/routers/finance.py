@@ -397,12 +397,26 @@ def get_transaction(
     return _build_transaction_out(tx, db)
 
 
+def _validate_parent_depth(parent_id: int, user_id: int, db: Session):
+    """Ensure parent transaction is not itself a child (max 1 level nesting)."""
+    parent = db.query(Transaction).filter(
+        Transaction.id == parent_id, Transaction.user_id == user_id,
+    ).first()
+    if not parent:
+        raise HTTPException(404, "parent transaction not found")
+    if parent.parent_transaction_id is not None:
+        raise HTTPException(400, "child transaction cannot have grandchild")
+
+
 @router.post("/transactions", response_model=TransactionOut, status_code=201)
 def create_transaction(
     body: TransactionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if body.parent_transaction_id is not None:
+        _validate_parent_depth(body.parent_transaction_id, current_user.id, db)
+
     tx_data = {k: v for k, v in body.model_dump().items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
     tx = Transaction(**tx_data, user_id=current_user.id, recorded_at=datetime.utcnow())
     db.add(tx)
@@ -458,6 +472,19 @@ def update_transaction(
         raise HTTPException(404, "transaction not found")
 
     update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
+
+    new_parent_id = update_data.get("parent_transaction_id")
+    if "parent_transaction_id" in update_data and new_parent_id is not None:
+        if new_parent_id == tx_id:
+            raise HTTPException(400, "transaction cannot be its own parent")
+        _validate_parent_depth(new_parent_id, current_user.id, db)
+        # Prevent making a parent (that has children) into a child
+        children_count = db.query(Transaction).filter(
+            Transaction.parent_transaction_id == tx_id,
+        ).count()
+        if children_count > 0:
+            raise HTTPException(400, "transaction with children cannot be nested under another parent")
+
     for key, val in update_data.items():
         setattr(tx, key, val)
 

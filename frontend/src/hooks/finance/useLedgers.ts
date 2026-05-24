@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../api/client'
+import { getToken } from '../../utils/token'
 import { useFinanceBase } from './useFinanceBase'
 import type { Ledger } from './types'
 
@@ -9,6 +10,7 @@ export function useLedgers() {
   const { handleError } = useFinanceBase()
 
   const fetchLedgers = useCallback(async () => {
+    if (!getToken()) { setLoading(false); return }
     const data = await api.get('/finance/ledgers') as Ledger[]
     setLedgers(data)
   }, [])

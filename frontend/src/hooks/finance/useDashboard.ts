@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import api from '../../api/client'
+import { getToken } from '../../utils/token'
 import { useFinanceBase } from './useFinanceBase'
 import type { DashboardSummary } from './types'
 
@@ -9,7 +10,7 @@ export function useDashboard(ledgerId: number | null) {
   const { handleError } = useFinanceBase()
 
   const fetchDashboard = useCallback(async () => {
-    if (ledgerId == null) { setDashboard(null); return }
+    if (ledgerId == null || !getToken()) { setDashboard(null); setLoading(false); return }
     const data = await api.get('/finance/dashboard', { params: { ledger_id: ledgerId } }) as DashboardSummary
     setDashboard(data)
   }, [ledgerId])

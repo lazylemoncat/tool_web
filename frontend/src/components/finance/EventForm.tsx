@@ -1,9 +1,10 @@
 /*
-  EventForm: 创建/编辑事件 Modal.
+ EventForm — 创建/编辑事件. 使用新 Modal 包装.
 */
+
 import React, { useState } from 'react'
 import { useLocale } from '../../i18n'
-import { FormField } from '../../components/ui'
+import { Modal, FormField, FormFooter } from '../ui'
 import type { FinanceEvent } from '../../hooks/finance'
 
 const COLORS = ['#e07050', '#4a7c59', '#6b8cce', '#c4943a', '#9c7cb0', '#5b9e9e', '#d4876b']
@@ -44,76 +45,49 @@ const EventForm: React.FC<Props> = ({ editEvent, onSubmit, onClose }) => {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>{isEdit ? t('finance.editEvent') : t('finance.newEvent')}</h3>
-          <button className="modal-close" onClick={onClose} aria-label={t('app.close')}>x</button>
-        </div>
+    <Modal open onOpenChange={() => onClose()} size="md" title={isEdit ? t('finance.editEvent') : t('finance.newEvent')} footer={<FormFooter onCancel={onClose} onSubmit={handleSubmit} />}>
+      <FormField label={t('finance.eventName')} error={nameError} required>
+        <input
+          value={name}
+          onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }}
+          placeholder={t('finance.eventName')}
+          autoFocus
+        />
+      </FormField>
 
-        <div className="modal-body">
-          <FormField label={t('finance.eventName')} error={nameError} required>
-            <input
-              value={name}
-              onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }}
-              placeholder={t('finance.eventName')}
-              autoFocus
-            />
+      <div className="form-group">
+        <label className="form-label">{t('finance.description')}</label>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder={t('finance.description')} rows={3} />
+      </div>
+
+      <div className="form-row">
+        <div style={{ flex: 1 }}>
+          <FormField label={t('finance.startAt')}>
+            <input type="datetime-local" value={startAt} onChange={(e) => { setStartAt(e.target.value); if (dateError) setDateError('') }} />
           </FormField>
-
-          <div className="form-group">
-            <label className="form-label">{t('finance.description')}</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder={t('finance.description')}
-              rows={3}
-            />
-          </div>
-
-          <div className="form-row">
-            <div className="flex-1">
-              <FormField label={t('finance.startAt')}>
-                <input
-                  type="datetime-local"
-                  value={startAt}
-                  onChange={(e) => { setStartAt(e.target.value); if (dateError) setDateError('') }}
-                />
-              </FormField>
-            </div>
-            <div className="flex-1">
-              <FormField label={t('finance.endAt')} error={dateError}>
-                <input
-                  type="datetime-local"
-                  value={endAt}
-                  onChange={(e) => { setEndAt(e.target.value); if (dateError) setDateError('') }}
-                />
-              </FormField>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label className="form-label">{t('finance.color')}</label>
-            <div className="finance-color-picker">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  className={`finance-color-swatch ${color === c ? 'active' : ''}`}
-                  style={{ background: c }}
-                  onClick={() => setColor(c)}
-                />
-              ))}
-            </div>
-          </div>
         </div>
-
-        <div className="modal-footer">
-          <button className="btn-cancel" onClick={onClose}>{t('app.cancel')}</button>
-          <button className="btn-submit" onClick={handleSubmit}>{t('app.confirm')}</button>
+        <div style={{ flex: 1 }}>
+          <FormField label={t('finance.endAt')} error={dateError}>
+            <input type="datetime-local" value={endAt} onChange={(e) => { setEndAt(e.target.value); if (dateError) setDateError('') }} />
+          </FormField>
         </div>
       </div>
-    </div>
+
+      <div className="form-group">
+        <label className="form-label">{t('finance.color')}</label>
+        <div className="finance-color-picker">
+          {COLORS.map((c) => (
+            <button
+              key={c}
+              type="button"
+              className={`finance-color-swatch ${color === c ? 'active' : ''}`}
+              style={{ background: c }}
+              onClick={() => setColor(c)}
+            />
+          ))}
+        </div>
+      </div>
+    </Modal>
   )
 }
 

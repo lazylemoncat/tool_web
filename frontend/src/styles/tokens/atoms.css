@@ -64,6 +64,9 @@
   --space-11: 80px;
   --space-12: 96px;
 
+  /* ── Layout ──────────────────────────────────────── */
+  --header-height: 52px;
+
   /* ── Radius ──────────────────────────────────────── */
   --radius-sm: 4px;
   --radius-md: 8px;
@@ -87,6 +90,16 @@
   --z-popover: 1200;
   --z-tooltip: 1300;
   --z-toast: 1400;
+
+  /* ── Drawer stack z-index ─────────────────────────── */
+  --z-drawer-stack-1: 1110;
+  --z-drawer-stack-2: 1120;
+  --z-drawer-stack-3: 1130;
+
+  /* ── Additional semantic tokens (aliased here, overridable by theme) ── */
+  --color-accent-soft: var(--color-accent-3);
+  --shadow-elevated: var(--shadow-5);
+  --radius-drawer: var(--radius-lg);
 }
 
 /* Dark mode shadows: amplified for visibility on dark bg */

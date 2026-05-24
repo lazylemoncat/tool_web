@@ -61,8 +61,14 @@ export type { CardProps } from './Card'
 export { default as Badge } from './Badge'
 export type { BadgeProps, BadgeVariant } from './Badge'
 
+export { default as DropdownMenu, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel, DropdownMenuSub } from './DropdownMenu'
+export type { DropdownMenuProps } from './DropdownMenu'
+
 export { default as Avatar } from './Avatar'
 export type { AvatarProps } from './Avatar'
 
 export { default as FormField, useFormField } from './FormField'
 export type { FormFieldProps } from './FormField'
+
+export { default as FormFooter } from './FormFooter'
+export type { FormFooterProps } from './FormFooter'

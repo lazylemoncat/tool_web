@@ -176,3 +176,22 @@
 
 /* ─── Todo Link ─── */
 .finance-todo-link { display: inline-flex; align-items: center; gap: 2px; padding: 3px 8px; border: 1px solid var(--accent); border-radius: 12px; font-size: 0.78rem; color: var(--accent); background: var(--accent-light); cursor: pointer; text-decoration: none; }
+
+/* ─── Filter Chips & Quick Presets ─── */
+.finance-filter-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.finance-quick-presets { display: flex; gap: 4px; flex-wrap: wrap; }
+.finance-active-chips { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+.finance-filter-chip {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 8px; border-radius: 12px;
+  font-size: 0.75rem; background: var(--color-accent-soft);
+  color: var(--color-accent); white-space: nowrap;
+}
+.finance-filter-chip button {
+  background: none; border: none; cursor: pointer; font-size: 0.85rem; color: var(--color-accent); padding: 0 2px; line-height: 1;
+}
+.finance-filter-clear-all { font-size: 0.75rem; color: var(--color-fg-muted); cursor: pointer; border: none; background: none; padding: 2px 4px; }
+.finance-filter-clear-all:hover { color: var(--color-danger); }
+
+.finance-todo-link-list { display: flex; flex-direction: column; gap: 2px; }
+

@@ -1,16 +1,23 @@
 /*
-  TransactionDetail: 交易详情 Modal (只读), 含编辑/删除操作.
+  TransactionDetail: 交易详情 Modal (只读), 含编辑/删除/子账单管理.
 */
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLocale } from '../../i18n'
-import type { Transaction } from '../../hooks/finance'
+import { FormFooter, useConfirm, useToast } from '../ui'
+import type { Account, FinanceCategory, FinanceTag, Transaction } from '../../hooks/finance'
+import api from '../../api/client'
+import SubTxDrawer from './SubTxDrawer'
 
 interface Props {
   transaction: Transaction
+  accounts: Account[]
+  categories: FinanceCategory[]
+  tags: FinanceTag[]
   onEdit: () => void
   onDelete: () => void
   onClose: () => void
+  onRefresh: () => void
 }
 
 const fmt = (v: unknown, digits = 2): string => {
@@ -20,9 +27,35 @@ const fmt = (v: unknown, digits = 2): string => {
 
 const TX_LABELS: Record<string, string> = { expense: 'expense', income: 'income', transfer: 'transfer' }
 
-const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete, onClose }) => {
+const TransactionDetail: React.FC<Props> = ({ transaction: tx, accounts, categories, tags, onEdit, onDelete, onClose, onRefresh }) => {
   const { t } = useLocale()
   const navigate = useNavigate()
+  const confirm = useConfirm()
+  const toast = useToast()
+  const [subTxDrawer, setSubTxDrawer] = useState<{ open: boolean; editTx?: Transaction }>({ open: false })
+
+  const isParent = tx.parent_transaction_id == null
+  const childCount = tx.children?.length ?? 0
+
+  const openCreateChild = () => setSubTxDrawer({ open: true })
+  const openEditChild = (child: Transaction) => setSubTxDrawer({ open: true, editTx: child })
+  const closeSubTxDrawer = () => setSubTxDrawer({ open: false })
+
+  const handleDeleteChild = async (child: Transaction) => {
+    const ok = await confirm({
+      title: t('finance.confirmDeleteTransaction'),
+      description: t('finance.deleteTransactionDescription'),
+      danger: true,
+    })
+    if (!ok) return
+    try {
+      await api.delete(`/finance/transactions/${child.id}`)
+      toast({ message: t('finance.transactionDeleted'), variant: 'success' })
+      onRefresh()
+    } catch {
+      toast({ message: t('finance.transactionDeleteFailed'), variant: 'error' })
+    }
+  }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -63,25 +96,35 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
             </div>
           )}
 
-          {tx.children && tx.children.length > 0 && (
+          {isParent && (
             <div className="form-group mt-3">
-              <label className="form-label">{t('finance.childTransactions')} ({tx.children.length})</label>
-              <div className="finance-split-list">
-                {tx.children.map((child) => (
-                  <div key={child.id} className="finance-split-row">
-                    <span className={`finance-tx-type finance-tx-${child.type}`}>
-                      {child.type === 'expense' ? '-' : child.type === 'income' ? '+' : 'S'}
-                    </span>
-                    <span className="tx-split-amount">{fmt(child.amount)}</span>
-                    <span className="tx-split-meta">
-                      {child.category?.name || t('finance.uncategorized')}
-                    </span>
-                    <span className="tx-split-note">
-                      {child.note || ''}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <label className="form-label">{t('finance.childTransactions')}{childCount > 0 && ` (${childCount})`}</label>
+              {childCount > 0 && (
+                <div className="finance-split-list">
+                  {tx.children!.map((child) => (
+                    <div key={child.id} className="finance-split-row">
+                      <span className={`finance-tx-type finance-tx-${child.type}`}>
+                        {child.type === 'expense' ? '-' : child.type === 'income' ? '+' : 'S'}
+                      </span>
+                      <span className="tx-split-amount">{fmt(child.amount)}</span>
+                      <span className="tx-split-meta">
+                        {child.category?.name || t('finance.uncategorized')}
+                      </span>
+                      <span className="tx-split-note">
+                        {child.note || ''}
+                      </span>
+                      <button className="btn-sm" onClick={() => openEditChild(child)}>{t('app.edit')}</button>
+                      <button className="finance-tx-del" onClick={() => handleDeleteChild(child)} aria-label={t('app.delete')}>x</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {childCount === 0 && (
+                <span className="text-muted" style={{ fontSize: '0.85rem' }}>{t('finance.noChildTx')}</span>
+              )}
+              <button className="btn-sm" onClick={openCreateChild} style={{ marginTop: 8 }}>
+                + {t('finance.addChildTransaction')}
+              </button>
             </div>
           )}
 
@@ -143,11 +186,23 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, onEdit, onDelete,
         </div>
 
         <div className="modal-footer">
-          <button className="btn-danger" onClick={onDelete}>{t('app.delete')}</button>
-          <button className="btn-cancel" onClick={onClose}>{t('app.cancel')}</button>
-          <button className="btn-submit" onClick={onEdit}>{t('app.edit')}</button>
+          <FormFooter onCancel={onClose} onSubmit={onEdit} submitLabel={t('app.edit')} extraLeft={<button className="btn-danger" onClick={onDelete}>{t('app.delete')}</button>} />
         </div>
       </div>
+
+      {subTxDrawer.open && (
+        <SubTxDrawer
+          open={subTxDrawer.open}
+          onOpenChange={(o) => { if (!o) closeSubTxDrawer() }}
+          parentTxId={tx.id}
+          ledgerId={tx.ledger_id}
+          editTx={subTxDrawer.editTx || null}
+          accounts={accounts}
+          categories={categories}
+          tags={tags}
+          onSuccess={() => { onRefresh() }}
+        />
+      )}
     </div>
   )
 }

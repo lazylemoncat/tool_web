@@ -8,7 +8,8 @@ export interface ModalProps {
   onOpenChange: (open: boolean) => void
   title?: React.ReactNode
   description?: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  dismissible?: boolean
   closeOnOverlayClick?: boolean
   children?: React.ReactNode
   footer?: React.ReactNode
@@ -21,6 +22,7 @@ const Modal: React.FC<ModalProps> = ({
   title,
   description,
   size = 'md',
+  dismissible = true,
   closeOnOverlayClick = true,
   children,
   footer,
@@ -41,9 +43,11 @@ const Modal: React.FC<ModalProps> = ({
                 {title && <Dialog.Title className="ui-modal-title">{title}</Dialog.Title>}
                 {description && <Dialog.Description className="ui-modal-description">{description}</Dialog.Description>}
               </div>
-              <Dialog.Close asChild>
-                <IconButton aria-label="Close" size="sm">✕</IconButton>
-              </Dialog.Close>
+              {dismissible && (
+                <Dialog.Close asChild>
+                  <IconButton aria-label="Close" size="lg" className="modal-close">✕</IconButton>
+                </Dialog.Close>
+              )}
             </div>
           )}
           <div className="ui-modal-body">{children}</div>

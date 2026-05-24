@@ -55,6 +55,27 @@
 .tx-card:hover .tx-card-actions,
 .tx-card:focus-within .tx-card-actions { opacity: 1; }
 
+.tx-card-child {
+  border-left: 3px solid var(--color-border-strong);
+}
+
+.tx-card-child-indicator {
+  color: var(--color-fg-muted);
+  font-size: var(--font-size-xs);
+}
+
+.tx-card-child-chip {
+  display: inline-block;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-normal);
+  color: var(--color-fg-muted);
+  background: var(--color-bg-hover);
+  border-radius: var(--radius-sm);
+  padding: 0 var(--space-1);
+  margin-left: var(--space-1);
+  vertical-align: middle;
+}
+
 @media (max-width: 768px) {
   .tx-card-actions { opacity: 1; } /* 移动端不靠 hover, 默认显示 */
 }

@@ -131,7 +131,8 @@
     "deleteFolderConfirm": "Confirm delete folder",
     "deleteFolderDescription": "Delete folder '{name}'? It contains {count} task(s){children}. This cannot be undone.",
     "renameFolder": "Rename folder",
-    "finance": "Finance"
+    "finance": "Finance",
+    "todo": "Todo"
   },
   "settings": {
     "title": "Settings",
@@ -157,7 +158,26 @@
     "noCustomThemes": "No custom themes",
     "invalidThemeFile": "Invalid theme file format",
     "uploadFailed": "Upload failed, please retry",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "description": "Manage account, appearance, language and data",
+    "account": "Account",
+    "appearance": "Appearance",
+    "locale": "Language & Region",
+    "notifications": "Notifications",
+    "data": "Data",
+    "accountSummary": "Account Summary",
+    "changePasswordHint": "Change your password regularly",
+    "managePassword": "Manage Password",
+    "manageCustomThemes": "Manage Custom Themes",
+    "revertToDefault": "Revert to Default",
+    "customThemeActive": "Custom theme is active",
+    "exportData": "Export Data",
+    "exportDataHint": "Export all data as JSON",
+    "importData": "Import Data",
+    "importDataHint": "Restore data from JSON file",
+    "export": "Export",
+    "import": "Import",
+    "notificationsHint": "Notification preferences coming soon"
   },
   "priority": {
     "high": "High",
@@ -190,7 +210,8 @@
     "api": "API",
     "settings": "Settings",
     "loading": "Loading...",
-    "notFound": "Document not found"
+    "notFound": "Document not found",
+    "description": "View feature documentation and user guide"
   },
   "date": {
     "today": "Today",
@@ -263,6 +284,14 @@
     "showSplit": "+ Split Items",
     "childTransactions": "Child Transactions",
     "addChildTransaction": "+ Child Transaction",
+    "newChildTransaction": "New Child Transaction",
+    "editChildTransaction": "Edit Child Transaction",
+    "hideChildTx": "Hide Child Transactions",
+    "noChildTx": "No child transactions",
+    "saveParentFirst": "Save parent transaction first",
+    "childTxCreated": "Child transaction created",
+    "childTxUpdated": "Child transaction updated",
+    "transactionDeleted": "Transaction deleted",
     "addSplitItem": "+ Add Item",
     "splitHint": "Split amounts should sum to transaction total",
     "editTransaction": "Edit Transaction",
@@ -329,7 +358,30 @@
     "uploadAttachment": "Upload Attachments",
     "noAttachments": "No attachments",
     "loading": "Loading...",
-    "accountCreateFailed": "Failed to create account"
+    "accountCreateFailed": "Failed to create account",
+    "noLedgers": "No ledgers, please create one first",
+    "items": "items",
+    "openSplitDrawer": "Edit splits in drawer",
+    "splitDetails": "Split Details",
+    "splitTotal": "{n} items, total ¥{total}",
+    "basic": "Basic",
+    "extended": "Extended",
+    "linked": "Linked",
+    "thisMonth": "This Month",
+    "lastMonth": "Last Month",
+    "last7Days": "Last 7 Days",
+    "thisYear": "This Year",
+    "clearAll": "Clear All",
+    "from": "From",
+    "to": "To",
+    "balance": "Balance"
+  },
+  "theme": {
+    "switchTo": "Switch to {name}"
+  },
+  "home": {
+    "recentTodos": "Recent Tasks",
+    "monthlyFinance": "Monthly Finance"
   },
   "landing": {
     "subtitle": "Personal productivity & finance hub",

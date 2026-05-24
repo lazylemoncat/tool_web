@@ -19,6 +19,7 @@ import {
   TooltipProvider,
   ConfirmDialogProvider,
 } from './components/ui'
+import { ThemeProvider } from './context/ThemeContext'
 import { useErrorDisplay } from './hooks/useErrorDisplay'
 import { useConfirm, Skeleton, Button } from './components/ui'
 import CustomButtons from './components/common/CustomButtons'
@@ -28,8 +29,18 @@ import SearchBar from './components/common/SearchBar'
 import TodoList from './components/todo/TodoList'
 import TodoForm, { type TodoFormData } from './components/todo/TodoForm'
 import TaskDetail from './components/todo/TaskDetail'
+import SubTaskDrawer from './components/todo/SubTaskDrawer'
+import AppTopBar from './components/layout/AppTopBar'
 import AuthPage from './components/auth/AuthPage'
 import SettingsPage from './components/settings/SettingsPage'
+import AccountSection from './components/settings/sections/AccountSection'
+import AppearanceSection from './components/settings/sections/AppearanceSection'
+import LocaleSection from './components/settings/sections/LocaleSection'
+import NotificationsSection from './components/settings/sections/NotificationsSection'
+import DataSection from './components/settings/sections/DataSection'
+import PasswordPage from './pages/settings/PasswordPage'
+import DeleteAccountPage from './pages/settings/DeleteAccountPage'
+import CustomThemePage from './pages/settings/CustomThemePage'
 import HelpPage from './pages/HelpPage'
 import FinanceLayout from './pages/finance/FinanceLayout'
 import DashboardPage from './pages/finance/DashboardPage'
@@ -37,6 +48,7 @@ import TransactionsPage from './pages/finance/TransactionsPage'
 import BudgetsPage from './pages/finance/BudgetsPage'
 import EventsPage from './pages/finance/EventsPage'
 import LandingPage from './pages/LandingPage'
+import HomePage from './pages/HomePage'
 import UIPreviewPage from './pages/UIPreviewPage'
 
 const AppContent: React.FC = () => {
@@ -90,23 +102,49 @@ const AppContent: React.FC = () => {
 
   return (
     <LocaleProvider initial={lang}>
-      <ConfirmDialogProvider>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/todo" element={<TodoApp />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route path="/finance" element={<FinanceLayout />}>
-            <Route index element={<Navigate to="/finance/dashboard" replace />} />
-            <Route path="dashboard" element={<DashboardPage />} />
-            <Route path="transactions" element={<TransactionsPage />} />
-            <Route path="budgets" element={<BudgetsPage />} />
-            <Route path="events" element={<EventsPage />} />
-          </Route>
-          {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
-        </Routes>
-      </ConfirmDialogProvider>
+      <ThemeProvider>
+        <ConfirmDialogProvider>
+          <AppContentAuthenticated />
+        </ConfirmDialogProvider>
+      </ThemeProvider>
     </LocaleProvider>
+  )
+}
+
+const AppContentAuthenticated: React.FC = () => {
+  const { username, logout } = useAuth()
+
+  return (
+    <>
+      <AppTopBar username={username!} onLogout={logout} />
+      <div className="app-main-content">
+        <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/welcome" element={<LandingPage />} />
+        <Route path="/todo" element={<TodoApp />} />
+        <Route path="/settings" element={<SettingsPage />}>
+          <Route index element={<Navigate to="/settings/account" replace />} />
+          <Route path="account" element={<AccountSection />} />
+          <Route path="appearance" element={<AppearanceSection />} />
+          <Route path="locale" element={<LocaleSection />} />
+          <Route path="notifications" element={<NotificationsSection />} />
+          <Route path="data" element={<DataSection />} />
+        </Route>
+        <Route path="/settings/account/password" element={<PasswordPage />} />
+        <Route path="/settings/account/delete" element={<DeleteAccountPage />} />
+        <Route path="/settings/appearance/custom" element={<CustomThemePage />} />
+        <Route path="/help" element={<HelpPage />} />
+        <Route path="/finance" element={<FinanceLayout />}>
+          <Route index element={<Navigate to="/finance/dashboard" replace />} />
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="transactions" element={<TransactionsPage />} />
+          <Route path="budgets" element={<BudgetsPage />} />
+          <Route path="events" element={<EventsPage />} />
+        </Route>
+        {import.meta.env.DEV && <Route path="/ui-preview" element={<UIPreviewPage />} />}
+      </Routes>
+      </div>
+    </>
   )
 }
 
@@ -154,6 +192,7 @@ const TodoApp: React.FC = () => {
   const [availableTags, setAvailableTags] = useState<{ id: number; name: string }[]>([])
   const [selectMode, setSelectMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [subtaskDrawerTodo, setSubtaskDrawerTodo] = useState<Todo | null>(null)
 
   useEffect(() => {
     fetchTags(undefined, activeFolderId).then(setAvailableTags).catch(() => {})
@@ -302,7 +341,7 @@ const TodoApp: React.FC = () => {
       </div>
 
       <main className="main-area">
-        <Header title={activeFolderName} onMenuClick={() => setSidebarOpen(true)} />
+        <Header title={activeFolderName} onMenuClick={() => setSidebarOpen(true)} username={username!} onLogout={logout} />
 
         <div className="toolbar">
           <SearchBar value={search} onChange={setSearch} placeholder={t('todo.searchPlaceholder')} />
@@ -398,6 +437,7 @@ const TodoApp: React.FC = () => {
             onEdit={setEditTodo}
             onReorder={reorderTodos}
             onDetail={setDetailTodo}
+            onOpenSubtasks={setSubtaskDrawerTodo}
             selectMode={selectMode}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
@@ -447,6 +487,21 @@ const TodoApp: React.FC = () => {
           todo={detailTodo}
           onClose={() => setDetailTodo(null)}
           onEdit={(t) => { setDetailTodo(null); setEditTodo(t); setShowForm(true) }}
+        />
+      )}
+
+      {subtaskDrawerTodo && (
+        <SubTaskDrawer
+          open={!!subtaskDrawerTodo}
+          onOpenChange={(o) => { if (!o) setSubtaskDrawerTodo(null) }}
+          parentTodo={subtaskDrawerTodo}
+          subtasks={subtaskDrawerTodo.children || []}
+          onToggle={toggleTodo}
+          onDelete={deleteTodo}
+          onAddSub={handleAddSub}
+          onEdit={setEditTodo}
+          onReorder={reorderTodos}
+          onDetail={setDetailTodo}
         />
       )}
     </div>

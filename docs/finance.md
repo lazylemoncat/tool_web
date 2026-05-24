@@ -35,9 +35,16 @@ Finance 模块是 Tool Web 中的个人财务管理系统, 与 Todo 模块共享
 
 ### 4. Child Transaction (子交易)
 
-父交易下可创建多个子交易, 每个子交易是完整的 Transaction (独立金额、分类、备注、附件).
+父交易下可创建多个子交易, 每个子交易是完整的 Transaction (独立金额、账户、分类、时间、备注、标签、附件、Todo 关联、事件关联).
 
-子交易继承父交易的账户、类型和发生时间. 父交易金额可为 0 (仅用于分组).
+**嵌套限制**: 仅支持 1 层嵌套 (父→子). 子交易不可再创建下级子交易. 后端在 POST/PUT /transactions 时校验 parent_transaction_id 链深度, 违反时返回 400.
+
+**子单管理**: 
+- 父单编辑态通过 SubTxDrawer (右侧 Drawer) 创建/编辑子单, 复用 TransactionForm 全部字段
+- 子单为独立 Transaction 记录, 通过 parent_transaction_id 关联父单
+- 子单 CRUD 为独立 API 调用 (POST/PUT/DELETE /transactions)
+- 父单卡片显示子单数量 chip, 子单卡片显示 ↳ 标识
+- 新建父单时不可添加子单 (需先保存父单)
 
 ### 5. Category (分类)
 

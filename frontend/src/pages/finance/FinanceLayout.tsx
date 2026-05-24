@@ -447,6 +447,8 @@ const FinanceLayout: React.FC = () => {
           onSubmit={handleSaveTransaction}
           onClose={() => { setShowTxForm(false); setEditTx(null) }}
           onCreateCategory={(name) => createCategory({ name, ledger_id: activeLedgerId })}
+          ledgerId={activeLedgerId}
+          onChildRefresh={fetchTransactions}
         />
       )}
 
@@ -472,9 +474,13 @@ const FinanceLayout: React.FC = () => {
       {detailTx && (
         <TransactionDetail
           transaction={detailTx}
+          accounts={accounts}
+          categories={categories}
+          tags={tags}
           onEdit={handleEditFromDetail}
           onDelete={() => handleDeleteFromDetail(detailTx.id)}
           onClose={() => setDetailTx(null)}
+          onRefresh={fetchTransactions}
         />
       )}
     </div>

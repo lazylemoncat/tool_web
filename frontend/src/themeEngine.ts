@@ -95,6 +95,19 @@ let _activeConfig: ThemeConfig | null = null
 let _activePage: string | null = null
 let _styleTag: HTMLStyleElement | null = null
 
+type ThemeChangeListener = (config: ThemeConfig | null) => void
+const _listeners = new Set<ThemeChangeListener>()
+
+/** 订阅主题变更. 返回取消订阅函数. */
+export function onThemeChange(listener: ThemeChangeListener): () => void {
+  _listeners.add(listener)
+  return () => { _listeners.delete(listener) }
+}
+
+function notifyListeners(config: ThemeConfig | null): void {
+  _listeners.forEach((fn) => fn(config))
+}
+
 export function getActiveConfig(): ThemeConfig | null {
   return _activeConfig
 }
@@ -116,6 +129,7 @@ export function applyThemeConfig(config: ThemeConfig, page?: string): void {
   }
 
   window.dispatchEvent(new CustomEvent('theme:changed', { detail: config }))
+  notifyListeners(config)
 }
 
 /** 切换当前页面 (重新计算页面级覆盖) */
@@ -137,6 +151,7 @@ export function clearThemeConfig(): void {
     _styleTag.textContent = ''
   }
   window.dispatchEvent(new CustomEvent('theme:changed', { detail: null }))
+  notifyListeners(null)
 }
 
 /** 按 position 取出当前激活主题的按钮列表 */

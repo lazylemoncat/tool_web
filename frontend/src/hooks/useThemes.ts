@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import api from '../api/client'
+import { getToken } from '../utils/token'
 
 export interface UserTheme {
   id: number
@@ -25,6 +26,11 @@ export function useThemes() {
   const [loading, setLoading] = useState(true)
 
   const fetchThemes = useCallback(async () => {
+    if (!getToken()) {
+      setThemes([])
+      setLoading(false)
+      return
+    }
     try {
       const data = await api.get('/themes') as any
       setThemes(Array.isArray(data) ? data : [])

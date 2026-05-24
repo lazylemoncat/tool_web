@@ -31,9 +31,9 @@ class ErrorBoundaryInner extends Component<Props & { t: (key: string) => string 
           padding: 24,
           textAlign: 'center',
         }}>
-          <h2>{this.props.t('errors.unexpectedTitle')}</h2>
-          <p style={{ color: 'var(--color-fg-muted)' }}>
-            {this.state.error?.message || this.props.t('errors.unexpectedMessage')}
+          <h2>{this.props.t('errors.unexpectedTitle') || '出了点问题'}</h2>
+          <p style={{ color: 'var(--color-fg-muted)', whiteSpace: 'pre-wrap' }}>
+            {this.state.error?.message || this.props.t('errors.unexpectedMessage') || '发生了意外错误'}
           </p>
           <Button
             onClick={() => {
@@ -41,7 +41,7 @@ class ErrorBoundaryInner extends Component<Props & { t: (key: string) => string 
               window.location.reload()
             }}
           >
-            {this.props.t('errors.reload')}
+            {this.props.t('errors.reload') || '重新加载'}
           </Button>
         </div>
       )

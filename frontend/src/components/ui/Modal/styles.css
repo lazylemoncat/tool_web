@@ -27,6 +27,10 @@
 .ui-modal-md { max-width: 480px; }
 .ui-modal-lg { max-width: 640px; }
 .ui-modal-xl { max-width: 880px; }
+.ui-modal-full {
+  max-width: calc(100vw - var(--space-8));
+  max-height: calc(100vh - var(--space-8));
+}
 
 .ui-modal:focus { outline: none; }
 
@@ -50,6 +54,10 @@
   color: var(--color-fg-muted);
   margin: var(--space-1) 0 0;
 }
+.modal-close {
+  flex-shrink: 0;
+}
+
 .ui-modal-body {
   padding: var(--space-5);
   overflow-y: auto;
