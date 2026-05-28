@@ -30,11 +30,11 @@ const TagManager: React.FC<Props> = ({ tags, onCreate, onDelete }) => {
         {showAdd ? (
           <div className="finance-category-edit-row">
             <input
+              className="form-input finance-input-sm"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
               placeholder={t('finance.accountType')}
-              className="finance-input-sm"
               autoFocus
             />
             <button className="btn-submit" onClick={handleCreate}>{t('app.confirm')}</button>

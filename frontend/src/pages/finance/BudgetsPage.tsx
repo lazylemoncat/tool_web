@@ -25,22 +25,48 @@ const BudgetsPage: React.FC = () => {
           action={<Button onClick={ctx.openNewBudget}>+ {t('finance.newBudget')}</Button>}
         />
       ) : (
-        ctx.budgets.map((b) => (
-          <div key={b.id} className="finance-budget-row">
-            <span>{b.name}</span>
-            <div className="finance-budget-bar">
+        <div className="budget-cards">
+          {ctx.budgets.map((b) => {
+            const pct = Math.min(Number(b.progress_pct) || 0, 100)
+            const threshold = b.alert_threshold || 80
+            const level = pct >= 100 ? 'danger' : pct >= threshold ? 'warn' : 'safe'
+
+            return (
               <div
-                className="finance-budget-fill"
-                style={{ width: `${Math.min(Number(b.progress_pct) || 0, 100)}%` }}
-              />
-            </div>
-            <span>{ctx.fmt(b.current_spent, 0)} / {ctx.fmt(b.amount, 0)}</span>
-            <div className="finance-budget-row-actions">
-              <Button size="sm" variant="secondary" onClick={() => ctx.openEditBudget(b)}>{t('app.edit')}</Button>
-              <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={() => ctx.handleDeleteBudget(b.id)}>🗑</IconButton>
-            </div>
-          </div>
-        ))
+                key={b.id}
+                className={`budget-card ${pct >= 100 ? 'over-budget' : pct >= threshold ? 'warning-budget' : ''}`}
+              >
+                <div className="budget-card-header">
+                  <span className="budget-card-category">{b.name}</span>
+                  {b.rrule && <span className="budget-card-period">{b.rrule}</span>}
+                </div>
+
+                <div className="budget-card-amounts">
+                  <span className="budget-card-spent">{ctx.fmt(b.current_spent, 0)}</span>
+                  <span className="budget-card-total">/ {ctx.fmt(b.amount, 0)}</span>
+                </div>
+
+                <div className="budget-progress-bar">
+                  <div
+                    className={`budget-progress-fill ${level}`}
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+
+                <div className="budget-card-footer">
+                  <span>{Math.round(pct)}%</span>
+                  <span className={`budget-card-status ${level === 'danger' ? 'over' : level}`}>
+                    {pct >= 100 ? t('finance.overBudget') : pct >= threshold ? t('finance.nearLimit') : t('finance.onTrack')}
+                  </span>
+                  <div className="finance-budget-row-actions">
+                    <Button size="sm" variant="secondary" onClick={() => ctx.openEditBudget(b)}>{t('app.edit')}</Button>
+                    <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={() => ctx.handleDeleteBudget(b.id)}>🗑</IconButton>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
       )}
     </div>
   )

@@ -99,7 +99,7 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
 
       <div className="form-group">
         <label className="form-label">{t('finance.rrule')}</label>
-        <input value={rrule} onChange={(e) => setRrule(e.target.value)} placeholder={t('finance.rruleHint')} />
+        <input className="form-input" value={rrule} onChange={(e) => setRrule(e.target.value)} placeholder={t('finance.rruleHint')} />
       </div>
 
       <div className="form-group">

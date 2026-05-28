@@ -25,18 +25,38 @@ const EventsPage: React.FC = () => {
           action={<Button onClick={ctx.openNewEvent}>+ {t('finance.newEvent')}</Button>}
         />
       ) : (
-        ctx.events.map((ev) => (
-          <div key={ev.id} className="finance-event-row">
-            <span className="dot" style={{ background: ev.color }} />
-            <span>{ev.name}</span>
-            <span>{ev.transaction_count} tx</span>
-            <span>{ctx.fmt(ev.total_amount)}</span>
-            <div className="finance-budget-row-actions">
-              <Button size="sm" variant="secondary" onClick={() => ctx.openEditEvent(ev)}>{t('app.edit')}</Button>
-              <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={() => ctx.handleDeleteEvent(ev.id)}>🗑</IconButton>
+        <div className="event-cards">
+          {ctx.events.map((ev) => (
+            <div key={ev.id} className="event-card" onClick={() => ctx.openEditEvent(ev)}>
+              <div className="event-card-header">
+                <span className="event-color-dot" style={{ background: ev.color }} />
+                <span className="event-card-name">{ev.name}</span>
+                {ev.start_at && (
+                  <span className="event-card-date">
+                    {new Date(ev.start_at).toLocaleDateString()}
+                    {ev.end_at ? ` - ${new Date(ev.end_at).toLocaleDateString()}` : ''}
+                  </span>
+                )}
+              </div>
+              <div className="event-card-stats">
+                <div className="event-stat">
+                  <span className="event-stat-label">{t('finance.transactions')}</span>
+                  <span className="event-stat-value">{ev.transaction_count}</span>
+                </div>
+                <div className="event-stat">
+                  <span className="event-stat-label">{t('finance.total')}</span>
+                  <span className={`event-stat-value ${ev.total_amount >= 0 ? 'in' : 'out'}`}>
+                    {ctx.fmt(ev.total_amount)}
+                  </span>
+                </div>
+              </div>
+              <div className="finance-budget-row-actions" style={{ marginTop: 10 }}>
+                <Button size="sm" variant="secondary" onClick={(e) => { e.stopPropagation(); ctx.openEditEvent(ev) }}>{t('app.edit')}</Button>
+                <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); ctx.handleDeleteEvent(ev.id) }}>🗑</IconButton>
+              </div>
             </div>
-          </div>
-        ))
+          ))}
+        </div>
       )}
     </div>
   )

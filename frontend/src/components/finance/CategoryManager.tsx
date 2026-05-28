@@ -100,16 +100,16 @@ const CategoryManager: React.FC<Props> = ({ categories, onCreate, onUpdate, onDe
           {isEditing ? (
             <div className="finance-category-edit-row">
               <input
+                className="form-input finance-input-sm"
                 value={state.editName}
                 onChange={(e) => set({ editName: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && saveEdit(cat.id)}
-                className="finance-input-sm"
                 autoFocus
               />
               <select
+                className="form-select finance-select"
                 value={state.editParent ?? ''}
                 onChange={(e) => set({ editParent: e.target.value ? Number(e.target.value) : null })}
-                className="finance-select"
               >
                 <option value="">{t('finance.noParent')}</option>
                 {allCats.filter((c) => c.id !== cat.id).map((c) => (
@@ -136,11 +136,11 @@ const CategoryManager: React.FC<Props> = ({ categories, onCreate, onUpdate, onDe
             <span className="finance-category-toggle" />
             <div className="finance-category-edit-row">
               <input
+                className="form-input finance-input-sm"
                 value={state.newChildName}
                 onChange={(e) => set({ newChildName: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && createChild()}
                 placeholder={t('finance.categoryName')}
-                className="finance-input-sm"
                 autoFocus
               />
               <button className="btn-submit" onClick={createChild}>{t('app.confirm')}</button>
@@ -161,11 +161,11 @@ const CategoryManager: React.FC<Props> = ({ categories, onCreate, onUpdate, onDe
         {state.showNewRoot ? (
           <div className="finance-category-edit-row">
             <input
+              className="form-input finance-input-sm"
               value={state.newRootName}
               onChange={(e) => set({ newRootName: e.target.value })}
               onKeyDown={(e) => e.key === 'Enter' && createRoot()}
               placeholder={t('finance.categoryName')}
-              className="finance-input-sm"
               autoFocus
             />
             <button className="btn-submit" onClick={createRoot}>{t('app.confirm')}</button>
