@@ -25,7 +25,7 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
     if (!ok) return
     setDeleting(true)
     try { await onDelete(tx.id) }
-    catch { toast('删除失败', 'error') }
+    catch { toast({ message: '删除失败', variant: 'error' }) }
     finally { setDeleting(false) }
   }
 
