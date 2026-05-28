@@ -75,6 +75,20 @@
   margin-left: var(--space-1);
   vertical-align: middle;
 }
+.tx-card-child-action {
+  align-self: flex-start;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+  color: var(--color-fg-muted);
+  cursor: pointer;
+  font-size: var(--font-size-xs);
+  padding: var(--space-1) var(--space-2);
+}
+.tx-card-child-action:hover {
+  border-color: var(--color-border-strong);
+  color: var(--color-fg);
+}
 
 @media (max-width: 768px) {
   .tx-card-actions { opacity: 1; } /* 移动端不靠 hover, 默认显示 */

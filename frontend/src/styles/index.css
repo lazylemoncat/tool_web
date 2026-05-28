@@ -43,6 +43,7 @@
 
 .app-main-content {
   min-height: calc(100vh - var(--header-height));
+  background: var(--bg-primary);
 }
 
 @media (min-width: 768px) {
@@ -54,6 +55,7 @@
 .app-layout {
   display: flex;
   min-height: 100vh;
+  width: 100%;
 }
 
 .sidebar-panel {
@@ -71,6 +73,7 @@
   bottom: 0;
   z-index: 100;
   transition: transform var(--transition);
+  overflow: hidden;
 }
 
 .sidebar-logo {
@@ -93,6 +96,7 @@
   gap: 4px;
   overflow-y: auto;
   min-height: 0;
+  padding-right: 2px;
 }
 
 .sidebar-item {
@@ -109,6 +113,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-height: 36px;
 }
 
 .sidebar-item:hover {
@@ -222,6 +227,7 @@
   margin-left: var(--sidebar-width);
   padding: 32px 40px;
   width: 100%;
+  min-width: 0;
 }
 
 /* ─── Header / Top bar ──────────────────── */
@@ -275,8 +281,9 @@
 
 .search-bar {
   position: relative;
-  flex: 1;
-  max-width: 360px;
+  flex: 1 1 260px;
+  min-width: min(100%, 220px);
+  max-width: 520px;
 }
 
 .search-bar svg {
@@ -315,8 +322,10 @@
 .toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 24px;
+  min-width: 0;
 }
 
 .filter-group {
@@ -326,6 +335,13 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 3px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.filter-group::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-btn {
@@ -334,6 +350,9 @@
   font-size: 0.82rem;
   color: var(--text-secondary);
   transition: all var(--transition);
+  min-height: 30px;
+  white-space: nowrap;
+  flex: 0 0 auto;
 }
 
 .filter-btn:hover { color: var(--text-primary); }
@@ -1186,7 +1205,14 @@
 
   .search-bar { max-width: none; }
 
-  .toolbar { gap: 8px; }
+  .toolbar {
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .toolbar .search-bar {
+    flex-basis: 100%;
+  }
 
   .filter-btn {
     padding: 6px 10px;
@@ -1242,6 +1268,12 @@
   .toolbar {
     gap: 6px;
     flex-wrap: wrap;
+  }
+
+  .toolbar > .ui-btn,
+  .toolbar > .custom-btn,
+  .tag-filter-select {
+    flex: 1 1 auto;
   }
 
   .filter-btn {
@@ -1556,13 +1588,13 @@
   font-size: 0.78rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  border: 1px solid #e07050;
-  background: #fef0ec;
-  color: #c0392b;
+  border: 1px solid var(--color-danger);
+  background: color-mix(in srgb, var(--color-danger) 12%, var(--bg-card));
+  color: var(--color-danger);
 }
 
 .btn-danger:hover {
-  background: #fce4dc;
+  background: color-mix(in srgb, var(--color-danger) 18%, var(--bg-card));
 }
 
 /* ─── Tags ────────────────────────────────── */
@@ -1651,7 +1683,7 @@
 }
 
 .tag-add-btn:hover {
-  background: #3d6a4a;
+  background: var(--color-accent-hover);
 }
 
 .tag-input-field {
@@ -1714,7 +1746,8 @@
   font-size: 0.85rem;
   outline: none;
   cursor: pointer;
-  min-width: 120px;
+  min-width: 132px;
+  max-width: 220px;
 }
 
 .tag-filter-select:focus {

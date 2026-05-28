@@ -16,6 +16,8 @@ interface Props {
   onOpenChange: (open: boolean) => void
   parentTxId: number
   ledgerId: number
+  parentAmount?: number | string | null
+  childTransactions?: Transaction[]
   editTx?: Transaction | null
   accounts: Account[]
   categories: FinanceCategory[]
@@ -24,15 +26,24 @@ interface Props {
 }
 
 const SubTxDrawer: React.FC<Props> = ({
-  open, onOpenChange, parentTxId, ledgerId, editTx,
+  open, onOpenChange, parentTxId, ledgerId, parentAmount, childTransactions = [], editTx,
   accounts, categories, tags, onSuccess,
 }) => {
   const { t } = useLocale()
   const toast = useToast()
   const isEdit = !!editTx
+  const parentTotal = parentAmount == null ? null : Number(parentAmount)
+  const siblingTotal = childTransactions
+    .filter((tx) => tx.id !== editTx?.id)
+    .reduce((sum, tx) => sum + Number(tx.amount || 0), 0)
+  const remaining = parentTotal == null ? null : Math.max(parentTotal - siblingTotal, 0)
 
   const handleSubmit = async (data: TransactionFormData) => {
     try {
+      if (remaining != null && Number(data.amount) - remaining > 0.005) {
+        toast({ message: t('finance.childAmountExceedsRemaining'), variant: 'error' })
+        return
+      }
       const payload: Record<string, unknown> = {
         ledger_id: ledgerId,
         account_id: data.account_id,
@@ -79,6 +90,8 @@ const SubTxDrawer: React.FC<Props> = ({
         onClose={() => onOpenChange(false)}
         mode="child"
         parentTxId={parentTxId}
+        surface="inline"
+        initialAmount={remaining}
       />
     </Drawer>
   )

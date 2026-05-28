@@ -196,6 +196,8 @@ const TransactionDetail: React.FC<Props> = ({ transaction: tx, accounts, categor
           onOpenChange={(o) => { if (!o) closeSubTxDrawer() }}
           parentTxId={tx.id}
           ledgerId={tx.ledger_id}
+          parentAmount={tx.amount}
+          childTransactions={tx.children ?? []}
           editTx={subTxDrawer.editTx || null}
           accounts={accounts}
           categories={categories}

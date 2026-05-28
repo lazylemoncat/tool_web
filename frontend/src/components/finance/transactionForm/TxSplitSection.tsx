@@ -106,6 +106,7 @@ const TxSplitSection: React.FC<Props> = ({
           onOpenChange={(o) => { if (!o) closeDrawer() }}
           parentTxId={parentTxId}
           ledgerId={ledgerId}
+          childTransactions={childTransactions}
           editTx={subTxDrawer.editTx || null}
           accounts={accounts}
           categories={categories}

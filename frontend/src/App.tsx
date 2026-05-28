@@ -3,11 +3,12 @@
 */
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react'
-import { Routes, Route, Navigate, useSearchParams } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { LocaleProvider, useLocale } from './i18n'
 import { initTheme } from './theme'
-import { applyThemeConfig } from './themeEngine'
+import { applyThemeConfig, switchPage } from './themeEngine'
+import { getThemePageFromPath } from './app/pageTheme'
 import api from './api/client'
 import { useTodos, type Todo } from './hooks/useTodos'
 import { useFolders } from './hooks/useFolders'
@@ -113,11 +114,25 @@ const AppContent: React.FC = () => {
 
 const AppContentAuthenticated: React.FC = () => {
   const { username, logout } = useAuth()
+  const location = useLocation()
+  const themePage = useMemo(
+    () => getThemePageFromPath(location.pathname),
+    [location.pathname],
+  )
+
+  useEffect(() => {
+    switchPage(themePage)
+    if (themePage) {
+      document.documentElement.dataset.page = themePage
+    } else {
+      delete document.documentElement.dataset.page
+    }
+  }, [themePage])
 
   return (
     <>
       <AppTopBar username={username!} onLogout={logout} />
-      <div className="app-main-content">
+      <div className={`app-main-content ${themePage ? `app-main-content-${themePage}` : ''}`}>
         <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/welcome" element={<LandingPage />} />

@@ -39,11 +39,13 @@ interface Props {
   parentTxId?: number
   ledgerId?: number | null
   onChildRefresh?: () => void
+  surface?: 'modal' | 'inline'
+  initialAmount?: number | null
 }
 
 const TX_TYPES = ['expense', 'income', 'transfer'] as const
 
-const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tags, editTx, onSubmit, onClose, onCreateCategory, mode = 'standalone', parentTxId, ledgerId, onChildRefresh }) => {
+const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tags, editTx, onSubmit, onClose, onCreateCategory, mode = 'standalone', parentTxId, ledgerId, onChildRefresh, surface = 'modal', initialAmount = null }) => {
   const { t } = useLocale()
   const toast = useToast()
   const isEdit = !!editTx
@@ -51,7 +53,7 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
   const effectiveLedgerId = ledgerId ?? editTx?.ledger_id ?? null
 
   const [txType, setTxType] = useState<'expense' | 'income' | 'transfer'>((editTx?.type as any) ?? 'expense')
-  const [amount, setAmount] = useState(editTx ? String(editTx.amount) : '')
+  const [amount, setAmount] = useState(editTx ? String(editTx.amount) : initialAmount && initialAmount > 0 ? initialAmount.toFixed(2) : '')
   const [accountId, setAccountId] = useState<number | null>(editTx?.account_id ?? null)
   const [categoryId, setCategoryId] = useState<number | null>(editTx?.category_id ?? null)
   const [note, setNote] = useState(editTx?.note ?? '')
@@ -105,9 +107,18 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
   const toggleTag = (tagId: number) => setSelectedTags((prev) => prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId])
   const typeLabel = (tp: string) => t(`finance.${tp}`)
 
-  return (
-    <Modal open onOpenChange={() => onClose()} size="xl" title={isEdit ? t('finance.editTransaction') : t('finance.newTransaction')} footer={<FormFooter onCancel={onClose} onSubmit={handleSubmit} submitLabel={isEdit ? t('app.save') : t('app.confirm')} submitting={uploading} disabled={!amount || accountId == null} />}>
-      <Tabs
+  const footer = (
+    <FormFooter
+      onCancel={onClose}
+      onSubmit={handleSubmit}
+      submitLabel={isEdit ? t('app.save') : t('app.confirm')}
+      submitting={uploading}
+      disabled={!amount || accountId == null}
+    />
+  )
+
+  const content = (
+    <Tabs
         value={tab}
         onValueChange={setTab}
         items={[
@@ -188,7 +199,20 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
           },
         ]}
       />
+  )
 
+  if (surface === 'inline') {
+    return (
+      <div className="transaction-form-inline">
+        {content}
+        <div className="transaction-form-inline-footer">{footer}</div>
+      </div>
+    )
+  }
+
+  return (
+    <Modal open onOpenChange={() => onClose()} size="xl" title={isEdit ? t('finance.editTransaction') : t('finance.newTransaction')} footer={footer}>
+      {content}
     </Modal>
   )
 })

@@ -105,3 +105,72 @@ class TestTransactionDepthGuard:
             "parent_transaction_id": tx_id,
         }, headers=auth_headers)
         assert resp.status_code == 400
+
+    def test_child_total_cannot_exceed_parent_amount(self, client, auth_headers):
+        """Child transaction total may not exceed the parent amount."""
+        lid, aid = _create_ledger_and_account(client, auth_headers)
+        parent = _create_tx(client, auth_headers, lid, aid)
+        parent_id = parent.json()["id"]
+
+        first = client.post("/api/v1/finance/transactions", json={
+            "ledger_id": lid,
+            "account_id": aid,
+            "type": "expense",
+            "amount": "60.00",
+            "parent_transaction_id": parent_id,
+        }, headers=auth_headers)
+        assert first.status_code == 201
+
+        over = client.post("/api/v1/finance/transactions", json={
+            "ledger_id": lid,
+            "account_id": aid,
+            "type": "expense",
+            "amount": "50.00",
+            "parent_transaction_id": parent_id,
+        }, headers=auth_headers)
+        assert over.status_code == 400
+
+        second = client.post("/api/v1/finance/transactions", json={
+            "ledger_id": lid,
+            "account_id": aid,
+            "type": "expense",
+            "amount": "40.00",
+            "parent_transaction_id": parent_id,
+        }, headers=auth_headers)
+        assert second.status_code == 201
+
+    def test_parent_amount_cannot_drop_below_child_total(self, client, auth_headers):
+        """A parent with children cannot be updated below the existing child total."""
+        lid, aid = _create_ledger_and_account(client, auth_headers)
+        parent = _create_tx(client, auth_headers, lid, aid)
+        parent_id = parent.json()["id"]
+        child = client.post("/api/v1/finance/transactions", json={
+            "ledger_id": lid,
+            "account_id": aid,
+            "type": "expense",
+            "amount": "80.00",
+            "parent_transaction_id": parent_id,
+        }, headers=auth_headers)
+        assert child.status_code == 201
+
+        resp = client.put(f"/api/v1/finance/transactions/{parent_id}", json={
+            "amount": "70.00",
+        }, headers=auth_headers)
+        assert resp.status_code == 400
+
+    def test_child_transactions_do_not_double_count_account_balance(self, client, auth_headers):
+        """Children break down the bill but do not count as extra spending."""
+        lid, aid = _create_ledger_and_account(client, auth_headers)
+        parent = _create_tx(client, auth_headers, lid, aid)
+        parent_id = parent.json()["id"]
+        child = client.post("/api/v1/finance/transactions", json={
+            "ledger_id": lid,
+            "account_id": aid,
+            "type": "expense",
+            "amount": "100.00",
+            "parent_transaction_id": parent_id,
+        }, headers=auth_headers)
+        assert child.status_code == 201
+
+        accounts = client.get(f"/api/v1/finance/accounts?ledger_id={lid}", headers=auth_headers).json()
+        assert accounts[0]["current_balance"] == "-100.00"

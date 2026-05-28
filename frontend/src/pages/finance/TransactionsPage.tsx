@@ -1,17 +1,25 @@
 /*
   TransactionsPage: 交易列表子页面, 含筛选 + 无限滚动 + 空状态.
 */
-import React from 'react'
+import React, { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { useLocale } from '../../i18n'
 import { Button, EmptyState, IconButton, Skeleton } from '../../components/ui'
 import TxFilterBar from '../../components/finance/TxFilterBar'
 import TxCard from '../../components/finance/TxCard'
+import TxChildrenDrawer from '../../components/finance/TxChildrenDrawer'
+import type { Transaction } from '../../hooks/finance'
 import type { FinanceContext } from './FinanceLayout'
 
 const TransactionsPage: React.FC = () => {
   const ctx = useOutletContext<FinanceContext>()
   const { t } = useLocale()
+  const [childDrawerTx, setChildDrawerTx] = useState<Transaction | null>(null)
+
+  const openChildDrawer = (tx: Transaction) => setChildDrawerTx(tx)
+  const childDrawerFreshTx = childDrawerTx
+    ? ctx.transactions.find((tx) => tx.id === childDrawerTx.id) ?? childDrawerTx
+    : null
 
   return (
     <div className="finance-placeholder">
@@ -66,6 +74,14 @@ const TransactionsPage: React.FC = () => {
                 <span className="finance-tx-amount">{ctx.fmt(tx.amount)}</span>
                 <span className="finance-tx-cat">{tx.category?.name || '-'}</span>
                 <span className="finance-tx-note">{tx.note || ''}</span>
+                <button
+                  className="finance-child-pill"
+                  onClick={(e) => { e.stopPropagation(); openChildDrawer(tx) }}
+                >
+                  {(tx.children?.length ?? 0) > 0
+                    ? `${tx.children!.length} / ${ctx.fmt(tx.children!.reduce((sum, child) => sum + Number(child.amount || 0), 0))}`
+                    : t('finance.addChildTransaction')}
+                </button>
                 <span className="finance-tx-date">{tx.occurred_at?.slice(0, 10)}</span>
                 <IconButton
                   aria-label={t('app.delete')}
@@ -82,9 +98,11 @@ const TransactionsPage: React.FC = () => {
                 key={tx.id}
                 tx={tx}
                 onClick={ctx.handleTransactionClick}
+                onOpenChildren={openChildDrawer}
                 onDelete={ctx.handleDeleteTransaction}
                 formatAmount={ctx.fmt}
                 deleteLabel={t('app.delete')}
+                addChildLabel={t('finance.addChildTransaction')}
               />
             ))}
           </div>
@@ -94,6 +112,18 @@ const TransactionsPage: React.FC = () => {
             </div>
           )}
         </>
+      )}
+      {childDrawerFreshTx && (
+        <TxChildrenDrawer
+          open={!!childDrawerTx}
+          onOpenChange={(open) => { if (!open) setChildDrawerTx(null) }}
+          parentTx={childDrawerFreshTx}
+          accounts={ctx.accounts}
+          categories={ctx.categories}
+          tags={ctx.tags}
+          onRefresh={ctx.refreshTransactions}
+          formatAmount={ctx.fmt}
+        />
       )}
     </div>
   )

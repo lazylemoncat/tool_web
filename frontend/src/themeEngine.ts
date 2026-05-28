@@ -119,7 +119,7 @@ export function getCurrentPage(): string | null {
 /** 应用一份主题配置. 可选页面名, 用于触发 pages.<page> 覆盖. */
 export function applyThemeConfig(config: ThemeConfig, page?: string): void {
   _activeConfig = config
-  _activePage = page ?? null
+  _activePage = page === undefined ? _activePage : page
 
   ensureStyleTag()
   _styleTag!.textContent = buildCSS(config, _activePage)

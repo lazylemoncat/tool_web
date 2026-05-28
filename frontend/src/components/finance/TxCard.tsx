@@ -12,12 +12,14 @@ import './TxCard.css'
 interface Props {
   tx: Transaction
   onClick: (tx: Transaction) => void
+  onOpenChildren?: (tx: Transaction) => void
   onDelete: (id: number) => Promise<void>
   formatAmount: (v: unknown, digits?: number) => string
   deleteLabel: string
+  addChildLabel: string
 }
 
-const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount, deleteLabel }) => {
+const TxCard: React.FC<Props> = ({ tx, onClick, onOpenChildren, onDelete, formatAmount, deleteLabel, addChildLabel }) => {
   const confirm = useConfirm()
   const toast = useToast()
   const [deleting, setDeleting] = useState(false)
@@ -26,6 +28,7 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount, deleteLa
   const variantClass = `tx-card-amount tx-card-amount-${tx.type}`
   const isChild = tx.parent_transaction_id != null
   const childCount = tx.children?.length ?? 0
+  const childTotal = tx.children?.reduce((sum, child) => sum + Number(child.amount || 0), 0) ?? 0
 
   const handleDelete = async () => {
     const ok = await confirm({
@@ -62,6 +65,14 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount, deleteLa
         <span className="tx-card-meta">{tx.account?.name || '—'}</span>
         <span className="tx-card-meta">{tx.occurred_at?.slice(0, 10) || ''}</span>
       </div>
+      {!isChild && (
+        <button
+          className="tx-card-child-action"
+          onClick={(e) => { e.stopPropagation(); onOpenChildren?.(tx) }}
+        >
+          {childCount > 0 ? `${childCount} / ${formatAmount(childTotal)}` : addChildLabel}
+        </button>
+      )}
       {tx.note && <p className="tx-card-note">{tx.note}</p>}
       <div className="tx-card-actions" onClick={(e) => e.stopPropagation()}>
         <DropdownMenu

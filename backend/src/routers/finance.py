@@ -41,10 +41,12 @@ def _calc_account_balance(account_id: int, db: Session) -> Decimal:
     income = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
         Transaction.account_id == account_id,
         Transaction.type == TransactionType.income,
+        Transaction.parent_transaction_id == None,
     ).scalar()
     expense = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
         Transaction.account_id == account_id,
         Transaction.type == TransactionType.expense,
+        Transaction.parent_transaction_id == None,
     ).scalar()
     return (account.initial_balance or Decimal("0")) + Decimal(str(income)) - Decimal(str(expense))
 
@@ -406,6 +408,24 @@ def _validate_parent_depth(parent_id: int, user_id: int, db: Session):
         raise HTTPException(404, "parent transaction not found")
     if parent.parent_transaction_id is not None:
         raise HTTPException(400, "child transaction cannot have grandchild")
+    return parent
+
+
+def _child_total(parent_id: int, db: Session, exclude_tx_id: Optional[int] = None) -> Decimal:
+    q = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+        Transaction.parent_transaction_id == parent_id,
+    )
+    if exclude_tx_id is not None:
+        q = q.filter(Transaction.id != exclude_tx_id)
+    return Decimal(str(q.scalar() or 0))
+
+
+def _validate_child_total(parent: Transaction, child_amount: Decimal, db: Session, exclude_tx_id: Optional[int] = None):
+    """Child transactions are a breakdown of the parent bill, so their sum may not exceed it."""
+    total = _child_total(parent.id, db, exclude_tx_id) + Decimal(str(child_amount))
+    parent_amount = Decimal(str(parent.amount or 0))
+    if total > parent_amount:
+        raise HTTPException(400, "child transaction total cannot exceed parent amount")
 
 
 @router.post("/transactions", response_model=TransactionOut, status_code=201)
@@ -414,8 +434,12 @@ def create_transaction(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    parent = None
     if body.parent_transaction_id is not None:
-        _validate_parent_depth(body.parent_transaction_id, current_user.id, db)
+        parent = _validate_parent_depth(body.parent_transaction_id, current_user.id, db)
+        if parent.ledger_id != body.ledger_id:
+            raise HTTPException(400, "child transaction must belong to the same ledger as parent")
+        _validate_child_total(parent, body.amount, db)
 
     tx_data = {k: v for k, v in body.model_dump().items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
     tx = Transaction(**tx_data, user_id=current_user.id, recorded_at=datetime.utcnow())
@@ -474,16 +498,29 @@ def update_transaction(
     update_data = {k: v for k, v in body.model_dump(exclude_unset=True).items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
 
     new_parent_id = update_data.get("parent_transaction_id")
+    next_amount = update_data.get("amount", tx.amount)
+    next_parent_id = new_parent_id if "parent_transaction_id" in update_data else tx.parent_transaction_id
     if "parent_transaction_id" in update_data and new_parent_id is not None:
         if new_parent_id == tx_id:
             raise HTTPException(400, "transaction cannot be its own parent")
-        _validate_parent_depth(new_parent_id, current_user.id, db)
+        parent = _validate_parent_depth(new_parent_id, current_user.id, db)
+        next_ledger_id = update_data.get("ledger_id", tx.ledger_id)
+        if parent.ledger_id != next_ledger_id:
+            raise HTTPException(400, "child transaction must belong to the same ledger as parent")
         # Prevent making a parent (that has children) into a child
         children_count = db.query(Transaction).filter(
             Transaction.parent_transaction_id == tx_id,
         ).count()
         if children_count > 0:
             raise HTTPException(400, "transaction with children cannot be nested under another parent")
+
+    if next_parent_id is not None:
+        parent = _validate_parent_depth(next_parent_id, current_user.id, db)
+        _validate_child_total(parent, next_amount, db, exclude_tx_id=tx_id)
+    elif "amount" in update_data:
+        children_total = _child_total(tx_id, db)
+        if children_total > Decimal(str(next_amount)):
+            raise HTTPException(400, "parent amount cannot be less than child transaction total")
 
     for key, val in update_data.items():
         setattr(tx, key, val)
@@ -657,6 +694,7 @@ def _calc_budget_spent(budget, db):
         Transaction.user_id == budget.user_id,
         Transaction.ledger_id == budget.ledger_id,
         Transaction.type == TransactionType.expense,
+        Transaction.parent_transaction_id == None,
     )
     filters = budget.filters or {}
     if filters.get("category_ids"):
@@ -831,6 +869,7 @@ def get_dashboard(
         Transaction.ledger_id == ledger_id,
         Transaction.type == TransactionType.income,
         Transaction.occurred_at >= month_start,
+        Transaction.parent_transaction_id == None,
     ).scalar() or Decimal("0")
 
     month_expense = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
@@ -838,6 +877,7 @@ def get_dashboard(
         Transaction.ledger_id == ledger_id,
         Transaction.type == TransactionType.expense,
         Transaction.occurred_at >= month_start,
+        Transaction.parent_transaction_id == None,
     ).scalar() or Decimal("0")
 
     recent_txs = db.query(Transaction).options(
@@ -847,6 +887,7 @@ def get_dashboard(
     ).filter(
         Transaction.user_id == current_user.id,
         Transaction.ledger_id == ledger_id,
+        Transaction.parent_transaction_id == None,
     ).order_by(Transaction.occurred_at.desc()).limit(10).all()
 
     budgets = db.query(Budget).filter(
@@ -895,6 +936,7 @@ def get_stats(
         Transaction.ledger_id == ledger_id,
         Transaction.type == TransactionType.expense,
         Transaction.occurred_at >= start,
+        Transaction.parent_transaction_id == None,
     ).all()
 
     cat_totals = {}
@@ -922,6 +964,7 @@ def get_stats(
             Transaction.type == TransactionType.expense,
             Transaction.occurred_at >= m_start,
             Transaction.occurred_at < m_end,
+            Transaction.parent_transaction_id == None,
         ).scalar() or Decimal("0")
         trend_data.append({"date": month_label, "amount": float(amt)})
 

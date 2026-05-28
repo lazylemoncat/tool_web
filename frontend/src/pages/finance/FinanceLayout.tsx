@@ -71,6 +71,7 @@ export interface FinanceContext {
   handleEditFromDetail: () => void
   handleDeleteFromDetail: (id: number) => Promise<void>
   handleDeleteTransaction: (id: number) => Promise<void>
+  refreshTransactions: () => Promise<void>
   handleCreateAccount: (f: Record<string, unknown>) => Promise<void>
   handleDeleteAccount: (id: number) => Promise<void>
   handleCreateCategory: (f: Record<string, unknown>) => Promise<FinanceCategory | null>
@@ -356,6 +357,7 @@ const FinanceLayout: React.FC = () => {
     handleCreateLedger, handleDeleteLedger,
     handleSaveTransaction, handleTransactionClick,
     handleEditFromDetail, handleDeleteFromDetail, handleDeleteTransaction,
+    refreshTransactions: fetchTransactions,
     handleCreateAccount, handleDeleteAccount,
     handleCreateCategory, handleUpdateCategory, handleDeleteCategory,
     handleCreateTag, handleDeleteTag,
