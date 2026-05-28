@@ -12,6 +12,7 @@
 @import './base.css';
 @import './layout.css';
 @import './finance.css';
+@import '../components/finance/FinanceSidebar.css';
 
 :root {
   /* Legacy aliases → new semantic tokens */
