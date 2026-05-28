@@ -4,7 +4,7 @@
 */
 
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import { useLocale } from '../i18n'
 import { Card, CardHeader, CardBody } from '../components/ui'
 import RecentTodosWidget from '../components/home/RecentTodosWidget'

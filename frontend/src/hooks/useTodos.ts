@@ -82,7 +82,7 @@ export function useTodos(filters: TodoFilters = {}) {
     title: string
     note?: string
     priority?: number
-    due_date?: string
+    due_date?: string | null
     tag_ids?: number[]
     recurrence_rules?: string[]
   }) => {

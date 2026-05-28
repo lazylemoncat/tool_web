@@ -2,7 +2,7 @@
   BudgetsPage: 预算列表子页面.
 */
 import React from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'umi'
 import { useLocale } from '../../i18n'
 import { Button, EmptyState, IconButton } from '../../components/ui'
 import type { FinanceContext } from './FinanceLayout'

@@ -32,7 +32,7 @@ interface Props {
     folder_id: number | null
     parent_id: number | null
     priority: number
-    due_date: string
+    due_date: string | null
     note: string
     tag_ids: number[]
     recurrence_rules: string[]
@@ -79,7 +79,7 @@ const TodoForm: React.FC<Props> = React.memo(({ folders, defaultFolderId, parent
       folder_id: folderId,
       parent_id: parentId ?? null,
       priority,
-      due_date: dueDate || '',
+      due_date: dueDate || null,
       note: note.trim(),
       tag_ids: tags.map((t) => t.id),
       recurrence_rules: recurrenceEnabled ? recurrenceRules : [],

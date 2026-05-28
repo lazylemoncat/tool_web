@@ -6,7 +6,7 @@
 */
 
 import React from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate, useLocation } from 'umi'
 import { useTheme } from '../../context/ThemeContext'
 import { useI18n } from '../../context/I18nContext'
 import DropdownMenu, { DropdownMenuItem, DropdownMenuSeparator, DropdownMenuLabel } from '../ui/DropdownMenu'

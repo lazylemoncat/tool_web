@@ -3,7 +3,7 @@
 */
 
 import React, { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import { useTheme } from '../../context/ThemeContext'
 import { useLocale } from '../../i18n'
 import { applyThemeConfig, clearThemeConfig, type ThemeConfig } from '../../themeEngine'

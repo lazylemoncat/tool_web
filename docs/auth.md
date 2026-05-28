@@ -366,8 +366,9 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
 | `frontend/src/utils/token.ts` | JWT 工具: 解码 token payload, 检查 token 是否过期或即将过期, 判断是否需要触发 refresh |
 | `frontend/src/hooks/useErrorDisplay.ts` | 错误显示 hook: 将 API 英文错误消息映射为当前语言的用户友好文案 |
 | `frontend/src/utils/errorMapping.ts` | 错误消息映射表: 英文 API 消息 → i18n key, 含 Pydantic 校验错误模式匹配 |
-| `frontend/src/App.tsx` | 应用根组件: 会话检查加载态 (sessionChecked), 基于 token 有无的条件路由守卫 (无 token 显示 AuthPage, 有 token 显示主应用) |
-| `frontend/src/main.tsx` | 入口文件: `BrowserRouter` 包裹 `<App />` |
+| `frontend/src/app.tsx` | Umi 运行时入口: 全局 Provider, ErrorBoundary, Toast/Tooltip, themeBridge 初始化 |
+| `frontend/src/layouts/index.tsx` | 应用布局: 会话检查加载态 (sessionChecked), 基于 token 有无的路由守卫 (无 token 显示 AuthPage, 有 token 显示主应用) |
+| `frontend/.umirc.ts` | Umi 路由配置: settings/auth 相关页面注册 |
 | `frontend/src/i18n.tsx` | 国际化系统: 懒加载 JSON 词典, `useLocale()` hook |
 | `frontend/src/locales/zh.json` | 中文翻译: `auth.*` 键 (登录/注册/改密/销户/语言切换), `errors.*` 键 (错误提示) |
 | `frontend/src/locales/en.json` | 英文翻译: `auth.*` 键, `errors.*` 键 |
@@ -383,10 +384,10 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
     → 后端验证 cookie, 返回 { token, username, preferences }
     → 恢复内存 token + localStorage username + preferences
     → sessionChecked = true
-    → App.tsx: token 非 null → 显示主应用路由
+    → layouts/index.tsx: token 非 null → 显示主应用路由
     (若 cookie 无效或不存在)
     → sessionChecked = true, token = null
-    → App.tsx: 显示 AuthPage 登录页
+    → layouts/index.tsx: 显示 AuthPage 登录页
 ```
 
 **登录/注册**:
@@ -397,7 +398,7 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
     → 后端返回 { token, username, preferences }
     → 存入内存 token + localStorage username + preferences
     → React state 更新 (token !== null)
-    → App.tsx 条件渲染: 显示主应用路由
+    → layouts/index.tsx 条件渲染: 显示主应用路由
 ```
 
 ### Token 管理
@@ -526,7 +527,7 @@ Pydantic 校验错误消息包含字段路径和具体原因. 前端通过正则
 | `JWT_SECRET` | **是** | 无 | JWT HS256 签名密钥, 可使用 `python -c "import secrets; print(secrets.token_urlsafe(64))"` 生成 |
 | `ADMIN_PASSWORD` | 否 | 随机生成 | Admin 种子用户的初始密码, 每次启动自动同步 |
 | `DATABASE_URL` | 否 | `sqlite:///./data/tool_web.db` | SQLAlchemy 数据库连接字符串 |
-| `ALLOWED_ORIGINS` | 否 | `http://localhost:5173,http://localhost:8003` | CORS 允许的来源 (逗号分隔) |
+| `ALLOWED_ORIGINS` | 否 | `http://localhost:8000,http://localhost:8003` | CORS 允许的来源 (逗号分隔) |
 | `LOG_LEVEL` | 否 | `INFO` | 日志级别 |
 
 配置方式: 在项目根目录创建 `.env` 文件 (参考 `.env.example`):
@@ -563,3 +564,7 @@ services:
 ```
 
 前端 Nginx 将 `/api` 请求代理到 `http://backend:8001`, 认证请求在容器网络内部完成.
+
+# Current Frontend Note
+
+Authentication state is still owned by `frontend/src/context/AuthContext.tsx`, but the route guard and authenticated shell now live in `frontend/src/layouts/index.tsx`. Global providers and `themeBridge` initialization live in `frontend/src/app.tsx`. Older references in historical sections to `frontend/src/App.tsx` or `frontend/src/main.tsx` mean the pre-Umi Vite entry.

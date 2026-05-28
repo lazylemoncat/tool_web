@@ -89,6 +89,8 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 访问 `/finance` 进入记账模块.
 
+Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文件嵌入本地 Umi dev server 的真实记账路由, 用于在 Open Design 中预览页面效果; 实际业务代码仍在 `frontend/src/pages/finance/` 与 `frontend/src/components/finance/`.
+
 ### Dashboard (仪表盘)
 
 四张汇总卡片: 总资产、本月收入、本月支出、预算使用率.
@@ -238,8 +240,8 @@ backend/src/
 └── routers/finance.py       # API 路由 (36+ endpoints)
 
 frontend/src/
-├── hooks/useFinance.ts      # React 数据 hooks
-├── pages/FinancePage.tsx    # 主页面容器
+├── pages/finance/FinanceLayout.tsx # Finance 主页面容器和 Outlet context
+├── hooks/finance/                # React 数据 hooks
 └── components/finance/
     ├── FinanceDashboard.tsx  # 仪表盘组件
     ├── FinanceCharts.tsx     # 图表 (饼图 + 趋势)
@@ -264,3 +266,7 @@ frontend/src/
 6. 点击 "记一笔" 开始记账 (支持附件上传和待办关联)
 7. Dashboard 查看汇总与图表, Transactions 筛选与无限滚动浏览
 8. 点击交易行查看详情, 支持编辑/删除
+
+# Current Frontend Note
+
+Finance is now routed by Umi through `frontend/.umirc.ts`. The shared finance container remains `frontend/src/pages/finance/FinanceLayout.tsx`, with child pages under `frontend/src/pages/finance/`. Route hooks should be imported from `umi`, not `react-router-dom`.

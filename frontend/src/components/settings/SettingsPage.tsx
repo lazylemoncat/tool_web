@@ -3,7 +3,7 @@
 */
 
 import React from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'umi'
 import { useLocale } from '../../i18n'
 import './SettingsPage.css'
 

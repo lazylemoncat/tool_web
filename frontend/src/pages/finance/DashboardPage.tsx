@@ -2,7 +2,7 @@
   DashboardPage: 仪表盘子页面.
 */
 import React from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext } from 'umi'
 import type { FinanceContext } from './FinanceLayout'
 import FinanceDashboard from '../../components/finance/FinanceDashboard'
 

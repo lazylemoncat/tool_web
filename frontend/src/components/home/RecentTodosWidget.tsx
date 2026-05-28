@@ -3,7 +3,7 @@
 */
 
 import React from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import { useLocale } from '../../i18n'
 import { useTodos } from '../../hooks/useTodos'
 import { Card, CardHeader, CardBody, Skeleton } from '../ui'

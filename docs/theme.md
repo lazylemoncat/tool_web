@@ -61,3 +61,7 @@ Tool Web 主题系统由两个独立子系统组成:
 1. 在 `themeEngine.ts` `ButtonPosition` 联合类型添加
 2. 在对应 React 组件位置插 `<CustomButtons position="新名" />`
 3. 文档 `frontend/public/help/theme-schema.md` 加一行
+
+# Current Frontend Note
+
+The theme runtime is initialized from the Umi runtime entry `frontend/src/app.tsx`. Page-level custom-theme switching is synchronized by `frontend/src/layouts/index.tsx` through `themeEngine.switchPage()`, using route-to-page keys from `frontend/src/utils/pageTheme.ts`.

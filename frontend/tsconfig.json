@@ -15,7 +15,12 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vite/client"]
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@@/*": ["src/.umi/*"],
+      "umi": ["node_modules/umi"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", ".umirc.ts"]
 }

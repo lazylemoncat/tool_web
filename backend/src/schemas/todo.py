@@ -78,6 +78,11 @@ class TodoCreate(BaseModel):
     tag_ids: list[int] = []
     recurrence_rules: list[str] = []
 
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def empty_due_date_to_none(cls, v):
+        return None if v == "" else v
+
     @field_validator("recurrence_rules")
     @classmethod
     def validate_rrules(cls, v: list[str]) -> list[str]:
@@ -100,6 +105,11 @@ class TodoUpdate(BaseModel):
     sort_order: Optional[int] = None
     tag_ids: Optional[list[int]] = None
     recurrence_rules: Optional[list[str]] = None
+
+    @field_validator("due_date", mode="before")
+    @classmethod
+    def empty_due_date_to_none(cls, v):
+        return None if v == "" else v
 
     @field_validator("recurrence_rules")
     @classmethod

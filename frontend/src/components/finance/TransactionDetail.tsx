@@ -2,7 +2,7 @@
   TransactionDetail: 交易详情 Modal (只读), 含编辑/删除/子账单管理.
 */
 import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import { useLocale } from '../../i18n'
 import { FormFooter, useConfirm, useToast } from '../ui'
 import type { Account, FinanceCategory, FinanceTag, Transaction } from '../../hooks/finance'

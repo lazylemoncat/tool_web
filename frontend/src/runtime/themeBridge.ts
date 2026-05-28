@@ -1,7 +1,7 @@
 /*
  themeBridge.ts - window.toolweb 运行时桥
 
- 在 main.tsx 启动时调用 installThemeBridge() 挂载 window.toolweb. 提供给:
+ 在 Umi 运行时入口 app.tsx 调用 installThemeBridge() 挂载 window.toolweb. 提供给:
  - 主题文件中的 scripts 块 (执行时第一个参数即此桥)
  - 主题按钮 action (themeEngine 调用 ui.* / api.* / events.*)
  - 进阶用户在 DevTools 控制台操控
@@ -145,7 +145,7 @@ export function registerI18n(impl: ThemeBridgeI18n): void {
   themeBridge.i18n.t = impl.t
 }
 
-/** 把 themeEngine 的查询 API 挂到 bridge.theme (themeEngine 反向依赖会循环, 由 main.tsx wire) */
+/** 把 themeEngine 的查询 API 挂到 bridge.theme (themeEngine 反向依赖会循环, 由 app.tsx wire) */
 export function registerTheme(impl: ThemeBridge['theme']): void {
   themeBridge.theme = impl
 }

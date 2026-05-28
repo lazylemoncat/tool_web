@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import type { Folder } from '../../hooks/useFolders'
 import { useLocale } from '../../i18n'
 import CustomButtons from '../common/CustomButtons'

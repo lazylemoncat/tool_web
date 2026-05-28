@@ -405,7 +405,9 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 
 | 文件 | 作用 |
 |------|------|
-| `frontend/src/App.tsx` | 应用根组件: 包含 TodoApp 主页面, 管理所有筛选状态 (含默认筛选回退), URL 同步筛选参数, 递归文件夹查找, 标签按文件夹过滤, 键盘快捷键 (N, /, Esc) |
+| `frontend/src/pages/TodoPage.tsx` | Todo 页面: 管理筛选状态 (含默认筛选回退), URL 同步筛选参数, 递归文件夹查找, 标签按文件夹过滤, 键盘快捷键 (N, /, Esc) |
+| `frontend/.umirc.ts` | Umi 路由配置: 注册 `/todo` 页面和其他模块路由 |
+| `frontend/src/layouts/index.tsx` | 全局布局: 鉴权守卫, i18n, 主题加载, 顶部栏, 页面级主题上下文 |
 | `frontend/src/components/todo/TodoForm.tsx` | 任务创建/编辑弹窗: 文件夹选择, 优先级, 日期, 标签, 重复规则 |
 | `frontend/src/components/todo/TodoList.tsx` | 任务列表: dnd-kit 拖拽容器, 渲染 SortableTodoItem, 批量选择模式 |
 | `frontend/src/components/todo/TodoItem.tsx` | 任务卡片: 复选框, 标题, 优先级标签, 日期, 标签徽章, 操作按钮, 移动端滑动, 详情触发 ("?" 图标), 删除确认弹窗 |
@@ -549,8 +551,8 @@ TodoApp (状态中心)
 | `backend/src/models/finance.py` | 数据模型 (10 表 + 2 关联表) |
 | `backend/src/schemas/finance.py` | Pydantic schemas |
 | `backend/src/routers/finance.py` | API 路由 (34 端点) |
-| `frontend/src/hooks/useFinance.ts` | 前端数据 hooks |
-| `frontend/src/pages/FinancePage.tsx` | 主页面 |
+| `frontend/src/hooks/finance/` | Finance 前端数据 hooks |
+| `frontend/src/pages/finance/FinanceLayout.tsx` | Finance 主页面容器 |
 | `frontend/src/components/finance/` | 组件目录 |
 
 ---
@@ -584,3 +586,7 @@ TodoApp (状态中心)
 **按钮位置**: `toolbar` (工具栏), `sidebar` (侧边栏), `todoItem` (任务卡片右侧).
 
 **按钮动作**: `api` (HTTP 调用), `navigate` (页面跳转), `script` (自定义 JS), `toggleFilter` (切换筛选).
+
+# Current Frontend Note
+
+The Todo page now lives at `frontend/src/pages/TodoPage.tsx`. The Umi route is configured in `frontend/.umirc.ts`, while authentication, i18n, theme loading, and the shared app shell live in `frontend/src/layouts/index.tsx`. Older references in historical sections to `frontend/src/App.tsx` mean the pre-Umi app root.
