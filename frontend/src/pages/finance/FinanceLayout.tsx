@@ -2,7 +2,7 @@
   FinanceLayout: 共享布局 + 状态管理, 子页面通过 Outlet context 消费数据.
 */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate, useLocation } from 'umi'
 import {
   useLedgers, useAccounts, useCategories, useFinanceTags,
   useTransactions, useEvents, useBudgets, useDashboard, useStats,
@@ -20,6 +20,7 @@ import TransactionForm, { type TransactionFormData } from '../../components/fina
 import BudgetForm from '../../components/finance/BudgetForm'
 import EventForm from '../../components/finance/EventForm'
 import TransactionDetail from '../../components/finance/TransactionDetail'
+import FinanceSidebar from '../../components/finance/FinanceSidebar'
 import '../../components/finance/finance-list.css'
 
 const fmt = (v: unknown, digits = 2): string => {
@@ -64,6 +65,8 @@ export interface FinanceContext {
   setShowNewLedger: (v: boolean) => void
   newLedgerName: string
   setNewLedgerName: (v: string) => void
+  activeTab: string
+  setActiveTab: (tab: string) => void
   handleCreateLedger: () => Promise<void>
   handleDeleteLedger: (id: number) => Promise<void>
   handleSaveTransaction: (data: TransactionFormData) => Promise<void>
@@ -97,6 +100,7 @@ const SUB_PAGES = ['dashboard', 'transactions', 'budgets', 'events'] as const
 
 const FinanceLayout: React.FC = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useLocale()
   const { toast } = useToast()
   const confirm = useConfirm()
@@ -123,6 +127,25 @@ const FinanceLayout: React.FC = () => {
   const { stats } = useStats(activeLedgerId, period)
   const [txFilters, setTxFilters] = useState<TransactionFilters>({})
   const { transactions, total, loading: txLoading, loadingMore, hasMore, fetchTransactions, loadMore, createTransaction, updateTransaction, deleteTransaction } = useTransactions(activeLedgerId, txFilters)
+
+  // Derive activeTab from URL pathname
+  const activeTab = useMemo(() => {
+    const segments = location.pathname.split('/').filter(Boolean)
+    const last = segments[segments.length - 1]
+    return SUB_PAGES.includes(last as typeof SUB_PAGES[number]) ? last : 'dashboard'
+  }, [location.pathname])
+
+  const setActiveTab = useCallback((tab: string) => {
+    navigate(`/finance/${tab}`)
+  }, [navigate])
+
+  // Sidebar switch: announce context to the main layout via dataset
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = 'finance'
+    return () => {
+      delete document.documentElement.dataset.sidebar
+    }
+  }, [])
 
   useEffect(() => {
     if (!activeLedgerId && ledgers.length > 0) {
@@ -354,6 +377,7 @@ const FinanceLayout: React.FC = () => {
     editingEvent, setEditingEvent,
     showNewLedger, setShowNewLedger,
     newLedgerName, setNewLedgerName,
+    activeTab, setActiveTab,
     handleCreateLedger, handleDeleteLedger,
     handleSaveTransaction, handleTransactionClick,
     handleEditFromDetail, handleDeleteFromDetail, handleDeleteTransaction,
@@ -371,120 +395,124 @@ const FinanceLayout: React.FC = () => {
 
   return (
     <div className="finance-page">
-      <div className="finance-header">
-        <button className="finance-back-btn" onClick={() => navigate('/')} title="Home">
-          ← Home
-        </button>
-        <h1 className="finance-title">Finance</h1>
-        <div className="finance-ledger-selector">
-          {ledgers.map((l) => (
-            <button
-              key={l.id}
-              className={`finance-ledger-btn ${l.id === activeLedgerId ? 'active' : ''}`}
-              onClick={() => setActiveLedgerId(l.id)}
-            >
-              {l.icon} {l.name}
-            </button>
-          ))}
-          {showNewLedger ? (
-            <div className="finance-ledger-new">
-              <input
-                value={newLedgerName}
-                onChange={(e) => setNewLedgerName(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleCreateLedger()}
-                placeholder={t('finance.newLedger')}
-                autoFocus
-                className="finance-input-sm"
-              />
-              <button onClick={handleCreateLedger} className="btn-submit">{t('app.confirm')}</button>
-              <button onClick={() => setShowNewLedger(false)} className="btn-cancel">{t('app.cancel')}</button>
+      <FinanceSidebar
+        activeTab={activeTab}
+        onTabChange={(tab) => navigate(`/finance/${tab}`)}
+        onAddTransaction={() => setShowTxForm(true)}
+      />
+      <div className="finance-main">
+        {activeLedger ? (
+          <>
+            <div className="finance-header">
+              <h1 className="finance-title">记账</h1>
+              <div className="finance-ledger-selector">
+                {ledgers.map((l) => (
+                  <button
+                    key={l.id}
+                    className={`finance-ledger-btn ${l.id === activeLedgerId ? 'active' : ''}`}
+                    onClick={() => setActiveLedgerId(l.id)}
+                  >
+                    {l.icon} {l.name}
+                  </button>
+                ))}
+                {showNewLedger ? (
+                  <div className="finance-ledger-new">
+                    <input
+                      value={newLedgerName}
+                      onChange={(e) => setNewLedgerName(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCreateLedger()}
+                      placeholder={t('finance.newLedger')}
+                      autoFocus
+                      className="finance-input-sm"
+                    />
+                    <button onClick={handleCreateLedger} className="btn-submit">{t('app.confirm')}</button>
+                    <button onClick={() => setShowNewLedger(false)} className="btn-cancel">{t('app.cancel')}</button>
+                  </div>
+                ) : (
+                  <button className="finance-ledger-add" onClick={() => setShowNewLedger(true)}>
+                    + {t('finance.newLedger')}
+                  </button>
+                )}
+              </div>
             </div>
-          ) : (
-            <button className="finance-ledger-add" onClick={() => setShowNewLedger(true)}>
-              + {t('finance.newLedger')}
-            </button>
-          )}
-        </div>
-      </div>
 
-      {activeLedger ? (
-        <>
-          <nav className="finance-subnav">
-            {SUB_PAGES.map((p) => (
-              <NavLink
-                key={p}
-                to={`/finance/${p}`}
-                className={({ isActive }) => `finance-subnav-btn ${isActive ? 'active' : ''}`}
-              >
-                {t(`finance.${p}`)}
-              </NavLink>
-            ))}
-          </nav>
+            <nav className="finance-subnav">
+              {SUB_PAGES.map((p) => (
+                <NavLink
+                  key={p}
+                  to={`/finance/${p}`}
+                  className={({ isActive }) => `finance-subnav-btn ${isActive ? 'active' : ''}`}
+                >
+                  {t(`finance.${p}`)}
+                </NavLink>
+              ))}
+            </nav>
 
-          <div className="finance-content">
-            <Outlet context={ctx} />
+            <div className="finance-content">
+              <Outlet context={ctx} />
+            </div>
+          </>
+        ) : (
+          <div className="finance-empty">
+            <EmptyState
+              icon="📒"
+              title={t('finance.noLedger')}
+              description={t('finance.noLedgerHint')}
+              action={
+                <Button onClick={() => setShowNewLedger(true)}>
+                  {t('finance.createFirstLedger')}
+                </Button>
+              }
+            />
           </div>
-        </>
-      ) : (
-        <div className="finance-empty">
-          <EmptyState
-            icon="📒"
-            title={t('finance.noLedger')}
-            description={t('finance.noLedgerHint')}
-            action={
-              <Button onClick={() => setShowNewLedger(true)}>
-                {t('finance.createFirstLedger')}
-              </Button>
-            }
+        )}
+
+        {showTxForm && activeLedger && (
+          <TransactionForm
+            accounts={accounts}
+            categories={categories}
+            tags={tags}
+            editTx={editTx}
+            onSubmit={handleSaveTransaction}
+            onClose={() => { setShowTxForm(false); setEditTx(null) }}
+            onCreateCategory={(name) => createCategory({ name, ledger_id: activeLedgerId })}
+            ledgerId={activeLedgerId}
+            onChildRefresh={fetchTransactions}
           />
-        </div>
-      )}
+        )}
 
-      {showTxForm && activeLedger && (
-        <TransactionForm
-          accounts={accounts}
-          categories={categories}
-          tags={tags}
-          editTx={editTx}
-          onSubmit={handleSaveTransaction}
-          onClose={() => { setShowTxForm(false); setEditTx(null) }}
-          onCreateCategory={(name) => createCategory({ name, ledger_id: activeLedgerId })}
-          ledgerId={activeLedgerId}
-          onChildRefresh={fetchTransactions}
-        />
-      )}
+        {showBudgetForm && activeLedger && (
+          <BudgetForm
+            editBudget={editingBudget}
+            categories={categories}
+            tags={tags}
+            events={events}
+            onSubmit={editingBudget ? handleUpdateBudget : handleCreateBudget}
+            onClose={() => { setShowBudgetForm(false); setEditingBudget(null) }}
+          />
+        )}
 
-      {showBudgetForm && activeLedger && (
-        <BudgetForm
-          editBudget={editingBudget}
-          categories={categories}
-          tags={tags}
-          events={events}
-          onSubmit={editingBudget ? handleUpdateBudget : handleCreateBudget}
-          onClose={() => { setShowBudgetForm(false); setEditingBudget(null) }}
-        />
-      )}
+        {showEventForm && activeLedger && (
+          <EventForm
+            editEvent={editingEvent}
+            onSubmit={editingEvent ? handleUpdateEvent : handleCreateEvent}
+            onClose={() => { setShowEventForm(false); setEditingEvent(null) }}
+          />
+        )}
 
-      {showEventForm && activeLedger && (
-        <EventForm
-          editEvent={editingEvent}
-          onSubmit={editingEvent ? handleUpdateEvent : handleCreateEvent}
-          onClose={() => { setShowEventForm(false); setEditingEvent(null) }}
-        />
-      )}
-
-      {detailTx && (
-        <TransactionDetail
-          transaction={detailTx}
-          accounts={accounts}
-          categories={categories}
-          tags={tags}
-          onEdit={handleEditFromDetail}
-          onDelete={() => handleDeleteFromDetail(detailTx.id)}
-          onClose={() => setDetailTx(null)}
-          onRefresh={fetchTransactions}
-        />
-      )}
+        {detailTx && (
+          <TransactionDetail
+            transaction={detailTx}
+            accounts={accounts}
+            categories={categories}
+            tags={tags}
+            onEdit={handleEditFromDetail}
+            onDelete={() => handleDeleteFromDetail(detailTx.id)}
+            onClose={() => setDetailTx(null)}
+            onRefresh={fetchTransactions}
+          />
+        )}
+      </div>
     </div>
   )
 }
