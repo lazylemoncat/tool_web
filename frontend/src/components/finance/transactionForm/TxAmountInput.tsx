@@ -32,7 +32,7 @@ const TxAmountInput: React.FC<Props> = ({ value, onChange, error, label = 'Amoun
         {QUICK_AMOUNTS.map((qa) => (
           <button
             key={qa}
-            className="finance-quick-btn"
+            className="quick-amt-chip"
             onClick={() => onChange(String(qa))}
           >{qa}</button>
         ))}
