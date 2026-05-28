@@ -80,7 +80,7 @@ const FinanceDashboard: React.FC<Props> = ({
           <span className="dashboard-budget-total">
             / ¥{fmtShort(budgets.reduce((s, b) => s + b.amount, 0))}
           </span>
-          <span className="dashboard-budget-pct">{budgetPct.toFixed(1)}%</span>
+          <span className="dashboard-budget-pct">{Number(budgetPct).toFixed(1)}%</span>
         </div>
         <div className="dashboard-progress-bar">
           <div
@@ -147,7 +147,7 @@ const FinanceDashboard: React.FC<Props> = ({
                   </span>
                 </div>
                 <span className={`dashboard-tx-amount ${isExpense ? 'expense' : isIncome ? 'income' : 'transfer'}`}>
-                  {isExpense ? '-' : isIncome ? '+' : ''}¥{tx.amount.toFixed(2)}
+                  {isExpense ? '-' : isIncome ? '+' : ''}¥{Number(tx.amount).toFixed(2)}
                 </span>
               </div>
             )
