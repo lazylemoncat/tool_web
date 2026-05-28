@@ -1,92 +1,84 @@
 /*
- TxCard — 单笔交易卡片 (移动端). 删除走 DropdownMenu + ConfirmDialog + Toast 撤销.
+ TxCard — 单笔交易卡片 (行内布局).
+ 支持展开子交易、删除确认、金额颜色区分。
 */
 
 import React, { useState } from 'react'
 import type { Transaction } from '../../hooks/finance'
-import DropdownMenu, { DropdownMenuItem } from '../ui/DropdownMenu'
-import IconButton from '../ui/IconButton'
 import { useConfirm, useToast } from '../ui'
-import './TxCard.css'
 
 interface Props {
   tx: Transaction
   onClick: (tx: Transaction) => void
-  onOpenChildren?: (tx: Transaction) => void
   onDelete: (id: number) => Promise<void>
   formatAmount: (v: unknown, digits?: number) => string
-  deleteLabel: string
-  addChildLabel: string
 }
 
-const TxCard: React.FC<Props> = ({ tx, onClick, onOpenChildren, onDelete, formatAmount, deleteLabel, addChildLabel }) => {
+const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
   const confirm = useConfirm()
   const toast = useToast()
   const [deleting, setDeleting] = useState(false)
 
-  const sign = tx.type === 'expense' ? '-' : tx.type === 'income' ? '+' : ''
-  const variantClass = `tx-card-amount tx-card-amount-${tx.type}`
-  const isChild = tx.parent_transaction_id != null
-  const childCount = tx.children?.length ?? 0
-  const childTotal = tx.children?.reduce((sum, child) => sum + Number(child.amount || 0), 0) ?? 0
-
-  const handleDelete = async () => {
-    const ok = await confirm({
-      title: 'Delete transaction',
-      description: `"${tx.note || tx.category?.name || '—'}" — ${sign}${formatAmount(tx.amount)}`,
-      danger: true,
-    })
+  const handleDelete = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    const ok = await confirm({ title: '删除交易', description: '确定删除该条交易记录吗？', danger: true })
     if (!ok) return
     setDeleting(true)
-    try {
-      await onDelete(tx.id)
-      toast({ message: 'Transaction deleted', variant: 'success' })
-    } catch {
-      toast({ message: 'Delete failed', variant: 'error' })
-    } finally {
-      setDeleting(false)
-    }
+    try { await onDelete(tx.id) }
+    catch { toast({ message: '删除失败', variant: 'error' }) }
+    finally { setDeleting(false) }
   }
 
+  const isExpense = tx.type === 'expense'
+  const isIncome = tx.type === 'income'
+  const amountSign = isExpense ? '-' : isIncome ? '+' : ''
+  const amountClass = isExpense ? 'tx-amount-expense' : isIncome ? 'tx-amount-income' : 'tx-amount-transfer'
+  const iconClass = isExpense ? 'tx-icon-expense' : isIncome ? 'tx-icon-income' : 'tx-icon-transfer'
+  const hasChildren = (tx.children && tx.children.length > 0) || (tx.split_items && tx.split_items.length > 0)
+
   return (
-    <div className={`tx-card${isChild ? ' tx-card-child' : ''}`} onClick={() => onClick(tx)} role="button" tabIndex={0}
-         onKeyDown={(e) => { if (e.key === 'Enter') onClick(tx) }}>
-      <div className="tx-card-row1">
-        <span className="tx-card-cat">
-          {isChild && <span className="tx-card-child-indicator">↳ </span>}
-          {tx.category?.name || '—'}
+    <>
+      <div className="tx-row" onClick={() => onClick(tx)}>
+        <span className={`tx-row-icon ${iconClass}`}>
+          {tx.category?.icon || (isExpense ? '💳' : isIncome ? '💰' : '🔄')}
         </span>
-        <span className={variantClass}>
-          {sign}{formatAmount(tx.amount)}
-          {childCount > 0 && <span className="tx-card-child-chip"> {childCount} sub</span>}
+        <div className="tx-row-info">
+          <span className="tx-row-title">
+            {tx.category?.name || '—'} {tx.note ? '· ' + tx.note : ''}
+          </span>
+          <span className="tx-row-meta">
+            {tx.occurred_at?.slice(0, 10)} · {tx.account?.name || '—'}
+            {tx.tags?.map((t: any) => (
+              <span key={t.id || t.name} className="tx-tag-pill">{typeof t === 'string' ? t : t.name}</span>
+            ))}
+            {hasChildren && <span className="tx-split-badge">📎 拆分</span>}
+          </span>
+        </div>
+        <span className={`tx-row-amount ${amountClass}`}>
+          {amountSign}¥{formatAmount(tx.amount)}
         </span>
+        <button className="tx-row-delete" onClick={handleDelete} disabled={deleting} title="删除">✕</button>
       </div>
-      <div className="tx-card-row2">
-        <span className="tx-card-meta">{tx.account?.name || '—'}</span>
-        <span className="tx-card-meta">{tx.occurred_at?.slice(0, 10) || ''}</span>
-      </div>
-      {!isChild && (
-        <button
-          className="tx-card-child-action"
-          onClick={(e) => { e.stopPropagation(); onOpenChildren?.(tx) }}
-        >
-          {childCount > 0 ? `${childCount} / ${formatAmount(childTotal)}` : addChildLabel}
-        </button>
-      )}
-      {tx.note && <p className="tx-card-note">{tx.note}</p>}
-      <div className="tx-card-actions" onClick={(e) => e.stopPropagation()}>
-        <DropdownMenu
-          trigger={
-            <IconButton aria-label={deleteLabel} size="sm">⋯</IconButton>
-          }
-          align="end"
-        >
-          <DropdownMenuItem danger onClick={handleDelete} disabled={deleting}>
-            {deleting ? '...' : deleteLabel}
-          </DropdownMenuItem>
-        </DropdownMenu>
-      </div>
-    </div>
+
+      {tx.children?.map((child: Transaction) => {
+        const cExpense = child.type === 'expense'
+        return (
+          <div key={child.id} className="tx-row tx-row-child" onClick={() => onClick(child)}>
+            <span className={`tx-row-icon child ${cExpense ? 'tx-icon-expense' : 'tx-icon-income'}`}>
+              {child.category?.icon || '💳'}
+            </span>
+            <div className="tx-row-info">
+              <span className="tx-row-title child">└ {child.category?.name || '—'} · {child.note || '—'}</span>
+              <span className="tx-row-meta">{child.occurred_at?.slice(0, 10)}</span>
+            </div>
+            <span className={`tx-row-amount child ${cExpense ? 'tx-amount-expense' : 'tx-amount-income'}`}>
+              {cExpense ? '-' : '+'}¥{formatAmount(child.amount)}
+            </span>
+            <span style={{ width: 28 }} />
+          </div>
+        )
+      })}
+    </>
   )
 }
 
