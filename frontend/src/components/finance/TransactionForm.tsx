@@ -113,7 +113,6 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
       onSubmit={handleSubmit}
       submitLabel={isEdit ? t('app.save') : t('app.confirm')}
       submitting={uploading}
-      disabled={!amount || accountId == null}
     />
   )
 
@@ -136,7 +135,7 @@ const TransactionForm: React.FC<Props> = React.memo(({ accounts, categories, tag
                     ))}
                   </div>
                 </div>
-                <TxAmountInput value={amount} onChange={(v) => { setAmount(v); if (amountError) setAmountError('') }} error={amountError} />
+                <TxAmountInput value={amount} onChange={(v) => { setAmount(v); if (amountError) setAmountError('') }} error={amountError} label={t('finance.amount')} />
                 <TxBasicFields
                   accounts={accounts} categories={categories}
                   accountId={accountId} onAccountChange={(id) => { setAccountId(id); if (accountError) setAccountError('') }} accountError={accountError}

@@ -10,6 +10,15 @@ from pydantic import field_validator
 T = TypeVar("T")
 
 
+class ReorderItem(BaseModel):
+    id: int
+    sort_order: int
+
+
+class ReorderBatch(BaseModel):
+    items: list[ReorderItem]
+
+
 class PaginatedResponse(BaseModel, Generic[T]):
     items: list[T]
     total: int

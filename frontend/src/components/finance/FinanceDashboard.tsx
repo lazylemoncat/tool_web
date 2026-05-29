@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import type { DashboardSummary, Account, Budget, FinanceCategory, Transaction, StatsData } from '../../hooks/finance'
 import FinanceCharts from './FinanceCharts'
 import { formatTransactionTitle } from './transactionDisplay'
@@ -13,6 +13,7 @@ interface Props {
   period: string
   onPeriodChange: (p: string) => void
   onTransactionClick: (tx: Transaction) => void
+  storageKey: string
 }
 
 const fmtShort = (n: number): string => {
@@ -20,115 +21,179 @@ const fmtShort = (n: number): string => {
   return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
+type WidgetId = 'stats' | 'budget' | 'categoryChart' | 'trendChart' | 'recent'
+
+const DEFAULT_WIDGETS: WidgetId[] = ['stats', 'budget', 'categoryChart', 'trendChart', 'recent']
+
 const FinanceDashboard: React.FC<Props> = ({
   dashboard, accounts, budgets, categories, stats, period, onPeriodChange,
-  onTransactionClick,
+  onTransactionClick, storageKey,
 }) => {
   const { t } = useLocale()
   const [showBudgetItems, setShowBudgetItems] = useState(false)
   const [hiddenBudgetIds, setHiddenBudgetIds] = useState<number[]>([])
+  const [manageMode, setManageMode] = useState(false)
+  const [visibleWidgets, setVisibleWidgets] = useState<WidgetId[]>(DEFAULT_WIDGETS)
+  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(DEFAULT_WIDGETS)
+  const dashboardConfigKey = `finance-dashboard-config-${storageKey}`
   const income = dashboard?.month_income ?? 0
   const expense = dashboard?.month_expense ?? 0
   const balance = income - expense
   const budgetPct = dashboard?.budget_usage_pct ?? 0
-  const totalAssets = accounts.reduce((s, a) => s + (a.current_balance || 0), 0)
+  const totalAssets = accounts.reduce((s, a) => s + (Number(a.current_balance) || 0), 0)
   const recentTxs = dashboard?.recent_transactions ?? []
   const toggleBudgetVisibility = (id: number) => {
     setHiddenBudgetIds((prev) => prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id])
   }
+  const widgetLabels: Record<WidgetId, string> = {
+    stats: t('finance.dashboardStats'),
+    budget: t('finance.budgetUsage'),
+    categoryChart: t('finance.categoryPie'),
+    trendChart: t('finance.monthlyTrend'),
+    recent: t('finance.recentTransactions'),
+  }
+  const validWidgetIds = useMemo(() => new Set<WidgetId>(DEFAULT_WIDGETS), [])
 
-  return (
-    <div>
-      {/* Stat cards */}
-      <div className="dashboard-stat-cards">
-        <div className="dashboard-stat-card">
-          <div className="dashboard-stat-label">总资产</div>
-          <div className="dashboard-stat-value">¥{fmtShort(totalAssets)}</div>
-          <div className="dashboard-stat-sub">{accounts.length}个账户</div>
-        </div>
-        <div className="dashboard-stat-card">
-          <div className="dashboard-stat-label">本月收入</div>
-          <div className="dashboard-stat-value income">+¥{fmtShort(income)}</div>
-          <div className="dashboard-stat-sub">{recentTxs.filter(t => t.type === 'income').length} 笔</div>
-        </div>
-        <div className="dashboard-stat-card">
-          <div className="dashboard-stat-label">本月支出</div>
-          <div className="dashboard-stat-value expense">-¥{fmtShort(expense)}</div>
-          <div className="dashboard-stat-sub">{recentTxs.filter(t => t.type === 'expense').length} 笔</div>
-        </div>
-        <div className="dashboard-stat-card">
-          <div className="dashboard-stat-label">本月结余</div>
-          <div className="dashboard-stat-value" style={{ color: balance >= 0 ? 'var(--color-income)' : 'var(--color-expense)' }}>
-            ¥{fmtShort(balance)}
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(dashboardConfigKey)
+      if (!saved) return
+      const parsed = JSON.parse(saved) as { visibleWidgets?: WidgetId[]; widgetOrder?: WidgetId[] }
+      if (parsed.visibleWidgets) {
+        setVisibleWidgets(parsed.visibleWidgets.filter((id) => validWidgetIds.has(id)))
+      }
+      if (parsed.widgetOrder) {
+        const savedOrder = parsed.widgetOrder.filter((id) => validWidgetIds.has(id))
+        const missing = DEFAULT_WIDGETS.filter((id) => !savedOrder.includes(id))
+        setWidgetOrder([...savedOrder, ...missing])
+      }
+    } catch {
+      setVisibleWidgets(DEFAULT_WIDGETS)
+      setWidgetOrder(DEFAULT_WIDGETS)
+    }
+  }, [dashboardConfigKey, validWidgetIds])
+
+  useEffect(() => {
+    localStorage.setItem(dashboardConfigKey, JSON.stringify({ visibleWidgets, widgetOrder }))
+  }, [dashboardConfigKey, visibleWidgets, widgetOrder])
+  const toggleWidget = (id: WidgetId) => {
+    setVisibleWidgets((prev) => prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id])
+  }
+  const moveWidget = (id: WidgetId, direction: -1 | 1) => {
+    setWidgetOrder((prev) => {
+      const index = prev.indexOf(id)
+      const nextIndex = index + direction
+      if (index === -1 || nextIndex < 0 || nextIndex >= prev.length) return prev
+      const next = [...prev]
+      const [moved] = next.splice(index, 1)
+      next.splice(nextIndex, 0, moved)
+      return next
+    })
+  }
+
+  const renderWidget = (id: WidgetId) => {
+    if (!visibleWidgets.includes(id)) return null
+    if (id === 'stats') {
+      return (
+        <div className="dashboard-stat-cards">
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-label">总资产</div>
+            <div className="dashboard-stat-value">¥{fmtShort(totalAssets)}</div>
+            <div className="dashboard-stat-sub">{accounts.length}个账户</div>
           </div>
-          <div className="dashboard-stat-sub">收支比 {income > 0 ? Math.round(expense / income * 100) : '—'}%</div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-label">本月收入</div>
+            <div className="dashboard-stat-value income">+¥{fmtShort(income)}</div>
+            <div className="dashboard-stat-sub">{recentTxs.filter(t => t.type === 'income').length} 笔</div>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-label">本月支出</div>
+            <div className="dashboard-stat-value expense">-¥{fmtShort(expense)}</div>
+            <div className="dashboard-stat-sub">{recentTxs.filter(t => t.type === 'expense').length} 笔</div>
+          </div>
+          <div className="dashboard-stat-card">
+            <div className="dashboard-stat-label">本月结余</div>
+            <div className="dashboard-stat-value" style={{ color: balance >= 0 ? 'var(--color-income)' : 'var(--color-expense)' }}>
+              ¥{fmtShort(balance)}
+            </div>
+            <div className="dashboard-stat-sub">收支比 {income > 0 ? Math.round(expense / income * 100) : '—'}%</div>
+          </div>
         </div>
-      </div>
+      )
+    }
 
-      {/* Budget usage bar */}
-      <div className="dashboard-section-card" style={{ marginBottom: 20 }}>
-        <div className="dashboard-section-header">
-          <span className="dashboard-section-title">预算使用率</span>
-          {budgets.length > 0 && (
-            <button className="btn-sm" type="button" onClick={() => setShowBudgetItems((v) => !v)}>
-              {showBudgetItems ? t('finance.hideBudgetItems') : t('finance.showBudgetItems')}
-            </button>
+    if (id === 'budget') {
+      return (
+        <div className="dashboard-section-card">
+          <div className="dashboard-section-header">
+            <span className="dashboard-section-title">预算使用率</span>
+            {budgets.length > 0 && (
+              <button className="btn-sm" type="button" onClick={() => setShowBudgetItems((v) => !v)}>
+                {showBudgetItems ? t('finance.hideBudgetItems') : t('finance.showBudgetItems')}
+              </button>
+            )}
+          </div>
+          <div className="dashboard-budget-overview">
+            <span className="dashboard-budget-amount">
+              ¥{fmtShort(budgets.reduce((s, b) => s + (Number(b.current_spent) || 0), 0))}
+            </span>
+            <span className="dashboard-budget-total">
+              / ¥{fmtShort(budgets.reduce((s, b) => s + (Number(b.amount) || 0), 0))}
+            </span>
+            <span className="dashboard-budget-pct">{Number(budgetPct).toFixed(1)}%</span>
+          </div>
+          <div className="dashboard-progress-bar">
+            <div
+              className={`dashboard-progress-fill ${budgetPct > 100 ? 'danger' : budgetPct > 80 ? 'warn' : 'safe'}`}
+              style={{ width: `${Math.min(budgetPct, 100)}%` }}
+            />
+          </div>
+          {showBudgetItems && (
+            <div className="dashboard-budget-items">
+              {budgets.map((budget) => {
+                const isHidden = hiddenBudgetIds.includes(budget.id)
+                const pct = Math.min(Number(budget.progress_pct) || 0, 100)
+                const level = pct >= 100 ? 'danger' : pct >= (budget.alert_threshold || 80) ? 'warn' : 'safe'
+                return (
+                  <div key={budget.id} className={`dashboard-budget-item ${isHidden ? 'is-hidden' : ''}`}>
+                    <div className="dashboard-budget-item-main">
+                      <span className="dashboard-budget-item-name">{budget.name}</span>
+                      {isHidden ? (
+                        <span className="dashboard-budget-item-muted">{t('finance.hidden')}</span>
+                      ) : (
+                        <span className="dashboard-budget-item-amount">
+                          ¥{fmtShort(Number(budget.current_spent) || 0)} / ¥{fmtShort(Number(budget.amount) || 0)}
+                        </span>
+                      )}
+                    </div>
+                    {!isHidden && (
+                      <div className="dashboard-budget-item-bar">
+                        <div className={`dashboard-budget-item-fill ${level}`} style={{ width: `${pct}%` }} />
+                      </div>
+                    )}
+                    <button className="btn-sm" type="button" onClick={() => toggleBudgetVisibility(budget.id)}>
+                      {isHidden ? t('finance.show') : t('finance.hide')}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
-        <div className="dashboard-budget-overview">
-          <span className="dashboard-budget-amount">
-            ¥{fmtShort(budgets.reduce((s, b) => s + (b.current_spent || 0), 0))}
-          </span>
-          <span className="dashboard-budget-total">
-            / ¥{fmtShort(budgets.reduce((s, b) => s + b.amount, 0))}
-          </span>
-          <span className="dashboard-budget-pct">{Number(budgetPct).toFixed(1)}%</span>
-        </div>
-        <div className="dashboard-progress-bar">
-          <div
-            className={`dashboard-progress-fill ${budgetPct > 100 ? 'danger' : budgetPct > 80 ? 'warn' : 'safe'}`}
-            style={{ width: `${Math.min(budgetPct, 100)}%` }}
-          />
-        </div>
-        {showBudgetItems && (
-          <div className="dashboard-budget-items">
-            {budgets.map((budget) => {
-              const isHidden = hiddenBudgetIds.includes(budget.id)
-              const pct = Math.min(Number(budget.progress_pct) || 0, 100)
-              const level = pct >= 100 ? 'danger' : pct >= (budget.alert_threshold || 80) ? 'warn' : 'safe'
-              return (
-                <div key={budget.id} className={`dashboard-budget-item ${isHidden ? 'is-hidden' : ''}`}>
-                  <div className="dashboard-budget-item-main">
-                    <span className="dashboard-budget-item-name">{budget.name}</span>
-                    {isHidden ? (
-                      <span className="dashboard-budget-item-muted">{t('finance.hidden')}</span>
-                    ) : (
-                      <span className="dashboard-budget-item-amount">
-                        ¥{fmtShort(Number(budget.current_spent) || 0)} / ¥{fmtShort(Number(budget.amount) || 0)}
-                      </span>
-                    )}
-                  </div>
-                  {!isHidden && (
-                    <div className="dashboard-budget-item-bar">
-                      <div className={`dashboard-budget-item-fill ${level}`} style={{ width: `${pct}%` }} />
-                    </div>
-                  )}
-                  <button className="btn-sm" type="button" onClick={() => toggleBudgetVisibility(budget.id)}>
-                    {isHidden ? t('finance.show') : t('finance.hide')}
-                  </button>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+      )
+    }
 
-      {/* Charts */}
-      <div className="dashboard-grid" style={{ marginBottom: 20 }}>
+    if (id === 'categoryChart') {
+      return (
         <div className="dashboard-section-card">
           <div className="dashboard-section-title">分类支出占比</div>
           <FinanceCharts stats={stats} period={period} onPeriodChange={onPeriodChange} />
         </div>
+      )
+    }
+
+    if (id === 'trendChart') {
+      return (
         <div className="dashboard-section-card">
           <div className="dashboard-section-title">月度支出趋势</div>
           {stats?.trend_data && stats.trend_data.length > 0 ? (
@@ -148,10 +213,11 @@ const FinanceDashboard: React.FC<Props> = ({
             <div className="empty-state"><div className="empty-state-icon">📈</div><p>暂无数据</p></div>
           )}
         </div>
-      </div>
+      )
+    }
 
-      {/* Recent transactions */}
-      <div className="dashboard-section-card" style={{ marginBottom: 20 }}>
+    return (
+      <div className="dashboard-section-card">
         <div className="dashboard-section-header">
           <span className="dashboard-section-title">最近交易</span>
         </div>
@@ -174,8 +240,8 @@ const FinanceDashboard: React.FC<Props> = ({
                   <span className="dashboard-tx-name">{formatTransactionTitle(cat?.name, tx.note, t('finance.uncategorized'))}</span>
                   <span className="dashboard-tx-meta">
                     {tx.occurred_at?.slice(0, 10)} · {acc?.name || '—'}
-                    {tx.tags?.map((t: any) => (
-                      <span key={t.id} className="tag-pill">{t.name}</span>
+                    {tx.tags?.map((tag: any) => (
+                      <span key={tag.id} className="tag-pill">{tag.name}</span>
                     ))}
                   </span>
                 </div>
@@ -187,7 +253,48 @@ const FinanceDashboard: React.FC<Props> = ({
           })}
         </div>
       </div>
+    )
+  }
 
+  return (
+    <div className="dashboard-page">
+      <div className="dashboard-toolbar">
+        <button className="btn-sm" type="button" onClick={() => setManageMode((v) => !v)}>
+          {manageMode ? t('finance.done') : t('finance.manageDashboard')}
+        </button>
+      </div>
+
+      {manageMode && (
+        <div className="dashboard-section-card dashboard-manager">
+          <div className="dashboard-section-title">{t('finance.dashboardWidgets')}</div>
+          <div className="dashboard-manager-grid">
+            {widgetOrder.map((id, index) => (
+              <div key={id} className="dashboard-manager-row">
+                <label className="form-inline-control">
+                  <input type="checkbox" checked={visibleWidgets.includes(id)} onChange={() => toggleWidget(id)} />
+                  <span>{widgetLabels[id]}</span>
+                </label>
+                <div className="dashboard-manager-actions">
+                  <button className="btn-sm" type="button" onClick={() => moveWidget(id, -1)} disabled={index === 0}>↑</button>
+                  <button className="btn-sm" type="button" onClick={() => moveWidget(id, 1)} disabled={index === widgetOrder.length - 1}>↓</button>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="dashboard-chart-settings">
+            <label className="form-label">{t('finance.chartPeriod')}</label>
+            <select className="form-select" value={period} onChange={(event) => onPeriodChange(event.target.value)}>
+              <option value="week">{t('finance.week')}</option>
+              <option value="month">{t('finance.month')}</option>
+              <option value="year">{t('finance.year')}</option>
+            </select>
+          </div>
+        </div>
+      )}
+
+      {widgetOrder.map((id) => (
+        <React.Fragment key={id}>{renderWidget(id)}</React.Fragment>
+      ))}
     </div>
   )
 }

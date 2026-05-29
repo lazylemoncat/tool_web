@@ -6,6 +6,7 @@ import { useOutletContext } from 'umi'
 import { useLocale } from '../../i18n'
 import { Button, EmptyState, IconButton } from '../../components/ui'
 import type { FinanceContext } from './FinanceLayout'
+import FinanceSortableList from '../../components/finance/FinanceSortableList'
 
 const BudgetsPage: React.FC = () => {
   const ctx = useOutletContext<FinanceContext>()
@@ -25,8 +26,8 @@ const BudgetsPage: React.FC = () => {
           action={<Button onClick={ctx.openNewBudget}>+ {t('finance.newBudget')}</Button>}
         />
       ) : (
-        <div className="budget-cards">
-          {ctx.budgets.map((b) => {
+        <FinanceSortableList className="budget-cards" items={ctx.budgets} onReorder={ctx.reorderBudgets}>
+          {(b) => {
             const pct = Math.min(Number(b.progress_pct) || 0, 100)
             const threshold = b.alert_threshold || 80
             const level = pct >= 100 ? 'danger' : pct >= threshold ? 'warn' : 'safe'
@@ -65,8 +66,8 @@ const BudgetsPage: React.FC = () => {
                 </div>
               </div>
             )
-          })}
-        </div>
+          }}
+        </FinanceSortableList>
       )}
     </div>
   )

@@ -60,18 +60,21 @@ const TxBasicFields: React.FC<Props> = ({
     <>
       <div className="form-row">
         <div className="form-group flex-1">
-          <label className="form-label">{t('finance.selectAccount')}</label>
+          <label className="form-label">
+            {t('finance.selectAccount')}
+            <span className="form-required-mark">*</span>
+          </label>
           <select
             value={accountId ?? ''}
             onChange={(e) => onAccountChange(e.target.value ? Number(e.target.value) : null)}
-            className="form-select"
+            className={`form-select ${accountError ? 'has-error' : ''}`}
           >
             <option value="">{t('finance.selectAccount')}</option>
             {accounts.map((a) => (
               <option key={a.id} value={a.id}>{a.name} ({fmt(a.current_balance)})</option>
             ))}
           </select>
-          {accountError && <p className="form-error">{accountError}</p>}
+          {accountError && <p className="form-error" role="alert">{accountError}</p>}
         </div>
         <div className="form-group flex-1">
           <label className="form-label">{t('finance.categories')}</label>

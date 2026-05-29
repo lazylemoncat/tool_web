@@ -18,6 +18,7 @@ const DashboardPage: React.FC = () => {
       period={ctx.period}
       onPeriodChange={ctx.setPeriod}
       onTransactionClick={ctx.handleTransactionClick}
+      storageKey={String(ctx.activeLedgerId ?? 'none')}
     />
   )
 }

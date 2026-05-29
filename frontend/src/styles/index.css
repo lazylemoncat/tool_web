@@ -771,6 +771,27 @@
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
+.form-required-mark {
+  color: var(--color-danger, var(--priority-high));
+  margin-left: 2px;
+}
+
+.form-input.has-error,
+.form-select.has-error,
+.form-textarea.has-error,
+.form-group input.has-error,
+.form-group textarea.has-error,
+.form-group select.has-error {
+  border-color: var(--color-danger, var(--priority-high));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-danger, #dc2626) 18%, transparent);
+}
+
+.form-error {
+  margin: 4px 0 0;
+  color: var(--color-danger, var(--priority-high));
+  font-size: 0.76rem;
+}
+
 .form-group label.form-inline-control,
 .form-inline-control {
   display: inline-flex;

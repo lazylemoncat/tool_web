@@ -55,15 +55,25 @@ export function useTransactions(ledgerId: number | null, filters: TransactionFil
 
   const createTransaction = async (fields: Record<string, unknown>) => {
     try { const tx = await api.post('/finance/transactions', fields) as Transaction; await fetchTransactions(); return tx }
-    catch (err) { handleError(err); fetchTransactions(); return null }
+    catch (err) { handleError(err); await fetchTransactions(); return null }
   }
   const updateTransaction = async (id: number, fields: Record<string, unknown>) => {
-    try { await api.put(`/finance/transactions/${id}`, fields); await fetchTransactions() }
-    catch (err) { handleError(err); fetchTransactions() }
+    try { await api.put(`/finance/transactions/${id}`, fields); await fetchTransactions(); return true }
+    catch (err) { handleError(err); await fetchTransactions(); return false }
   }
   const deleteTransaction = async (id: number) => {
     try { await api.delete(`/finance/transactions/${id}`); await fetchTransactions() }
     catch (err) { handleError(err); fetchTransactions() }
   }
-  return { transactions, total, loading, loadingMore, hasMore, fetchTransactions, loadMore, createTransaction, updateTransaction, deleteTransaction }
+
+  const reorderTransactions = async (items: { id: number; sort_order: number }[]) => {
+    const orderMap = new Map(items.map((item) => [item.id, item.sort_order]))
+    setTransactions((prev) => [...prev]
+      .map((tx) => ({ ...tx, sort_order: orderMap.get(tx.id) ?? tx.sort_order }))
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0)))
+    try { await api.post('/finance/transactions/reorder', { items }) }
+    catch (err) { handleError(err); fetchTransactions() }
+  }
+
+  return { transactions, total, loading, loadingMore, hasMore, fetchTransactions, loadMore, createTransaction, updateTransaction, deleteTransaction, reorderTransactions }
 }

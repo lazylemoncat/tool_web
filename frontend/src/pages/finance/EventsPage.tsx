@@ -6,6 +6,7 @@ import { useOutletContext } from 'umi'
 import { useLocale } from '../../i18n'
 import { Button, EmptyState, IconButton } from '../../components/ui'
 import type { FinanceContext } from './FinanceLayout'
+import FinanceSortableList from '../../components/finance/FinanceSortableList'
 
 const EventsPage: React.FC = () => {
   const ctx = useOutletContext<FinanceContext>()
@@ -25,8 +26,8 @@ const EventsPage: React.FC = () => {
           action={<Button onClick={ctx.openNewEvent}>+ {t('finance.newEvent')}</Button>}
         />
       ) : (
-        <div className="event-cards">
-          {ctx.events.map((ev) => (
+        <FinanceSortableList className="event-cards" items={ctx.events} onReorder={ctx.reorderEvents}>
+          {(ev) => (
             <div key={ev.id} className="event-card" onClick={() => ctx.openEditEvent(ev)}>
               <div className="event-card-header">
                 <span className="event-color-dot" style={{ background: ev.color }} />
@@ -55,8 +56,8 @@ const EventsPage: React.FC = () => {
                 <IconButton aria-label={t('app.delete')} size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); ctx.handleDeleteEvent(ev.id) }}>🗑</IconButton>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </FinanceSortableList>
       )}
     </div>
   )

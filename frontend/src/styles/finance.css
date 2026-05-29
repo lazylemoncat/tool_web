@@ -330,6 +330,49 @@
 .dashboard-progress-fill.warn { background: var(--color-warning, #d97706); }
 .dashboard-progress-fill.danger { background: var(--color-expense); }
 
+.dashboard-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dashboard-manager {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dashboard-manager-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.dashboard-manager-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+}
+
+.dashboard-manager-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.dashboard-chart-settings {
+  max-width: 260px;
+}
+
 .dashboard-budget-items {
   display: flex;
   flex-direction: column;
@@ -464,6 +507,21 @@
   font-variant-numeric: tabular-nums;
 }
 
+.dashboard-chart-tooltip {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-md);
+  font-size: 0.78rem;
+}
+
+.dashboard-chart-tooltip-title {
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
 .dashboard-tx-list {
   display: flex;
   flex-direction: column;
@@ -566,6 +624,35 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
   gap: var(--space-3);
+}
+
+.finance-sortable-item {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  min-width: 0;
+}
+
+.finance-sortable-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.finance-drag-handle {
+  width: 22px;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  flex: 0 0 auto;
+}
+
+.finance-drag-handle:active {
+  cursor: grabbing;
 }
 
 @media (max-width: 1024px) {

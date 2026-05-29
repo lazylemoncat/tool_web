@@ -2,7 +2,7 @@
   FinanceLayout: 共享布局 + 状态管理, 子页面通过 Outlet context 消费数据.
 */
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate, useLocation } from 'umi'
+import { Outlet, useNavigate, useLocation } from 'umi'
 import {
   useLedgers, useAccounts, useCategories, useFinanceTags,
   useTransactions, useEvents, useBudgets, useDashboard, useStats,
@@ -74,6 +74,7 @@ export interface FinanceContext {
   handleEditFromDetail: () => void
   handleDeleteFromDetail: (id: number) => Promise<void>
   handleDeleteTransaction: (id: number) => Promise<void>
+  reorderTransactions: (items: { id: number; sort_order: number }[]) => void
   refreshTransactions: () => Promise<void>
   handleCreateAccount: (f: Record<string, unknown>) => Promise<void>
   handleDeleteAccount: (id: number) => Promise<void>
@@ -85,11 +86,13 @@ export interface FinanceContext {
   handleCreateBudget: (f: Record<string, unknown>) => Promise<void>
   handleUpdateBudget: (f: Record<string, unknown>) => Promise<void>
   handleDeleteBudget: (id: number) => Promise<void>
+  reorderBudgets: (items: { id: number; sort_order: number }[]) => void
   openEditBudget: (b: Budget) => void
   openNewBudget: () => void
   handleCreateEvent: (f: Record<string, unknown>) => Promise<void>
   handleUpdateEvent: (f: Record<string, unknown>) => Promise<void>
   handleDeleteEvent: (id: number) => Promise<void>
+  reorderEvents: (items: { id: number; sort_order: number }[]) => void
   openEditEvent: (ev: FinanceEvent) => void
   openNewEvent: () => void
   sentinelRef: React.RefObject<HTMLDivElement | null>
@@ -121,12 +124,12 @@ const FinanceLayout: React.FC = () => {
   const { categories, createCategory, updateCategory, deleteCategory } = useCategories(activeLedgerId)
   const { tags, createTag, deleteTag } = useFinanceTags(activeLedgerId)
   const { dashboard } = useDashboard(activeLedgerId)
-  const { events, createEvent, updateEvent, deleteEvent } = useEvents(activeLedgerId)
-  const { budgets, createBudget, updateBudget, deleteBudget } = useBudgets(activeLedgerId)
+  const { events, createEvent, updateEvent, deleteEvent, reorderEvents } = useEvents(activeLedgerId)
+  const { budgets, createBudget, updateBudget, deleteBudget, reorderBudgets } = useBudgets(activeLedgerId)
   const [period, setPeriod] = useState('month')
   const { stats } = useStats(activeLedgerId, period)
   const [txFilters, setTxFilters] = useState<TransactionFilters>({})
-  const { transactions, total, loading: txLoading, loadingMore, hasMore, fetchTransactions, loadMore, createTransaction, updateTransaction, deleteTransaction } = useTransactions(activeLedgerId, txFilters)
+  const { transactions, total, loading: txLoading, loadingMore, hasMore, fetchTransactions, loadMore, createTransaction, updateTransaction, deleteTransaction, reorderTransactions } = useTransactions(activeLedgerId, txFilters)
 
   // Derive activeTab from URL pathname
   const activeTab = useMemo(() => {
@@ -200,7 +203,8 @@ const FinanceLayout: React.FC = () => {
   const handleSaveTransaction = useCallback(async (data: TransactionFormData) => {
     try {
       if (editTx) {
-        await updateTransaction(editTx.id, data as unknown as Record<string, unknown>)
+        const ok = await updateTransaction(editTx.id, data as unknown as Record<string, unknown>)
+        if (!ok) return
         setEditTx(null)
       } else {
         const parent = await createTransaction({
@@ -211,6 +215,7 @@ const FinanceLayout: React.FC = () => {
           linked_todo_ids: data.linked_todo_ids ?? [],
           ledger_id: activeLedgerId,
         } as any)
+        if (!parent) return
         if (parent && data.children.length > 0) {
           for (const child of data.children) {
             await createTransaction({
@@ -310,7 +315,8 @@ const FinanceLayout: React.FC = () => {
 
   const handleCreateBudget = async (fields: Record<string, unknown>) => {
     try {
-      await createBudget({ ...fields, ledger_id: activeLedgerId })
+      const ok = await createBudget({ ...fields, ledger_id: activeLedgerId })
+      if (!ok) return
       setShowBudgetForm(false)
       setEditingBudget(null)
     } catch { toast(t('finance.budgetCreateFailed'), 'error') }
@@ -319,7 +325,8 @@ const FinanceLayout: React.FC = () => {
   const handleUpdateBudget = async (fields: Record<string, unknown>) => {
     if (!editingBudget) return
     try {
-      await updateBudget(editingBudget.id, fields)
+      const ok = await updateBudget(editingBudget.id, fields)
+      if (!ok) return
       setShowBudgetForm(false)
       setEditingBudget(null)
     } catch { toast(t('finance.budgetUpdateFailed'), 'error') }
@@ -341,7 +348,8 @@ const FinanceLayout: React.FC = () => {
 
   const handleCreateEvent = async (fields: Record<string, unknown>) => {
     try {
-      await createEvent({ ...fields, ledger_id: activeLedgerId })
+      const ok = await createEvent({ ...fields, ledger_id: activeLedgerId })
+      if (!ok) return
       setShowEventForm(false)
       setEditingEvent(null)
     } catch { toast(t('finance.eventCreateFailed'), 'error') }
@@ -350,7 +358,8 @@ const FinanceLayout: React.FC = () => {
   const handleUpdateEvent = async (fields: Record<string, unknown>) => {
     if (!editingEvent) return
     try {
-      await updateEvent(editingEvent.id, fields)
+      const ok = await updateEvent(editingEvent.id, fields)
+      if (!ok) return
       setShowEventForm(false)
       setEditingEvent(null)
     } catch { toast(t('finance.eventUpdateFailed'), 'error') }
@@ -388,14 +397,14 @@ const FinanceLayout: React.FC = () => {
     activeTab, setActiveTab,
     handleCreateLedger, handleDeleteLedger,
     handleSaveTransaction, handleTransactionClick,
-    handleEditFromDetail, handleDeleteFromDetail, handleDeleteTransaction,
+    handleEditFromDetail, handleDeleteFromDetail, handleDeleteTransaction, reorderTransactions,
     refreshTransactions: fetchTransactions,
     handleCreateAccount, handleDeleteAccount,
     handleCreateCategory, handleUpdateCategory, handleDeleteCategory,
     handleCreateTag, handleDeleteTag,
-    handleCreateBudget, handleUpdateBudget, handleDeleteBudget,
+    handleCreateBudget, handleUpdateBudget, handleDeleteBudget, reorderBudgets,
     openEditBudget, openNewBudget,
-    handleCreateEvent, handleUpdateEvent, handleDeleteEvent,
+    handleCreateEvent, handleUpdateEvent, handleDeleteEvent, reorderEvents,
     openEditEvent, openNewEvent,
     sentinelRef,
     fmt,
@@ -443,18 +452,6 @@ const FinanceLayout: React.FC = () => {
                 )}
               </div>
             </div>
-
-            <nav className="finance-subnav">
-              {SUB_PAGES.map((p) => (
-                <NavLink
-                  key={p}
-                  to={`/finance/${p}`}
-                  className={({ isActive }) => `finance-subnav-btn ${isActive ? 'active' : ''}`}
-                >
-                  {t(`finance.${p}`)}
-                </NavLink>
-              ))}
-            </nav>
 
             <div className="finance-content">
               <Outlet context={ctx} />

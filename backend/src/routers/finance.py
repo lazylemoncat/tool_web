@@ -26,7 +26,7 @@ from ..schemas.finance import (
     EventCreate, EventUpdate, EventOut, EventSummary,
     BudgetCreate, BudgetUpdate, BudgetOut,
     AttachmentOut, RelationCreate, RelationOut,
-    DashboardSummary, StatsResponse,
+    DashboardSummary, StatsResponse, ReorderBatch,
 )
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
@@ -373,12 +373,37 @@ def list_transactions(
         joinedload(Transaction.tags),
         joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
-    ).order_by(Transaction.occurred_at.desc(), Transaction.sort_order).offset(skip).limit(limit).all()
+    ).order_by(Transaction.sort_order, Transaction.occurred_at.desc()).offset(skip).limit(limit).all()
 
     return TransactionListResponse(
         items=[_build_transaction_out(tx, db) for tx in txs],
         total=total, skip=skip, limit=limit,
     )
+
+
+@router.post("/transactions/reorder", status_code=204)
+def reorder_transactions(
+    body: ReorderBatch,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ids = [item.id for item in body.items]
+    txs = db.query(Transaction).filter(
+        Transaction.id.in_(ids),
+        Transaction.user_id == current_user.id,
+    ).all()
+    if len(txs) != len(ids):
+        raise HTTPException(404, "transaction not found")
+
+    ledger_ids = {tx.ledger_id for tx in txs}
+    parent_ids = {tx.parent_transaction_id for tx in txs}
+    if len(ledger_ids) > 1 or len(parent_ids) > 1:
+        raise HTTPException(400, "transactions must share the same ledger and parent")
+
+    order_map = {item.id: item.sort_order for item in body.items}
+    for tx in txs:
+        tx.sort_order = order_map[tx.id]
+    db.commit()
 
 
 @router.get("/transactions/{tx_id}", response_model=TransactionOut)
@@ -442,6 +467,13 @@ def create_transaction(
         _validate_child_total(parent, body.amount, db)
 
     tx_data = {k: v for k, v in body.model_dump().items() if k not in ("tag_ids", "split_items", "attachment_ids", "linked_todo_ids")}
+    if body.sort_order == 0:
+        max_order = db.query(func.max(Transaction.sort_order)).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.ledger_id == body.ledger_id,
+            Transaction.parent_transaction_id == body.parent_transaction_id,
+        ).scalar()
+        tx_data["sort_order"] = int(max_order if max_order is not None else -1) + 1
     tx = Transaction(**tx_data, user_id=current_user.id, recorded_at=datetime.utcnow())
     db.add(tx)
     db.flush()

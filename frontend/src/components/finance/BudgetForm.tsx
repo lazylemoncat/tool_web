@@ -74,12 +74,12 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
       <div className="form-row">
         <div style={{ flex: 2 }}>
           <FormField label={t('finance.budgetName')} error={nameError} required>
-            <input value={name} onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }} placeholder={t('finance.budgetName')} autoFocus />
+            <input className={`form-input ${nameError ? 'has-error' : ''}`} value={name} onChange={(e) => { setName(e.target.value); if (nameError) setNameError('') }} placeholder={t('finance.budgetName')} autoFocus />
           </FormField>
         </div>
         <div style={{ flex: 1 }}>
           <FormField label={t('finance.currency')}>
-            <input value={currency} onChange={(e) => setCurrency(e.target.value)} />
+            <input className="form-input" value={currency} onChange={(e) => setCurrency(e.target.value)} />
           </FormField>
         </div>
       </div>

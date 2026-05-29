@@ -7,6 +7,7 @@ import { useOutletContext } from 'umi'
 import type { FinanceContext } from './FinanceLayout'
 import TxCard from '../../components/finance/TxCard'
 import TxFilterBar from '../../components/finance/TxFilterBar'
+import FinanceSortableList from '../../components/finance/FinanceSortableList'
 import { Skeleton } from '../../components/ui'
 
 const TransactionsPage: React.FC = () => {
@@ -36,8 +37,8 @@ const TransactionsPage: React.FC = () => {
             <p>没有匹配的交易记录</p>
           </div>
         ) : (
-          <div className="tx-list">
-            {ctx.transactions.map((tx) => (
+          <FinanceSortableList className="tx-list" items={ctx.transactions} onReorder={ctx.reorderTransactions}>
+            {(tx) => (
               <TxCard
                 key={tx.id}
                 tx={tx}
@@ -45,8 +46,8 @@ const TransactionsPage: React.FC = () => {
                 onDelete={ctx.handleDeleteTransaction}
                 formatAmount={ctx.fmt}
               />
-            ))}
-          </div>
+            )}
+          </FinanceSortableList>
         )}
 
         {ctx.hasMore && (
