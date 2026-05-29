@@ -6,6 +6,8 @@
 import React, { useState } from 'react'
 import type { Transaction } from '../../hooks/finance'
 import { useConfirm, useToast } from '../ui'
+import { useLocale } from '../../i18n'
+import { formatTransactionTitle } from './transactionDisplay'
 
 interface Props {
   tx: Transaction
@@ -17,6 +19,7 @@ interface Props {
 const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
   const confirm = useConfirm()
   const toast = useToast()
+  const { t } = useLocale()
   const [deleting, setDeleting] = useState(false)
 
   const handleDelete = async (e: React.MouseEvent) => {
@@ -35,6 +38,7 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
   const amountClass = isExpense ? 'tx-amount-expense' : isIncome ? 'tx-amount-income' : 'tx-amount-transfer'
   const iconClass = isExpense ? 'tx-icon-expense' : isIncome ? 'tx-icon-income' : 'tx-icon-transfer'
   const hasChildren = (tx.children && tx.children.length > 0) || (tx.split_items && tx.split_items.length > 0)
+  const fallbackTitle = t('finance.uncategorized')
 
   return (
     <>
@@ -44,7 +48,7 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
         </span>
         <div className="tx-row-info">
           <span className="tx-row-title">
-            {tx.category?.name || '—'} {tx.note ? '· ' + tx.note : ''}
+            {formatTransactionTitle(tx.category?.name, tx.note, fallbackTitle)}
           </span>
           <span className="tx-row-meta">
             {tx.occurred_at?.slice(0, 10)} · {tx.account?.name || '—'}
@@ -68,7 +72,7 @@ const TxCard: React.FC<Props> = ({ tx, onClick, onDelete, formatAmount }) => {
               {child.category?.icon || '💳'}
             </span>
             <div className="tx-row-info">
-              <span className="tx-row-title child">└ {child.category?.name || '—'} · {child.note || '—'}</span>
+              <span className="tx-row-title child">└ {formatTransactionTitle(child.category?.name, child.note, fallbackTitle)}</span>
               <span className="tx-row-meta">{child.occurred_at?.slice(0, 10)}</span>
             </div>
             <span className={`tx-row-amount child ${cExpense ? 'tx-amount-expense' : 'tx-amount-income'}`}>

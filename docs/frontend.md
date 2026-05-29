@@ -108,6 +108,8 @@ Open Design cannot execute Umi `.tsx` route modules directly as standalone previ
 | `frontend/public/open-design/finance-budgets.html` | `http://localhost:8003/#/finance/budgets` |
 | `frontend/public/open-design/finance-events.html` | `http://localhost:8003/#/finance/events` |
 
+Finance child pages include dashboard, transactions, budgets, events, and manage. The manage page owns finance category and tag administration so the dashboard remains display-focused.
+
 Start the frontend dev server before opening these files in Open Design. Source edits remain in `frontend/src/pages/finance/` and `frontend/src/components/finance/`; the wrappers are preview-only tooling.
 
 ## Migration Notes
@@ -119,3 +121,8 @@ The migration intentionally does not preserve Vite compatibility. The project is
 - `src/layouts/index.tsx` owns authenticated shell layout.
 - TODO page state moved from the old app root into `src/pages/TodoPage.tsx`.
 - Route imports were changed from `react-router-dom` to `umi`.
+
+## UX Notes
+
+- The todo sidebar only contains todo folder navigation and shared shell actions. Finance entry points live in the home/finance routes instead of inside the todo folder list.
+- `ConfirmDialogProvider` uses the shared `Modal` component. Delete confirmations should pass a clear `description`; `Modal` omits the body section when no children are provided so confirm dialogs do not show an empty middle area.

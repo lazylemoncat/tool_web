@@ -318,7 +318,11 @@ const TodoPage: React.FC = () => {
             <span>{t('app.selectedCount', { n: selectedIds.size })}</span>
             <button className="btn-submit" onClick={() => handleBulkAction('complete')}>✓ {t('todo.completed')}</button>
             <button className="btn-danger" onClick={async () => {
-              const ok = await confirm({ title: t('app.confirmDelete'), danger: true })
+              const ok = await confirm({
+                title: t('app.confirmDelete'),
+                description: t('app.confirmDeleteSelectedDescription', { n: selectedIds.size }),
+                danger: true,
+              })
               if (ok) handleBulkAction('delete')
             }}>{t('app.delete')}</button>
           </div>

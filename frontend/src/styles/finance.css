@@ -330,6 +330,67 @@
 .dashboard-progress-fill.warn { background: var(--color-warning, #d97706); }
 .dashboard-progress-fill.danger { background: var(--color-expense); }
 
+.dashboard-budget-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.dashboard-budget-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+
+.dashboard-budget-item.is-hidden {
+  color: var(--text-muted);
+}
+
+.dashboard-budget-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dashboard-budget-item-name {
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-budget-item-amount,
+.dashboard-budget-item-muted {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dashboard-budget-item-bar {
+  grid-column: 1 / 2;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--bg-primary);
+}
+
+.dashboard-budget-item-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.dashboard-budget-item-fill.safe { background: var(--color-income); }
+.dashboard-budget-item-fill.warn { background: var(--color-warning, #d97706); }
+.dashboard-budget-item-fill.danger { background: var(--color-expense); }
+
 .dashboard-bar-chart {
   display: flex;
   align-items: flex-end;
@@ -502,18 +563,23 @@
 }
 
 .dashboard-management-links {
-  margin-top: 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.55fr);
+  gap: var(--space-3);
 }
 
 @media (max-width: 1024px) {
   .dashboard-stat-cards { grid-template-columns: repeat(2, 1fr); }
   .dashboard-grid { grid-template-columns: 1fr; }
+  .dashboard-management-links { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {
   .dashboard-stat-cards { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
   .dashboard-stat-card { padding: 12px; }
   .dashboard-stat-value { font-size: 1.3rem; }
+  .dashboard-budget-item { grid-template-columns: 1fr; }
+  .dashboard-budget-item-bar { grid-column: 1; }
 }
 
 /* ─── Transaction Row List ─── */

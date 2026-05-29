@@ -138,9 +138,9 @@ const BudgetForm: React.FC<Props> = ({ editBudget, categories, tags, events, onS
       </div>
 
       <div className="form-group">
-        <label className="finance-checkbox-label">
+        <label className="form-inline-control">
           <input type="checkbox" checked={rollover} onChange={(e) => setRollover(e.target.checked)} />
-          {t('finance.rollover')}
+          <span>{t('finance.rollover')}</span>
         </label>
       </div>
     </Modal>

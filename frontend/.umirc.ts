@@ -38,6 +38,7 @@ export default defineConfig({
         { path: '/finance/transactions', component: '@/pages/finance/TransactionsPage' },
         { path: '/finance/budgets', component: '@/pages/finance/BudgetsPage' },
         { path: '/finance/events', component: '@/pages/finance/EventsPage' },
+        { path: '/finance/manage', component: '@/pages/finance/ManagePage' },
       ],
     },
     { path: '/ui-preview', component: '@/pages/UIPreviewPage' },

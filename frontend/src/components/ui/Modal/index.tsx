@@ -28,6 +28,8 @@ const Modal: React.FC<ModalProps> = ({
   footer,
   className = '',
 }) => {
+  const hasBody = React.Children.count(children) > 0
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -50,7 +52,7 @@ const Modal: React.FC<ModalProps> = ({
               )}
             </div>
           )}
-          <div className="ui-modal-body">{children}</div>
+          {hasBody && <div className="ui-modal-body">{children}</div>}
           {footer && <div className="ui-modal-footer">{footer}</div>}
         </Dialog.Content>
       </Dialog.Portal>

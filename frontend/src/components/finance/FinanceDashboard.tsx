@@ -1,8 +1,8 @@
-import React from 'react'
-import type { DashboardSummary, Account, Budget, FinanceCategory, FinanceTag, Transaction, StatsData } from '../../hooks/finance'
+import React, { useState } from 'react'
+import type { DashboardSummary, Account, Budget, FinanceCategory, Transaction, StatsData } from '../../hooks/finance'
 import FinanceCharts from './FinanceCharts'
-import CategoryManager from './CategoryManager'
-import TagManager from './TagManager'
+import { formatTransactionTitle } from './transactionDisplay'
+import { useLocale } from '../../i18n'
 
 interface Props {
   dashboard: DashboardSummary | null
@@ -12,14 +12,6 @@ interface Props {
   stats: StatsData | null
   period: string
   onPeriodChange: (p: string) => void
-  onCreateAccount: (fields: Record<string, unknown>) => void
-  onDeleteAccount: (id: number) => void
-  onCreateCategory: (fields: Record<string, unknown>) => void
-  onUpdateCategory: (id: number, fields: Record<string, unknown>) => void
-  onDeleteCategory: (id: number) => void
-  tags: FinanceTag[]
-  onCreateTag: (name: string) => void
-  onDeleteTag: (id: number) => void
   onTransactionClick: (tx: Transaction) => void
 }
 
@@ -30,15 +22,20 @@ const fmtShort = (n: number): string => {
 
 const FinanceDashboard: React.FC<Props> = ({
   dashboard, accounts, budgets, categories, stats, period, onPeriodChange,
-  onCreateAccount, onDeleteAccount, onCreateCategory, onUpdateCategory, onDeleteCategory,
-  tags, onCreateTag, onDeleteTag, onTransactionClick,
+  onTransactionClick,
 }) => {
+  const { t } = useLocale()
+  const [showBudgetItems, setShowBudgetItems] = useState(false)
+  const [hiddenBudgetIds, setHiddenBudgetIds] = useState<number[]>([])
   const income = dashboard?.month_income ?? 0
   const expense = dashboard?.month_expense ?? 0
   const balance = income - expense
   const budgetPct = dashboard?.budget_usage_pct ?? 0
   const totalAssets = accounts.reduce((s, a) => s + (a.current_balance || 0), 0)
   const recentTxs = dashboard?.recent_transactions ?? []
+  const toggleBudgetVisibility = (id: number) => {
+    setHiddenBudgetIds((prev) => prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id])
+  }
 
   return (
     <div>
@@ -72,6 +69,11 @@ const FinanceDashboard: React.FC<Props> = ({
       <div className="dashboard-section-card" style={{ marginBottom: 20 }}>
         <div className="dashboard-section-header">
           <span className="dashboard-section-title">预算使用率</span>
+          {budgets.length > 0 && (
+            <button className="btn-sm" type="button" onClick={() => setShowBudgetItems((v) => !v)}>
+              {showBudgetItems ? t('finance.hideBudgetItems') : t('finance.showBudgetItems')}
+            </button>
+          )}
         </div>
         <div className="dashboard-budget-overview">
           <span className="dashboard-budget-amount">
@@ -88,6 +90,37 @@ const FinanceDashboard: React.FC<Props> = ({
             style={{ width: `${Math.min(budgetPct, 100)}%` }}
           />
         </div>
+        {showBudgetItems && (
+          <div className="dashboard-budget-items">
+            {budgets.map((budget) => {
+              const isHidden = hiddenBudgetIds.includes(budget.id)
+              const pct = Math.min(Number(budget.progress_pct) || 0, 100)
+              const level = pct >= 100 ? 'danger' : pct >= (budget.alert_threshold || 80) ? 'warn' : 'safe'
+              return (
+                <div key={budget.id} className={`dashboard-budget-item ${isHidden ? 'is-hidden' : ''}`}>
+                  <div className="dashboard-budget-item-main">
+                    <span className="dashboard-budget-item-name">{budget.name}</span>
+                    {isHidden ? (
+                      <span className="dashboard-budget-item-muted">{t('finance.hidden')}</span>
+                    ) : (
+                      <span className="dashboard-budget-item-amount">
+                        ¥{fmtShort(Number(budget.current_spent) || 0)} / ¥{fmtShort(Number(budget.amount) || 0)}
+                      </span>
+                    )}
+                  </div>
+                  {!isHidden && (
+                    <div className="dashboard-budget-item-bar">
+                      <div className={`dashboard-budget-item-fill ${level}`} style={{ width: `${pct}%` }} />
+                    </div>
+                  )}
+                  <button className="btn-sm" type="button" onClick={() => toggleBudgetVisibility(budget.id)}>
+                    {isHidden ? t('finance.show') : t('finance.hide')}
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </div>
 
       {/* Charts */}
@@ -138,7 +171,7 @@ const FinanceDashboard: React.FC<Props> = ({
                   {cat?.icon || '💳'}
                 </span>
                 <div className="dashboard-tx-info">
-                  <span className="dashboard-tx-name">{cat?.name || '—'} {tx.note ? '· ' + tx.note : ''}</span>
+                  <span className="dashboard-tx-name">{formatTransactionTitle(cat?.name, tx.note, t('finance.uncategorized'))}</span>
                   <span className="dashboard-tx-meta">
                     {tx.occurred_at?.slice(0, 10)} · {acc?.name || '—'}
                     {tx.tags?.map((t: any) => (
@@ -155,15 +188,6 @@ const FinanceDashboard: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="dashboard-management-links">
-        <CategoryManager
-          categories={categories}
-          onCreate={onCreateCategory}
-          onUpdate={onUpdateCategory}
-          onDelete={onDeleteCategory}
-        />
-        <TagManager tags={tags} onCreate={onCreateTag} onDelete={onDeleteTag} />
-      </div>
     </div>
   )
 }

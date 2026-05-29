@@ -96,7 +96,7 @@ export interface FinanceContext {
   fmt: (v: unknown, digits?: number) => string
 }
 
-const SUB_PAGES = ['dashboard', 'transactions', 'budgets', 'events'] as const
+const SUB_PAGES = ['dashboard', 'transactions', 'budgets', 'events', 'manage'] as const
 
 const FinanceLayout: React.FC = () => {
   const navigate = useNavigate()
@@ -326,7 +326,11 @@ const FinanceLayout: React.FC = () => {
   }
 
   const handleDeleteBudget = async (id: number) => {
-    const ok = await confirm({ title: t('finance.confirmDeleteBudget'), danger: true })
+    const ok = await confirm({
+      title: t('finance.confirmDeleteBudget'),
+      description: t('finance.deleteBudgetDescription'),
+      danger: true,
+    })
     if (!ok) return
     try { await deleteBudget(id) }
     catch { toast(t('finance.budgetDeleteFailed'), 'error') }
@@ -353,7 +357,11 @@ const FinanceLayout: React.FC = () => {
   }
 
   const handleDeleteEvent = async (id: number) => {
-    const ok = await confirm({ title: t('finance.confirmDeleteEvent'), danger: true })
+    const ok = await confirm({
+      title: t('finance.confirmDeleteEvent'),
+      description: t('finance.deleteEventDescription'),
+      danger: true,
+    })
     if (!ok) return
     try { await deleteEvent(id) }
     catch { toast(t('finance.eventDeleteFailed'), 'error') }

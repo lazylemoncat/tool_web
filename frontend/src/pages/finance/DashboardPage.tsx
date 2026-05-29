@@ -17,14 +17,6 @@ const DashboardPage: React.FC = () => {
       stats={ctx.stats}
       period={ctx.period}
       onPeriodChange={ctx.setPeriod}
-      onCreateAccount={ctx.handleCreateAccount}
-      onDeleteAccount={ctx.handleDeleteAccount}
-      onCreateCategory={ctx.handleCreateCategory}
-      onUpdateCategory={ctx.handleUpdateCategory}
-      onDeleteCategory={ctx.handleDeleteCategory}
-      tags={ctx.tags}
-      onCreateTag={ctx.handleCreateTag}
-      onDeleteTag={ctx.handleDeleteTag}
       onTransactionClick={ctx.handleTransactionClick}
     />
   )

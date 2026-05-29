@@ -45,6 +45,18 @@ const NAV_ITEMS: NavItem[] = [
       <line x1="3" y1="10" x2="21" y2="10"/>
     </svg>,
   },
+  {
+    tab: 'manage',
+    label: '基础管理',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 7h16"/>
+      <path d="M7 12h10"/>
+      <path d="M10 17h4"/>
+      <circle cx="6" cy="7" r="2"/>
+      <circle cx="18" cy="12" r="2"/>
+      <circle cx="9" cy="17" r="2"/>
+    </svg>,
+  },
 ]
 
 interface Props {

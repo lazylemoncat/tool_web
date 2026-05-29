@@ -771,6 +771,53 @@
   box-shadow: 0 0 0 3px var(--accent-light);
 }
 
+.form-group label.form-inline-control,
+.form-inline-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 0;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.form-inline-control input[type="checkbox"],
+.form-inline-control input[type="radio"] {
+  width: auto;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.form-inline-control span {
+  min-width: 0;
+}
+
+.form-group label.finance-checkbox-label,
+.finance-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 0;
+  line-height: 1.35;
+}
+
+.finance-checkbox-label input[type="checkbox"],
+.finance-checkbox-label input[type="radio"] {
+  width: auto;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
 .form-group textarea {
   resize: vertical;
   min-height: 60px;
