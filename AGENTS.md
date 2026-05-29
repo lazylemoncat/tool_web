@@ -34,3 +34,9 @@
 3. 查找符号、文件、入口点时优先使用 `codegraph query`, `codegraph context`, `codegraph callers`, `codegraph callees`, `codegraph impact`.
 4. CodeGraph 没有命中或需要确认最新文件内容时, 再配合 `rg` 和直接读取文件.
 5. `.codegraph/` 是本地索引目录, 不提交到 git.
+
+## 生成 UML
+
+```
+当被要求生成 UML 或架构图时，请使用 `universal-uml-diagrammerr` 技能,并阅读其中的readme文件。
+```

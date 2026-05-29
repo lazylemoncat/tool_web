@@ -1,0 +1,78 @@
+"' Presentation style preset for readable architecture diagrams.
+' Include with:
+' !include .agents/skills/universal-uml-diagrammer/templates/presentation-style.puml
+'
+' Notes:
+' - skinparam remains widely supported, though newer PlantUML style CSS can also be used.
+' - This preset intentionally prefers polyline over ortho for dense labeled diagrams.
+
+!theme plain
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam handwritten false
+skinparam dpi 180
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam defaultFontColor #111827
+skinparam defaultTextAlignment center
+
+skinparam ArrowColor #111827
+skinparam ArrowThickness 1.2
+skinparam ArrowFontName Arial
+skinparam ArrowFontSize 13
+skinparam ArrowFontColor #111827
+skinparam ArrowMessageAlignment center
+
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 85
+
+skinparam componentStyle rectangle
+skinparam wrapWidth 220
+skinparam maxMessageSize 80
+
+skinparam rectangle {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 16
+  RoundCorner 14
+}
+
+skinparam component {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 16
+  RoundCorner 14
+}
+
+skinparam package {
+  BackgroundColor #F9FAFB
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 18
+}
+
+skinparam database {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 16
+}
+
+skinparam queue {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 16
+}
+
+skinparam note {
+  BackgroundColor #FFF7ED
+  BorderColor #FDBA74
+  FontColor #111827
+  FontSize 13
+}

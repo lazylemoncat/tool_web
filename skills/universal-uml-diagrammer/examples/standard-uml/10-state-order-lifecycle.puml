@@ -1,0 +1,19 @@
+@startuml
+title Order lifecycle - state machine diagram
+
+' Scope: Order status transitions
+' Evidence:
+' - src/order/OrderStatus.ts
+' - src/order/Order.ts
+
+[*] --> Created
+Created --> Paid : pay()
+Created --> Cancelled : cancel()
+Paid --> Fulfilled : fulfill()
+Paid --> Refunded : refund()
+Fulfilled --> Closed : close()
+Cancelled --> [*]
+Refunded --> [*]
+Closed --> [*]
+
+@enduml

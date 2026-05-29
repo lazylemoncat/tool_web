@@ -1,0 +1,27 @@
+@startuml
+title Production Kubernetes - deployment diagram
+
+' Scope: Production runtime topology
+' Evidence:
+' - deploy/k8s/api.yaml
+' - deploy/k8s/worker.yaml
+' - terraform/postgres.tf
+
+node "Kubernetes Cluster" {
+  node "api pod" {
+    component "api container" as API
+  }
+
+  node "worker pod" {
+    component "worker container" as Worker
+  }
+}
+
+database "Managed PostgreSQL" <<database>> as DB
+queue "Managed Kafka" <<queue>> as Kafka
+
+API --> DB
+API --> Kafka
+Worker --> Kafka
+
+@enduml

@@ -1,0 +1,31 @@
+@startuml
+title Payment retry timeout - timing diagram
+
+' Scope: Retry state over time
+' Evidence:
+' - src/payment/RetryPolicy.ts
+' - tests/payment-retry.spec.ts
+
+robust "PaymentWorker" as Worker
+robust "PaymentProvider" as Provider
+
+@0
+Worker is Idle
+Provider is Ready
+
+@10
+Worker is SendingRequest
+Provider is Processing
+
+@20
+Worker is WaitingForResponse
+
+@30
+Worker is Retrying
+Provider is Processing
+
+@40
+Worker is Failed
+Provider is Ready
+
+@enduml

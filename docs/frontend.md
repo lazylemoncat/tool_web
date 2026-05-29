@@ -20,6 +20,8 @@ This document describes the current frontend structure after the Umi migration.
 | `frontend/src/app.tsx` | Umi runtime entry: global providers, error boundary, toast providers, tooltip provider, and theme bridge setup. |
 | `frontend/src/layouts/index.tsx` | Global application layout: session gate, i18n provider, theme provider, custom theme loading, top bar, and page theme synchronization. |
 | `frontend/src/utils/pageTheme.ts` | Maps URL paths to custom-theme page keys such as `todo`, `finance`, and `settings`. |
+| `docs/frontend-components.md` | Reusable component guide. Read this before building or changing frontend pages. |
+| `docs/uml/index.md` | UML diagram index, including the whole-frontend component overview. |
 
 The legacy Vite files `frontend/src/main.tsx`, `frontend/src/App.tsx`, `frontend/vite.config.ts`, and `frontend/index.html` are no longer used.
 
@@ -30,7 +32,6 @@ Routes are configured in `frontend/.umirc.ts`.
 Current route groups:
 
 - `/` -> `HomePage`
-- `/welcome` -> `LandingPage`
 - `/todo` -> `TodoPage`
 - `/settings/*` -> settings layout and sections
 - `/finance/*` -> finance layout and child pages
@@ -54,7 +55,7 @@ Do not import routing APIs directly from `react-router-dom`.
 3. Loads the active custom theme when `custom_theme_id` exists.
 4. Syncs the current route to `themeEngine.switchPage(pageKey)`.
 5. Shows `AuthPage` when there is no authenticated session.
-6. Shows `AppTopBar` and the active route outlet after login.
+6. Sends explicit login/register success to `/`, then shows `AppTopBar` and the home route outlet.
 
 `/ui-preview` stays accessible in development mode without login so UI components can be checked quickly.
 
@@ -125,4 +126,5 @@ The migration intentionally does not preserve Vite compatibility. The project is
 ## UX Notes
 
 - The todo sidebar only contains todo folder navigation and shared shell actions. Finance entry points live in the home/finance routes instead of inside the todo folder list.
+- The home dashboard is the authenticated landing surface. It includes its own sidebar, reusable module cards (`frontend/src/components/home/HomeModuleCard.tsx`), and persistent local dashboard management state so users can keep only the modules they actually use.
 - `ConfirmDialogProvider` uses the shared `Modal` component. Delete confirmations should pass a clear `description`; `Modal` omits the body section when no children are provided so confirm dialogs do not show an empty middle area.

@@ -1,6 +1,5 @@
 export type ThemePage =
   | 'home'
-  | 'welcome'
   | 'todo'
   | 'settings'
   | 'finance'
@@ -9,7 +8,6 @@ export type ThemePage =
 
 export function getThemePageFromPath(pathname: string): ThemePage | null {
   if (pathname === '/') return 'home'
-  if (pathname.startsWith('/welcome')) return 'welcome'
   if (pathname.startsWith('/todo')) return 'todo'
   if (pathname.startsWith('/settings')) return 'settings'
   if (pathname.startsWith('/finance')) return 'finance'

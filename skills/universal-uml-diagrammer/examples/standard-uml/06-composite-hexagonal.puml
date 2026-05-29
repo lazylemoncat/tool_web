@@ -1,0 +1,25 @@
+@startuml
+title Order module internals - composite structure diagram
+
+' Scope: Internal structure of Order module
+' Evidence:
+' - src/order/OrderModule.ts
+' - src/order/adapters
+' Assumptions:
+' - Approximated using PlantUML components and ports.
+
+component "Order Module" as OrderModule {
+  portin "HTTP commands" as HttpIn
+  portout "Domain events" as EventsOut
+
+  component "OrderApplicationService" as App
+  component "OrderRepositoryAdapter" as Repo
+  component "PaymentClientAdapter" as Payment
+
+  HttpIn --> App
+  App --> Repo
+  App --> Payment
+  App --> EventsOut
+}
+
+@enduml

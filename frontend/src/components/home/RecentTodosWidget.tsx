@@ -1,12 +1,13 @@
 /*
- RecentTodosWidget — 最近 5 条待办任务.
+ RecentTodosWidget — 首页最近任务列表.
+ 读取待办数据并渲染为 HomePage 仪表盘卡片内的内容区.
 */
 
 import React from 'react'
 import { useNavigate } from 'umi'
 import { useLocale } from '../../i18n'
 import { useTodos } from '../../hooks/useTodos'
-import { Card, CardHeader, CardBody, Skeleton } from '../ui'
+import { Skeleton } from '../ui'
 
 const RecentTodosWidget: React.FC = () => {
   const { t } = useLocale()
@@ -16,37 +17,35 @@ const RecentTodosWidget: React.FC = () => {
   const recent = todos.slice(0, 5)
 
   return (
-    <Card>
-      <CardHeader>
-        <h3 style={{ margin: 0, fontSize: 'var(--font-size-md)', fontWeight: 600 }}>{t('home.recentTodos')}</h3>
-      </CardHeader>
-      <CardBody>
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} variant="text" width={`${60 + i * 10}%`} />)
-        ) : recent.length === 0 ? (
-          <p style={{ color: 'var(--color-fg-muted)', fontSize: '0.85rem' }}>{t('todo.emptyState')}</p>
-        ) : (
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {recent.map((todo) => (
-              <li
-                key={todo.id}
-                style={{
-                  padding: '6px 0',
-                  borderBottom: '1px solid var(--color-border)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  color: todo.is_completed ? 'var(--color-fg-muted)' : 'var(--color-fg)',
-                  textDecoration: todo.is_completed ? 'line-through' : 'none',
-                }}
+    <div className="home-recent-widget">
+      {loading ? (
+        <div className="home-widget-skeletons">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} variant="text" width={`${68 + i * 6}%`} />)}
+        </div>
+      ) : recent.length === 0 ? (
+        <p className="home-widget-empty">{t('todo.emptyState')}</p>
+      ) : (
+        <ul className="home-recent-list">
+          {recent.map((todo) => (
+            <li key={todo.id}>
+              <button
+                type="button"
+                className={todo.is_completed ? 'completed' : ''}
                 onClick={() => navigate('/todo')}
               >
-                {todo.title}
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardBody>
-    </Card>
+                <span className="home-task-status" aria-hidden="true" />
+                <span className="home-task-copy">
+                  <span className="home-task-title">{todo.title}</span>
+                  <span className="home-task-meta">
+                    {todo.due_date || t('home.noDueDate')}
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   )
 }
 

@@ -11,7 +11,6 @@ export default defineConfig({
   },
   routes: [
     { path: '/', component: '@/pages/HomePage' },
-    { path: '/welcome', component: '@/pages/LandingPage' },
     { path: '/todo', component: '@/pages/TodoPage' },
     { path: '/settings/account/password', component: '@/pages/settings/PasswordPage' },
     { path: '/settings/account/delete', component: '@/pages/settings/DeleteAccountPage' },

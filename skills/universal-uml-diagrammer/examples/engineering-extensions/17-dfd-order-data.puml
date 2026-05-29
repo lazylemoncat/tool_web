@@ -1,0 +1,23 @@
+@startuml
+title Order data movement - data flow diagram
+
+' Scope: Order data movement
+' Evidence:
+' - src/routes/orders.ts
+' - src/order/OrderService.ts
+' Assumptions:
+' - Approximated using components, data stores, and directional data flows.
+
+actor "Customer" as Customer
+component "Create Order" <<process>> as P1
+database "Order Database" <<data store>> as D1
+component "Payment Provider" <<external entity>> as E1
+queue "order.created" <<data flow/store>> as Q1
+
+Customer --> P1 : order details
+P1 --> D1 : order record
+P1 --> E1 : payment details
+E1 --> P1 : authorization result
+P1 --> Q1 : order event
+
+@enduml

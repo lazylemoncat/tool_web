@@ -2,7 +2,6 @@
 
 ## 路由树
 ```
-/welcome                         LandingPage (未登录欢迎)
 /                                HomePage (登录后仪表盘)
 /todo                            TodoApp (任务清单)
 /settings                        SettingsPage (设置布局, 重定向 /settings/account)
@@ -28,7 +27,7 @@
 - 已登录: AppTopBar 全局渲染, 路由按上述树分发
 
 ## 页面文件位置
-- `pages/`: LandingPage, HomePage, HelpPage, UIPreviewPage
+- `pages/`: HomePage, HelpPage, UIPreviewPage
 - `pages/settings/`: PasswordPage, DeleteAccountPage, CustomThemePage
 - `pages/finance/`: FinanceLayout, DashboardPage, TransactionsPage, BudgetsPage, EventsPage
 - `components/settings/`: SettingsPage, ThemeManager

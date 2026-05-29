@@ -1,0 +1,25 @@
+@startuml
+title Orders API - dependency diagram
+
+' Scope: Orders API dependencies
+' Evidence:
+' - src/routes/orders.ts
+' - src/order/OrderController.ts
+' - src/order/OrderService.ts
+
+component "POST /orders" <<endpoint>> as PostOrders
+component "GET /orders/{id}" <<endpoint>> as GetOrder
+component "OrderController" as Controller
+component "OrderService" as Service
+database "PostgreSQL" <<database>> as DB
+component "PaymentClient" as PaymentClient
+component "Payment API" <<external>> as PaymentAPI
+
+PostOrders --> Controller
+GetOrder --> Controller
+Controller --> Service
+Service --> DB
+Service --> PaymentClient
+PaymentClient --> PaymentAPI
+
+@enduml
