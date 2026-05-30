@@ -20,8 +20,15 @@ export function useLedgers() {
   }, [fetchLedgers])
 
   const createLedger = async (name: string, icon?: string, currency?: string) => {
-    try { await api.post('/finance/ledgers', { name, icon, currency }); await fetchLedgers() }
-    catch (err) { handleError(err); fetchLedgers() }
+    try {
+      await api.post('/finance/ledgers', { name, icon, currency })
+      await fetchLedgers()
+      return true
+    } catch (err) {
+      handleError(err)
+      await fetchLedgers()
+      return false
+    }
   }
   const updateLedger = async (id: number, fields: Partial<Ledger>) => {
     try { await api.put(`/finance/ledgers/${id}`, fields); await fetchLedgers() }

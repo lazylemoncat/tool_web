@@ -9,7 +9,7 @@ Finance manages ledgers, accounts, transactions, categories, tags, budgets, even
 ### Create A Ledger
 
 1. Open Finance.
-2. If there are no ledgers, click **Create First Ledger**.
+2. If there are no ledgers, click **Create First Ledger** to show the ledger name field.
 3. If a ledger already exists, click **New Ledger** in the ledger selector.
 4. Enter a name and confirm.
 
@@ -21,6 +21,7 @@ Finance manages ledgers, accounts, transactions, categories, tags, budgets, even
 ### Delete A Ledger
 
 - Deleting a ledger removes its accounts, transactions, budgets, and events.
+- Click the delete button beside a ledger in the ledger selector to delete it.
 - A confirmation dialog is shown before deletion.
 
 ## Dashboard

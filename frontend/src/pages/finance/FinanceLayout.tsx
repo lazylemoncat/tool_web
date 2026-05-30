@@ -177,13 +177,29 @@ const FinanceLayout: React.FC = () => {
   const handleCreateLedger = async () => {
     if (!newLedgerName.trim()) return
     try {
-      await createLedger(newLedgerName.trim())
+      const ok = await createLedger(newLedgerName.trim())
+      if (!ok) return
       setNewLedgerName('')
       setShowNewLedger(false)
     } catch {
       toast(t('finance.ledgerCreateFailed'), 'error')
     }
   }
+
+  const renderNewLedgerForm = () => (
+    <div className="finance-ledger-new">
+      <input
+        value={newLedgerName}
+        onChange={(e) => setNewLedgerName(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleCreateLedger()}
+        placeholder={t('finance.newLedger')}
+        autoFocus
+        className="finance-input-sm"
+      />
+      <button onClick={handleCreateLedger} className="btn-submit">{t('app.confirm')}</button>
+      <button onClick={() => setShowNewLedger(false)} className="btn-cancel">{t('app.cancel')}</button>
+    </div>
+  )
 
   const handleDeleteLedger = async (id: number) => {
     const ok = await confirm({
@@ -424,27 +440,25 @@ const FinanceLayout: React.FC = () => {
               <h1 className="finance-title">记账</h1>
               <div className="finance-ledger-selector">
                 {ledgers.map((l) => (
-                  <button
-                    key={l.id}
-                    className={`finance-ledger-btn ${l.id === activeLedgerId ? 'active' : ''}`}
-                    onClick={() => setActiveLedgerId(l.id)}
-                  >
-                    {l.icon} {l.name}
-                  </button>
+                  <div key={l.id} className="finance-ledger-item">
+                    <button
+                      className={`finance-ledger-btn ${l.id === activeLedgerId ? 'active' : ''}`}
+                      onClick={() => setActiveLedgerId(l.id)}
+                    >
+                      {l.icon} {l.name}
+                    </button>
+                    <button
+                      className="finance-ledger-delete"
+                      onClick={() => handleDeleteLedger(l.id)}
+                      aria-label={`${t('app.delete')} ${l.name}`}
+                      title={t('app.delete')}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
                 {showNewLedger ? (
-                  <div className="finance-ledger-new">
-                    <input
-                      value={newLedgerName}
-                      onChange={(e) => setNewLedgerName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleCreateLedger()}
-                      placeholder={t('finance.newLedger')}
-                      autoFocus
-                      className="finance-input-sm"
-                    />
-                    <button onClick={handleCreateLedger} className="btn-submit">{t('app.confirm')}</button>
-                    <button onClick={() => setShowNewLedger(false)} className="btn-cancel">{t('app.cancel')}</button>
-                  </div>
+                  renderNewLedgerForm()
                 ) : (
                   <button className="finance-ledger-add" onClick={() => setShowNewLedger(true)}>
                     + {t('finance.newLedger')}
@@ -464,11 +478,18 @@ const FinanceLayout: React.FC = () => {
               title={t('finance.noLedger')}
               description={t('finance.noLedgerHint')}
               action={
-                <Button onClick={() => setShowNewLedger(true)}>
-                  {t('finance.createFirstLedger')}
-                </Button>
+                !showNewLedger && (
+                  <Button onClick={() => setShowNewLedger(true)}>
+                    {t('finance.createFirstLedger')}
+                  </Button>
+                )
               }
             />
+            {showNewLedger && (
+              <div className="finance-empty-ledger-form">
+                {renderNewLedgerForm()}
+              </div>
+            )}
           </div>
         )}
 
