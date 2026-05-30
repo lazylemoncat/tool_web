@@ -4,8 +4,8 @@
 
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect } from 'react'
 import axios from 'axios'
-import api from '../api/client'
-import { setToken } from '../utils/token'
+import { authClient } from '../auth/client/AuthClient'
+import { setAccessToken, setCsrfToken } from '../auth/client/token'
 
 interface Preferences {
   theme?: string
@@ -67,8 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true })
         const body = res.data
         if (!cancelled && body.token) {
-          setToken(body.token)
+          setAccessToken(body.token)
           setTokenState(body.token)
+          setCsrfToken(body.csrf_token || null)
           localStorage.setItem('username', body.username)
           setUsername(body.username)
           if (body.preferences) {
@@ -83,8 +84,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const handleAuthSuccess = (data: any) => {
-    setToken(data.token)
+    setAccessToken(data.token)
     setTokenState(data.token)
+    setCsrfToken(data.csrf_token || null)
     localStorage.setItem('username', data.username)
     setUsername(data.username)
     if (data.preferences) {
@@ -95,7 +97,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (u: string, p: string, rememberMe: boolean = false) => {
     setLoading(true)
     try {
-      const data = await api.post('/auth/login', { username: u, password: p, remember_me: rememberMe }) as any
+      const data = await authClient.login(u, p, rememberMe) as any
+      if (data.status === 'mfa_required') {
+        throw new Error('MFA required')
+      }
       handleAuthSuccess(data)
     } finally {
       setLoading(false)
@@ -105,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = useCallback(async (u: string, p: string) => {
     setLoading(true)
     try {
-      const data = await api.post('/auth/register', { username: u, password: p }) as any
+      const data = await authClient.register(u, p) as any
       handleAuthSuccess(data)
     } finally {
       setLoading(false)
@@ -114,33 +119,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await api.post('/auth/logout')
+      await authClient.logout()
     } catch {
       // ignore errors — clear state regardless
     }
-    setToken(null)
+    setAccessToken(null)
+    setCsrfToken(null)
     setTokenState(null)
     localStorage.removeItem('username')
     setUsername(null)
   }, [])
 
   const changePassword = useCallback(async (oldPassword: string, newPassword: string) => {
-    await api.put('/auth/password', {
-      old_password: oldPassword,
-      new_password: newPassword,
-    })
+    await authClient.changePassword(oldPassword, newPassword)
   }, [])
 
   const deleteAccount = useCallback(async (password: string) => {
-    await api.delete('/auth/account', { data: { password } })
-    setToken(null)
+    await authClient.deleteAccount(password)
+    setAccessToken(null)
+    setCsrfToken(null)
     setTokenState(null)
     localStorage.removeItem('username')
     setUsername(null)
   }, [])
 
   const updatePreferences = useCallback(async (prefs: Preferences) => {
-    await api.put('/auth/preferences', { preferences: prefs })
+    await authClient.updatePreferences(prefs)
     savePrefs(prefs)
   }, [])
 

@@ -3,7 +3,13 @@
 */
 
 import axios from 'axios'
-import { getToken, shouldRefreshToken, setToken } from '../utils/token'
+import {
+  getAccessToken,
+  getCsrfToken,
+  setAccessToken,
+  setCsrfToken,
+  shouldRefreshToken,
+} from '../auth/client/token'
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -18,29 +24,37 @@ let refreshPromise: Promise<void> | null = null
 async function tryRefresh(): Promise<boolean> {
   if (refreshPromise) {
     await refreshPromise
-    return !!getToken()
+    return !!getAccessToken()
   }
   refreshPromise = (async () => {
     try {
       const res = await axios.post('/api/v1/auth/refresh', {}, { withCredentials: true })
       const body = res.data
       if (body.token) {
-        setToken(body.token)
+        setAccessToken(body.token)
+        setCsrfToken(body.csrf_token || null)
       }
     } catch {
-      setToken(null)
+      setAccessToken(null)
+      setCsrfToken(null)
     } finally {
       refreshPromise = null
     }
   })()
   await refreshPromise
-  return !!getToken()
+  return !!getAccessToken()
 }
 
 api.interceptors.request.use(async (config) => {
-  const token = getToken()
+  const token = getAccessToken()
   if (token && shouldRefreshToken(token)) {
     await tryRefresh()
+  }
+  const csrf = getCsrfToken()
+  const method = (config.method || 'get').toUpperCase()
+  if (csrf && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+    config.headers = config.headers || {}
+    config.headers['X-CSRF-Token'] = csrf
   }
   return config
 })
@@ -66,7 +80,8 @@ api.interceptors.response.use(
         return api(err.config)
       }
       // Refresh failed — clear state
-      setToken(null)
+      setAccessToken(null)
+      setCsrfToken(null)
       localStorage.removeItem('username')
       window.location.reload()
     }

@@ -14,7 +14,7 @@ source .env
 set +a
 
 # Validate required vars
-for var in DOCKER_USER SSH_HOST SSH_USER REMOTE_PATH; do
+for var in DOCKER_USER SSH_HOST SSH_USER REMOTE_PATH JWT_SECRET; do
   if [ -z "${!var:-}" ]; then
     echo "ERROR: ${var} is not set in .env"
     exit 1
@@ -25,12 +25,24 @@ BACKEND_IMAGE="${DOCKER_USER}/tool-web-backend:latest"
 FRONTEND_IMAGE="${DOCKER_USER}/tool-web-frontend:latest"
 
 echo "=== Building images ==="
-docker compose build
+if [ "${NO_CACHE:-0}" = "1" ]; then
+  docker compose build --no-cache
+else
+  docker compose build
+fi
 
 echo ""
 echo "=== Tagging images ==="
-docker tag tool_web-backend "${BACKEND_IMAGE}"
-docker tag tool_web-frontend "${FRONTEND_IMAGE}"
+BACKEND_LOCAL_IMAGE="$(docker compose images -q backend)"
+FRONTEND_LOCAL_IMAGE="$(docker compose images -q frontend)"
+
+if [ -z "${BACKEND_LOCAL_IMAGE}" ] || [ -z "${FRONTEND_LOCAL_IMAGE}" ]; then
+  echo "ERROR: Failed to resolve local compose image IDs."
+  exit 1
+fi
+
+docker tag "${BACKEND_LOCAL_IMAGE}" "${BACKEND_IMAGE}"
+docker tag "${FRONTEND_LOCAL_IMAGE}" "${FRONTEND_IMAGE}"
 
 echo ""
 echo "=== Pushing images to Docker Hub ==="
@@ -47,6 +59,9 @@ ssh "${SSH_USER}@${SSH_HOST}" "
   cd ${REMOTE_PATH}
   docker compose -f docker-compose.prod.yml pull
   docker compose -f docker-compose.prod.yml up -d
+  if [ \"${RESET_AUTH_SCHEMA:-0}\" = \"1\" ]; then
+    docker compose -f docker-compose.prod.yml exec -T backend uv run python -c \"from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')\"
+  fi
 "
 
 echo ""

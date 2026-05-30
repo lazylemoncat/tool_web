@@ -34,6 +34,14 @@ const AccountSection: React.FC = () => {
       </div>
 
       <div className="settings-section-block">
+        <h3>多因素认证</h3>
+        <p>启用 TOTP 后, 登录时需要输入认证器应用中的动态验证码.</p>
+        <Button variant="secondary" onClick={() => navigate('/settings/account/totp')}>
+          启用 TOTP
+        </Button>
+      </div>
+
+      <div className="settings-section-block">
         <h3>{t('auth.deleteAccount')}</h3>
         <p>{t('auth.deleteAccountWarning')}</p>
         <Button variant="danger" onClick={() => navigate('/settings/account/delete')}>

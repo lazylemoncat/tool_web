@@ -32,3 +32,6 @@
 - `pages/finance/`: FinanceLayout, DashboardPage, TransactionsPage, BudgetsPage, EventsPage
 - `components/settings/`: SettingsPage, ThemeManager
 - `components/settings/sections/`: AccountSection, AppearanceSection, LocaleSection, NotificationsSection, DataSection
+
+## Auth Route Additions
+- `/settings/account/totp`: TotpPage, independent TOTP setup page with local QR code rendering.

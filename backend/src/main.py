@@ -14,9 +14,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
+from .auth.core.errors import AuthError
+from .auth.fastapi_adapter.exceptions import auth_error_handler
+from .auth.fastapi_adapter.router import router as auth_router
 from .database import init_db
 from .middleware.logging import log_requests
-from .routers import folder, todo, auth, theme, tag, finance
+from .routers import folder, todo, theme, tag, finance
 from .utils.errors import AppError, app_error_handler
 from .utils.rate_limit import rate_limit_middleware
 
@@ -43,7 +46,7 @@ app.add_middleware(
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-    allow_headers=["Authorization", "Content-Type"],
+    allow_headers=["Authorization", "Content-Type", "X-CSRF-Token"],
 )
 
 app.middleware("http")(log_requests)
@@ -71,10 +74,11 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 app.add_exception_handler(RequestValidationError, validation_error_handler)
 app.add_exception_handler(HTTPException, http_exception_handler)
 app.add_exception_handler(AppError, app_error_handler)
+app.add_exception_handler(AuthError, auth_error_handler)
 
+app.include_router(auth_router)
 app.include_router(folder.router)
 app.include_router(todo.router)
-app.include_router(auth.router)
 app.include_router(theme.router)
 app.include_router(tag.router)
 app.include_router(finance.router)

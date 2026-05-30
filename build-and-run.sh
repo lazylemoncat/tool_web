@@ -11,11 +11,25 @@ if [ -f .env ]; then
   set +a
 fi
 
+if [ -z "${JWT_SECRET:-}" ]; then
+  echo "ERROR: JWT_SECRET is not set. Set it in .env before starting the app."
+  exit 1
+fi
+
 echo "Building images..."
-docker compose build
+if [ "${NO_CACHE:-0}" = "1" ]; then
+  docker compose build --no-cache
+else
+  docker compose build
+fi
 
 echo "Starting containers..."
 docker compose up -d
+
+if [ "${RESET_AUTH_SCHEMA:-0}" = "1" ]; then
+  echo "Resetting auth schema..."
+  docker compose exec -T backend uv run python -c "from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')"
+fi
 
 echo ""
 echo "App running at http://localhost:8003"

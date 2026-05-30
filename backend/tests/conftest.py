@@ -14,6 +14,9 @@ from sqlalchemy.pool import StaticPool
 
 from src.database import get_db
 from src.models.todo import Base
+import src.models.user  # noqa: F401  register auth tables with Base.metadata
+import src.models.tag  # noqa: F401  register tag tables with Base.metadata
+import src.models.theme  # noqa: F401  register theme tables with Base.metadata
 import src.models.finance  # noqa: F401  register finance tables with Base.metadata
 
 test_engine = create_engine(

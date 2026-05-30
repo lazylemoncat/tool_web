@@ -53,6 +53,13 @@ Do not hand-roll modal overlays, dropdown menus, toast systems, confirmation dia
 
 For app-level authenticated pages, keep using the global layout in `frontend/src/layouts/index.tsx`. Do not duplicate top bars or auth gates inside pages unless a page owns a special local navigation surface, such as the Home dashboard sidebar.
 
+## Settings Components
+
+| Need | Component | Notes |
+|---|---|---|
+| Account overview and security actions | `AccountSection` | `components/settings/sections/AccountSection.tsx`; username summary plus password/delete-account/TOTP entry points. |
+| TOTP setup | `TotpPage` | `pages/settings/TotpPage.tsx`; independent MFA setup page with local QR rendering, fallback URI copy, confirmation code, and recovery codes. |
+
 ## Home Components
 
 | Need | Component | Notes |

@@ -1,0 +1,1 @@
+"""Auth persistence port interfaces."""

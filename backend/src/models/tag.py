@@ -21,7 +21,7 @@ class Tag(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name = Column(String(50), nullable=False)
 

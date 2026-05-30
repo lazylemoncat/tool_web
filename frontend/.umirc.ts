@@ -13,6 +13,7 @@ export default defineConfig({
     { path: '/', component: '@/pages/HomePage' },
     { path: '/todo', component: '@/pages/TodoPage' },
     { path: '/settings/account/password', component: '@/pages/settings/PasswordPage' },
+    { path: '/settings/account/totp', component: '@/pages/settings/TotpPage' },
     { path: '/settings/account/delete', component: '@/pages/settings/DeleteAccountPage' },
     { path: '/settings/appearance/custom', component: '@/pages/settings/CustomThemePage' },
     {
