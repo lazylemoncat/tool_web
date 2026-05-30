@@ -1,0 +1,22 @@
+@startuml
+title Commerce platform - DDD context map
+
+' Scope: Commerce bounded context relationships
+' Evidence:
+' - docs/domain-contexts.md
+' - src/order
+' - src/billing
+' - src/shipping
+
+component "Ordering" <<bounded-context>> as Ordering
+component "Billing" <<bounded-context>> as Billing
+component "Shipping" <<bounded-context>> as Shipping
+component "Legacy ERP" <<external>> as ERP
+component "ERP Anti-Corruption Layer" <<ACL>> as ACL
+
+Ordering --> Billing : customer/supplier
+Ordering --> Shipping : published language
+Billing --> ACL
+ACL --> ERP
+
+@enduml

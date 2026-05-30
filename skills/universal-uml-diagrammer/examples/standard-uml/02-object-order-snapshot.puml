@@ -1,0 +1,22 @@
+@startuml
+title Order fixture - object diagram
+
+' Scope: Example order object graph from tests
+' Evidence:
+' - tests/fixtures/order-paid.json
+' Assumptions:
+' - Values are copied from fixture data.
+
+object "order: Order" as order {
+  id = "ord_123"
+  status = "PAID"
+}
+
+object "payment: Payment" as payment {
+  id = "pay_456"
+  status = "CAPTURED"
+}
+
+order --> payment : payment
+
+@enduml

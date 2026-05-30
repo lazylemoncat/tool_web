@@ -1,0 +1,23 @@
+@startuml
+title Backend services - component diagram
+
+' Scope: Backend service dependencies
+' Evidence:
+' - docker-compose.yml
+' - src/order
+' - src/payment
+
+component "Web API" as Web
+component "Order Service" as Order
+component "Payment Service" as Payment
+database "PostgreSQL" <<database>> as DB
+queue "Kafka" <<queue>> as Kafka
+component "Payment Provider" <<external>> as PSP
+
+Web --> Order
+Order --> Payment
+Order --> DB
+Order --> Kafka
+Payment --> PSP
+
+@enduml

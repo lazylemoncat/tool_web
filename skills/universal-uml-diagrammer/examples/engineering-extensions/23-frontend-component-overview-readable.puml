@@ -1,0 +1,126 @@
+@startuml
+title Frontend Component Overview
+
+' Scope: Frontend component overview
+' Evidence:
+' - frontend/.umirc.ts
+' - src/layouts/index.tsx
+' - components/layout
+' - components/common
+' - components/ui
+' - hooks
+' - api/client.ts
+' - pages/HomePage.tsx
+' - pages/TodoPage.tsx
+' - pages/finance
+' Assumptions:
+' - This is an overview diagram. Repeated imports and low-level UI dependencies are summarized to preserve readability.
+
+!include .agents/skills/universal-uml-diagrammer/templates/presentation-style.puml
+
+left to right direction
+
+legend right
+  Solid arrow: primary rendering / dependency path
+  Dashed arrow: data, preference, or feature dependency
+  Dotted arrow: optional or indirect relationship
+endlegend
+
+package "Frontend App" #EEF6FF {
+  rectangle "Umi Route Config\n(frontend/.umirc.ts)" as Umi
+  rectangle "AppLayout\n(src/layouts/index.tsx)" as Layout
+  rectangle "AuthPage\n(components/auth)" as Auth
+  rectangle "AppTopBar\n(components/layout)" as TopBar
+  rectangle "Theme and i18n Runtime\n(context, i18n, theme)" as Runtime
+
+  Umi -down-> Layout : wraps routes
+  Layout -down-> TopBar : shell
+  TopBar -down-> Runtime : runtime context
+  Auth -right.> TopBar : unauthenticated\nredirects
+}
+
+package "Pages and Feature Components" #F0FDF4 {
+  together {
+    rectangle "Finance Routes\n(pages/finance)" as FinanceRoutes
+    rectangle "Todo Page\n(pages/TodoPage.tsx)" as TodoPage
+    rectangle "Settings and Utility Pages\n(components/settings,\npages/settings,\npages/HelpPage,\npages/UIPreviewPage)" as SettingsPages
+    rectangle "Home Dashboard\n(pages/HomePage.tsx)" as HomePage
+  }
+}
+
+package "Shared Frontend Layer" #FFFBEB {
+  together {
+    rectangle "Common Components\n(components/common)" as Common
+    rectangle "Hooks\n(hooks, hooks/finance)" as Hooks
+    rectangle "Finance Components\n(components/finance)" as FinanceComponents
+    rectangle "Todo Components\n(components/todo)" as TodoComponents
+    rectangle "Home Components\n(components/home)" as HomeComponents
+  }
+
+  together {
+    rectangle "API Client\n(api/client.ts)" as ApiClient
+    rectangle "UI Primitives\n(components/ui)" as UI
+    rectangle "Styles and Tokens\n(styles, theme CSS vars)" as Styles
+  }
+
+  Common -down-> ApiClient
+  Common -down-> UI
+  Hooks -down-> ApiClient
+  Hooks -down-> UI
+  UI -down-> Styles
+}
+
+package "External UI Libraries" #F5F3FF {
+  rectangle "«external»\nRadix UI" as Radix
+  rectangle "«external»\nRecharts" as Recharts
+  rectangle "«external»\ndnd-kit" as DndKit
+}
+
+' Layout stabilizers.
+Layout -[hidden]right- FinanceRoutes
+FinanceRoutes -[hidden]right- TodoPage
+TodoPage -[hidden]right- SettingsPages
+SettingsPages -[hidden]right- HomePage
+Common -[hidden]right- Hooks
+Hooks -[hidden]right- FinanceComponents
+FinanceComponents -[hidden]right- TodoComponents
+TodoComponents -[hidden]right- HomeComponents
+Radix -[hidden]right- Recharts
+Recharts -[hidden]right- DndKit
+
+' Primary relationships.
+Layout -right-> FinanceRoutes : route shell
+Layout -right-> TodoPage : route shell
+Layout -right-> SettingsPages : route shell
+Layout -right-> HomePage : route shell
+
+FinanceRoutes -down.> Hooks : preference data
+FinanceRoutes -down.> FinanceComponents : finance UI
+TodoPage -down.> TodoComponents : task UI
+SettingsPages -down.> Common : settings UI
+HomePage -down.> HomeComponents : dashboard UI
+
+FinanceComponents -down.> UI : forms
+TodoComponents -down.> UI : sortable tasks
+HomeComponents -down.> UI : dashboard cards
+HomeComponents -down.> Recharts : charts
+
+UI -down-> Radix : primitives
+FinanceComponents -down.> Recharts : charts
+TodoComponents -down.> DndKit : sorting
+
+TopBar -right.> Common : search / toast
+Runtime -right.> Styles : theme tokens
+ApiClient -down.> Styles : theme fetch
+
+note bottom of FinanceRoutes
+  Detailed finance subroutes
+  should be shown in a child diagram.
+end note
+
+note bottom of UI
+  Headless primitives and styling
+  are summarized to avoid edge clutter.
+end note
+
+@enduml

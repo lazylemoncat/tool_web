@@ -1,0 +1,27 @@
+@startuml
+title Commerce platform - C4 container diagram approximation
+
+' Scope: Commerce platform containers
+' Evidence:
+' - docker-compose.yml
+' - docs/architecture.md
+' Assumptions:
+' - Approximated using PlantUML components.
+
+actor "Customer" as Customer
+component "Web App" <<container>> as Web
+component "API Service" <<container>> as API
+component "Worker Service" <<container>> as Worker
+database "PostgreSQL" <<container/database>> as DB
+queue "Kafka" <<container/queue>> as Kafka
+component "Payment Provider" <<external system>> as PSP
+
+Customer --> Web
+Web --> API : HTTPS/JSON
+API --> DB
+API --> Kafka
+Worker --> Kafka
+Worker --> DB
+API --> PSP
+
+@enduml

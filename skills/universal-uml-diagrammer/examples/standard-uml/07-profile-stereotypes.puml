@@ -1,0 +1,22 @@
+@startuml
+title Project UML profile - stereotypes
+
+' Scope: Diagram stereotype conventions
+' Evidence:
+' - docs/architecture.md
+' Assumptions:
+' - This profile documents conventions for generated diagrams.
+
+class External <<stereotype>> {
+  taggedValue: owner
+}
+
+class Database <<stereotype>> {
+  taggedValue: engine
+}
+
+class Queue <<stereotype>> {
+  taggedValue: deliverySemantics
+}
+
+@enduml

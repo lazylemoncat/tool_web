@@ -1,10 +1,12 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'umi'
 import { useAuth } from '../../context/AuthContext'
 import { useLocale } from '../../i18n'
 import { useErrorDisplay } from '../../hooks/useErrorDisplay'
 
 const AuthPage: React.FC = () => {
   const { login, register, loading } = useAuth()
+  const navigate = useNavigate()
   const { locale, setLocale, t } = useLocale()
   const { displayError } = useErrorDisplay()
   const [tab, setTab] = useState<'login' | 'register'>('login')
@@ -37,6 +39,7 @@ const AuthPage: React.FC = () => {
       } else {
         await register(username.trim(), password)
       }
+      navigate('/', { replace: true })
     } catch (err: any) {
       setError(displayError(err))
     }

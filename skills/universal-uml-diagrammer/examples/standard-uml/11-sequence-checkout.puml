@@ -1,0 +1,36 @@
+@startuml
+title Checkout payment authorization - sequence diagram
+
+' Scope: Checkout payment authorization
+' Evidence:
+' - src/checkout/CheckoutController.ts
+' - src/checkout/CheckoutService.ts
+' - src/payment/PaymentGateway.ts
+
+actor Customer
+participant "CheckoutController" as Controller
+participant "CheckoutService" as Checkout
+participant "PaymentGateway" as Gateway
+database "PostgreSQL" <<database>> as DB
+component "Payment Provider" <<external>> as PSP
+
+Customer -> Controller: POST /checkout
+Controller -> Checkout: checkout(request)
+Checkout -> DB: load cart
+Checkout -> Gateway: authorize(payment)
+Gateway -> PSP: authorize request
+
+alt authorized
+  PSP --> Gateway: approved
+  Gateway --> Checkout: approved
+  Checkout -> DB: save order
+  Checkout --> Controller: success
+else declined
+  PSP --> Gateway: declined
+  Gateway --> Checkout: declined
+  Checkout --> Controller: failure
+end
+
+Controller --> Customer: HTTP response
+
+@enduml

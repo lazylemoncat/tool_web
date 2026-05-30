@@ -1,0 +1,29 @@
+@startuml
+title Refund workflow - activity diagram
+
+' Scope: Refund business process
+' Evidence:
+' - src/refund/RefundService.ts
+' - tests/refund.spec.ts
+
+start
+:Receive refund request;
+:Validate order eligibility;
+
+if (Eligible?) then (yes)
+  :Call payment provider;
+  if (Provider accepted?) then (yes)
+    :Mark payment refunded;
+    :Publish RefundCompleted;
+    :Return success;
+  else (no)
+    :Record provider failure;
+    :Return failure;
+  endif
+else (no)
+  :Return validation error;
+endif
+
+stop
+
+@enduml

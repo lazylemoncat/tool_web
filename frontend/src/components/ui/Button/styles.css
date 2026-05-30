@@ -1,0 +1,79 @@
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  font-family: inherit;
+  font-weight: var(--font-weight-medium);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base),
+              border-color var(--transition-base), box-shadow var(--transition-base),
+              transform var(--duration-fast) var(--ease-out);
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1;
+}
+.ui-btn:active:not(:disabled) { transform: translateY(1px); }
+.ui-btn:focus-visible {
+  outline: 2px solid var(--color-border-focus);
+  outline-offset: 2px;
+}
+.ui-btn:disabled { cursor: not-allowed; opacity: 0.55; }
+.ui-btn-full { width: 100%; }
+
+/* Sizes */
+.ui-btn-sm { height: 28px; padding: 0 var(--space-3); font-size: var(--font-size-sm); }
+.ui-btn-md { height: 36px; padding: 0 var(--space-4); font-size: var(--font-size-md); }
+.ui-btn-lg { height: 44px; padding: 0 var(--space-5); font-size: var(--font-size-lg); }
+
+/* Variants */
+.ui-btn-primary {
+  background: var(--color-accent);
+  color: var(--color-fg-on-accent);
+}
+.ui-btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+.ui-btn-primary:active:not(:disabled) { background: var(--color-accent-active); }
+
+.ui-btn-secondary {
+  background: var(--color-bg-elevated);
+  color: var(--color-fg);
+  border-color: var(--color-border);
+}
+.ui-btn-secondary:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  border-color: var(--color-border-strong);
+}
+
+.ui-btn-ghost {
+  background: transparent;
+  color: var(--color-fg-muted);
+}
+.ui-btn-ghost:hover:not(:disabled) {
+  background: var(--color-bg-hover);
+  color: var(--color-fg);
+}
+
+.ui-btn-danger {
+  background: var(--color-danger);
+  color: var(--color-danger-fg);
+}
+.ui-btn-danger:hover:not(:disabled) { background: var(--color-danger-hover); }
+
+.ui-btn-link {
+  background: transparent;
+  color: var(--color-accent);
+  height: auto;
+  padding: 0;
+  text-decoration: none;
+}
+.ui-btn-link:hover:not(:disabled) { text-decoration: underline; }
+
+.ui-btn-loading { color: transparent; }
+.ui-btn-loading .ui-btn-label { visibility: hidden; }
+.ui-btn-spinner { position: absolute; }
+.ui-btn-loading { position: relative; }
+.ui-btn-loading .ui-btn-spinner { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+
+.ui-btn-icon { display: inline-flex; align-items: center; line-height: 0; }

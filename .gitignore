@@ -8,6 +8,8 @@ dist/
 # Node
 node_modules/
 frontend/dist/
+frontend/src/.umi/
+frontend/src/.umi-production/
 
 # Database
 *.db
@@ -38,6 +40,13 @@ backend/uv.toml
 # Logs
 *.log
 backend/logs/
+
+# Local code intelligence indexes
+.codegraph/
+
+# Uploads
+backend/uploads/*
+!backend/uploads/.gitkeep
 
 # Env
 .env

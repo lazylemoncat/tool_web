@@ -1,0 +1,278 @@
+@startuml
+title Full Database ERD Overview
+
+' Scope: Whole database ERD overview at standard granularity.
+' Evidence:
+' - backend/src/models/user.py
+' - backend/src/models/todo.py
+' - backend/src/models/tag.py
+' - backend/src/models/finance.py
+' - backend/src/models/theme.py
+' Assumptions:
+' - SQLAlchemy models are treated as the source of truth because migration files were not found in the inspected repository.
+' - Standard granularity includes primary keys, foreign keys, and core business fields while omitting most created_at and updated_at audit fields.
+' - Repeated user ownership edges are summarized in a note because every user_id field already exposes the users.id foreign key.
+' - resource_relations stores polymorphic links through type and id fields, so its links are documented as application-level references instead of database foreign keys.
+
+top to bottom direction
+hide circle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam dpi 180
+skinparam defaultFontName Arial
+skinparam defaultFontSize 16
+skinparam defaultFontColor #111827
+skinparam ArrowColor #111827
+skinparam ArrowThickness 1.2
+skinparam ArrowFontSize 13
+skinparam linetype polyline
+skinparam nodesep 70
+skinparam ranksep 85
+skinparam entity {
+  BackgroundColor #FFFFFF
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 16
+}
+skinparam package {
+  BackgroundColor #F9FAFB
+  BorderColor #6B7280
+  FontColor #111827
+  FontSize 18
+}
+skinparam note {
+  BackgroundColor #FFF7ED
+  BorderColor #FDBA74
+  FontColor #111827
+  FontSize 13
+}
+skinparam classAttributeIconSize 0
+
+package "Identity and Preferences" #EEF2FF {
+  entity "users" as users {
+    * id : Integer <<PK>>
+    --
+    username : String(50) <<unique>>
+    password_hash : String(128)
+    is_admin : Boolean
+    preferences : JSON
+    failed_login_attempts : Integer
+    locked_until : DateTime
+  }
+
+  entity "user_themes" as user_themes {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    name : String(100)
+    config_json : Text
+  }
+}
+
+package "Todo" #ECFDF5 {
+  entity "folders" as folders {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    parent_id : Integer <<FK>>
+    name : String(50)
+    color : String(9)
+    sort_order : Integer
+  }
+
+  entity "todos" as todos {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    folder_id : Integer <<FK>>
+    parent_id : Integer <<FK>>
+    title : String(500)
+    priority : Integer
+    due_date : Date
+    is_completed : Boolean
+    sort_order : Integer
+  }
+
+  entity "tags" as tags {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    name : String(50)
+    unique : user_id + name
+  }
+
+  entity "todo_tags" as todo_tags {
+    * todo_id : Integer <<PK, FK>>
+    * tag_id : Integer <<PK, FK>>
+  }
+
+  entity "recurrence_rules" as recurrence_rules {
+    * id : Integer <<PK>>
+    --
+    todo_id : Integer <<FK>>
+    rrule_string : String(500)
+  }
+}
+
+package "Finance" #FFF7ED {
+  entity "ledgers" as ledgers {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    name : String(50)
+    icon : String(10)
+    currency : String(10)
+  }
+
+  entity "accounts" as accounts {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    name : String(50)
+    type : String(50)
+    currency : String(10)
+    initial_balance : Numeric(12,2)
+    archived : Boolean
+  }
+
+  entity "finance_categories" as finance_categories {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    parent_id : Integer <<FK>>
+    name : String(50)
+    icon : String(10)
+  }
+
+  entity "finance_tags" as finance_tags {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    name : String(50)
+    unique : ledger_id + name
+  }
+
+  entity "transactions" as transactions {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    account_id : Integer <<FK>>
+    category_id : Integer <<FK nullable>>
+    event_id : Integer <<FK nullable>>
+    parent_transaction_id : Integer <<FK nullable>>
+    type : TransactionType
+    amount : Numeric(12,2)
+    currency : String(10)
+    occurred_at : DateTime
+    sort_order : Integer
+  }
+
+  entity "split_items" as split_items {
+    * id : Integer <<PK>>
+    --
+    transaction_id : Integer <<FK>>
+    category_id : Integer <<FK nullable>>
+    amount : Numeric(12,2)
+    note : Text
+  }
+
+  entity "events" as events {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    name : String(100)
+    start_at : DateTime
+    end_at : DateTime
+    color : String(9)
+  }
+
+  entity "budgets" as budgets {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    ledger_id : Integer <<FK>>
+    name : String(100)
+    amount : Numeric(12,2)
+    currency : String(10)
+    rrule : Text
+    filters : JSON
+    rollover : Boolean
+    alert_threshold : Integer
+  }
+
+  entity "attachments" as attachments {
+    * id : Integer <<PK>>
+    --
+    user_id : Integer <<FK>>
+    url : String(500)
+    mime_type : String(100)
+    size : Integer
+  }
+
+  entity "transaction_tags" as transaction_tags {
+    * transaction_id : Integer <<PK, FK>>
+    * tag_id : Integer <<PK, FK>>
+  }
+
+  entity "transaction_attachments" as transaction_attachments {
+    * transaction_id : Integer <<PK, FK>>
+    * attachment_id : Integer <<PK, FK>>
+  }
+
+  entity "resource_relations" as resource_relations {
+    * id : Integer <<PK>>
+    --
+    from_type : String(50)
+    from_id : Integer
+    relation_type : String(50)
+    to_type : String(50)
+    to_id : Integer
+  }
+}
+
+users ||--o{ user_themes
+users ||--o{ folders
+users ||--o{ ledgers
+
+folders ||--o{ folders
+folders ||--o{ todos
+todos ||--o{ todos
+todos ||--o{ recurrence_rules
+todos ||--o{ todo_tags
+tags ||--o{ todo_tags
+
+ledgers ||--o{ accounts
+ledgers ||--o{ finance_categories
+ledgers ||--o{ finance_tags
+ledgers ||--o{ transactions
+ledgers ||--o{ events
+ledgers ||--o{ budgets
+finance_categories ||--o{ finance_categories
+accounts ||--o{ transactions
+finance_categories ||--o{ transactions
+events ||--o{ transactions
+transactions ||--o{ transactions
+transactions ||--o{ split_items
+finance_categories ||--o{ split_items
+transactions ||--o{ transaction_tags
+finance_tags ||--o{ transaction_tags
+transactions ||--o{ transaction_attachments
+attachments ||--o{ transaction_attachments
+
+note bottom of users
+  Tables with user_id reference users.id.
+  Most user-owned rows use ondelete CASCADE in the models.
+end note
+
+note right of resource_relations
+  Application-level polymorphic relation.
+  from_type/from_id and to_type/to_id are indexed,
+  but are not declared as database foreign keys.
+end note
+
+@enduml

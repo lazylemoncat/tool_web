@@ -4,6 +4,7 @@
 */
 
 import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { registerI18n } from './runtime/themeBridge'
 
 export type Locale = 'zh' | 'en'
 
@@ -65,6 +66,10 @@ export function LocaleProvider({ children, initial }: { children: ReactNode; ini
     }
     return interpolate(template, vars)
   }
+
+  useEffect(() => {
+    registerI18n({ locale, t })
+  }, [locale, messages])
 
   return (
     <LocaleContext.Provider value={{ locale, setLocale, t }}>

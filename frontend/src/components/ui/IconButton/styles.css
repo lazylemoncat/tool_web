@@ -1,0 +1,28 @@
+.ui-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background var(--transition-base), color var(--transition-base), border-color var(--transition-base);
+  color: var(--color-fg-muted);
+  background: transparent;
+  flex-shrink: 0;
+}
+.ui-icon-btn:hover:not(:disabled) { background: var(--color-bg-hover); color: var(--color-fg); }
+.ui-icon-btn:active:not(:disabled) { background: var(--color-bg-active); }
+.ui-icon-btn:focus-visible { outline: 2px solid var(--color-border-focus); outline-offset: 2px; }
+.ui-icon-btn:disabled { cursor: not-allowed; opacity: 0.5; }
+
+.ui-icon-btn-sm { width: 28px; height: 28px; font-size: 14px; }
+.ui-icon-btn-md { width: 36px; height: 36px; font-size: 16px; }
+.ui-icon-btn-lg { width: 44px; height: 44px; font-size: 18px; }
+
+.ui-icon-btn-ghost { /* default */ }
+.ui-icon-btn-secondary { border-color: var(--color-border); background: var(--color-bg-elevated); }
+.ui-icon-btn-secondary:hover:not(:disabled) { background: var(--color-bg-hover); border-color: var(--color-border-strong); }
+.ui-icon-btn-primary { background: var(--color-accent); color: var(--color-fg-on-accent); }
+.ui-icon-btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); color: var(--color-fg-on-accent); }
+.ui-icon-btn-danger { color: var(--color-danger); }
+.ui-icon-btn-danger:hover:not(:disabled) { background: color-mix(in srgb, var(--color-danger) 12%, transparent); color: var(--color-danger-hover); }

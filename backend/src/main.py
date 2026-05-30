@@ -12,10 +12,11 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from .database import init_db
 from .middleware.logging import log_requests
-from .routers import folder, todo, auth, theme, tag
+from .routers import folder, todo, auth, theme, tag, finance
 from .utils.errors import AppError, app_error_handler
 from .utils.rate_limit import rate_limit_middleware
 
@@ -34,7 +35,7 @@ app = FastAPI(
     title="Tool Web API",
     version="1.0.0",
     lifespan=lifespan,
-    request_max_size=1_048_576,  # 1MB
+    request_max_size=10_485_760,  # 10MB
 )
 
 app.add_middleware(
@@ -76,6 +77,11 @@ app.include_router(todo.router)
 app.include_router(auth.router)
 app.include_router(theme.router)
 app.include_router(tag.router)
+app.include_router(finance.router)
+
+uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
+os.makedirs(uploads_dir, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=uploads_dir), name="uploads")
 
 
 @app.get("/api/health")

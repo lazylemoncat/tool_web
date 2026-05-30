@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useLocale } from '../../i18n'
+import { EmptyState } from '../ui'
 import TodoItem from './TodoItem'
 import type { Todo } from '../../hooks/useTodos'
 
@@ -30,6 +31,7 @@ interface Props {
   onEdit: (todo: Todo) => void
   onReorder: (items: { id: number; sort_order: number }[]) => void
   onDetail?: (todo: Todo) => void
+  onOpenSubtasks?: (todo: Todo) => void
   selectMode?: boolean
   selectedIds?: Set<number>
   onToggleSelect?: (id: number) => void
@@ -43,12 +45,13 @@ interface SortableTodoItemProps {
   onEdit: (todo: Todo) => void
   onReorder?: (items: { id: number; sort_order: number }[]) => void
   onDetail?: (todo: Todo) => void
+  onOpenSubtasks?: (todo: Todo) => void
   selectMode?: boolean
   selectedIds?: Set<number>
   onToggleSelect?: (id: number) => void
 }
 
-const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail, selectMode, selectedIds, onToggleSelect }) => {
+const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail, onOpenSubtasks, selectMode, selectedIds, onToggleSelect }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
   })
@@ -56,8 +59,11 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggle, onD
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : undefined,
+    opacity: isDragging ? 0.6 : undefined,
     position: 'relative',
+    boxShadow: isDragging ? 'var(--shadow-elevated)' : undefined,
+    border: isDragging ? '1px solid var(--color-accent)' : undefined,
+    borderRadius: isDragging ? 'var(--radius-sm)' : undefined,
   }
 
   return (
@@ -79,12 +85,13 @@ const SortableTodoItem: React.FC<SortableTodoItemProps> = ({ todo, onToggle, onD
         onEdit={onEdit}
         onReorder={onReorder}
         onDetail={onDetail}
+        onOpenSubtasks={onOpenSubtasks}
       />
     </div>
   )
 }
 
-const TodoList: React.FC<Props> = React.memo(({ todos, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail, selectMode, selectedIds, onToggleSelect }) => {
+const TodoList: React.FC<Props> = React.memo(({ todos, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail, onOpenSubtasks, selectMode, selectedIds, onToggleSelect }) => {
   const { t } = useLocale()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -93,9 +100,10 @@ const TodoList: React.FC<Props> = React.memo(({ todos, onToggle, onDelete, onAdd
 
   if (todos.length === 0) {
     return (
-      <div className="empty-state">
-        <p>{t('todo.emptyState')}</p>
-      </div>
+      <EmptyState
+        icon="📋"
+        title={t('todo.emptyState')}
+      />
     )
   }
 
@@ -130,6 +138,7 @@ const TodoList: React.FC<Props> = React.memo(({ todos, onToggle, onDelete, onAdd
               onEdit={onEdit}
               onReorder={onReorder}
               onDetail={onDetail}
+              onOpenSubtasks={onOpenSubtasks}
               selectMode={selectMode}
               selectedIds={selectedIds}
               onToggleSelect={onToggleSelect}
