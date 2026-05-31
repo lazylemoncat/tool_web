@@ -32,4 +32,4 @@ if [ "${RESET_AUTH_SCHEMA:-0}" = "1" ]; then
 fi
 
 echo ""
-echo "App running at http://localhost:8003"
+echo "Backend running at http://localhost:8003"

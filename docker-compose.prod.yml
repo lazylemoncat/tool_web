@@ -1,6 +1,8 @@
 services:
   backend:
     image: ${DOCKER_USER:-user}/tool-web-backend:latest
+    ports:
+      - "8003:8000"
     volumes:
       - ./backend/data:/app/data
     environment:
@@ -8,12 +10,4 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:8003}
-    restart: unless-stopped
-
-  frontend:
-    image: ${DOCKER_USER:-user}/tool-web-frontend:latest
-    ports:
-      - "8003:80"
-    depends_on:
-      - backend
     restart: unless-stopped

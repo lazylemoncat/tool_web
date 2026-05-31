@@ -22,7 +22,6 @@ for var in DOCKER_USER SSH_HOST SSH_USER REMOTE_PATH JWT_SECRET; do
 done
 
 BACKEND_IMAGE="${DOCKER_USER}/tool-web-backend:latest"
-FRONTEND_IMAGE="${DOCKER_USER}/tool-web-frontend:latest"
 
 echo "=== Building images ==="
 if [ "${NO_CACHE:-0}" = "1" ]; then
@@ -34,20 +33,17 @@ fi
 echo ""
 echo "=== Tagging images ==="
 BACKEND_LOCAL_IMAGE="$(docker compose images -q backend)"
-FRONTEND_LOCAL_IMAGE="$(docker compose images -q frontend)"
 
-if [ -z "${BACKEND_LOCAL_IMAGE}" ] || [ -z "${FRONTEND_LOCAL_IMAGE}" ]; then
+if [ -z "${BACKEND_LOCAL_IMAGE}" ]; then
   echo "ERROR: Failed to resolve local compose image IDs."
   exit 1
 fi
 
 docker tag "${BACKEND_LOCAL_IMAGE}" "${BACKEND_IMAGE}"
-docker tag "${FRONTEND_LOCAL_IMAGE}" "${FRONTEND_IMAGE}"
 
 echo ""
 echo "=== Pushing images to Docker Hub ==="
 docker push "${BACKEND_IMAGE}"
-docker push "${FRONTEND_IMAGE}"
 
 echo ""
 echo "=== Syncing files to remote ==="
