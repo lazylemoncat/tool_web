@@ -89,6 +89,19 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 访问 `/finance` 进入记账模块.
 
+## UI 组件配置
+
+前端已通过 `frontend/src/components/common/MuiProvider.tsx` 全局接入 MUI Material 和 MUI X Date Pickers. `frontend/src/layouts/index.tsx` 会在加载页、未登录页、开发预览页和已登录应用外层统一挂载该 Provider.
+
+`MuiProvider` 负责:
+
+- 通过 MUI `ThemeProvider` 为全站提供组件主题上下文.
+- 从现有 CSS 主题 token 读取主色、背景色、文本色、边框色、字体和圆角, 映射到 MUI theme token.
+- 通过 MUI X `LocalizationProvider` 为日期选择器提供 dayjs adapter 和语言环境.
+- 为弹窗、浮层和复杂输入控件提供统一的 MUI 运行时配置.
+
+后续迁移记账页面时, 基础按钮、输入框、弹窗等优先使用 `frontend/src/components/ui/` 中已封装到 MUI 的组件; 日期选择器等复杂组件优先使用 MUI X; 表格、选择器等复杂业务组件优先使用 MUI Material 再按业务需要做二次封装.
+
 Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文件嵌入本地 Umi dev server 的真实记账路由, 用于在 Open Design 中预览页面效果; 实际业务代码仍在 `frontend/src/pages/finance/` 与 `frontend/src/components/finance/`.
 
 ### Dashboard (仪表盘)

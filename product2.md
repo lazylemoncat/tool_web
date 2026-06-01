@@ -1,72 +1,475 @@
-# Codex Engineering Brief: Agent-ready Personal Workspace Database & Backend Refactor
+# 产品需求文档（PRD）
 
-## 0. Objective
+## 项目名称
 
-Refactor the current project into a workspace-owned, resource-centered, externally-agent-accessible personal data platform.
+暂定名：**tool-web**
 
-This project is **not** an internal Agent runtime. It must not host, schedule, or execute built-in AI Agents. Instead, it exposes structured data, permissions, REST APIs, Webhooks, and MCP-compatible tools so that user-authorized external Agents, scripts, CLI tools, integrations, and MCP clients can safely read and write user workspace data.
+## 文档定位
 
-Primary backend stack assumptions:
+本文档是 `tool-web` 的新版产品与技术产品文档，用于替代旧版 PRD。
+
+本文档同时描述：
+
+- 当前已经实现的产品能力与技术栈
+- 当前数据模型和系统限制
+- 产品长期目标架构
+- 面向外部 Agent 的开放能力规划
+- 近期、中期、长期路线图
+
+重要边界：本项目不是内置 Agent Runtime，不负责运行、编排或托管 AI Agent。项目定位是 **Agent-ready Personal Workspace**，即为用户和用户授权的外部 Agent / 脚本 / 自动化工具提供结构化数据、API、权限、审计、Webhook 与 MCP 风格接口。
+
+---
+
+# 1. 产品概述
+
+## 1.1 产品定位
+
+`tool-web` 是一款 **Web-first、API-first、Self-hostable 的 Agent-ready Personal Workspace**。
+
+产品核心定位：
+
+> 面向个人与未来轻量协作场景的结构化信息管理平台，为用户提供任务、财务、主题、自定义工作空间等能力，并在长期演进中为外部 Agent 提供安全、可审计、可控的数据操作接口。
+
+产品强调：
+
+- 结构化数据管理
+- Web 多端统一访问
+- 高度可自定义主题与界面体验
+- API-first 的后端能力
+- 可自部署与 Docker 化部署
+- 面向外部 Agent 的开放数据接口
+- 长期可演进为统一 Resource 中心模型
+
+## 1.2 产品不是什麼
+
+为了避免产品边界失控，当前和长期设计中需要明确以下限制：
+
+- 不内置 AI Agent Runtime
+- 不内置 Agent 聊天 UI
+- 不直接执行外部 Agent 代码
+- 不允许外部 Agent 直接访问数据库
+- 不把系统设计成通用 LLM 编排平台
+- 不把插件系统作为近期核心目标
+
+外部 Agent 未来只能通过受控方式接入，例如：
+
+- REST API
+- API Token / Personal Access Token
+- Webhook
+- MCP Server 风格接口
+- 未来可能的 OAuth-style 授权
+
+## 1.3 产品核心价值
+
+### 1.3.1 对普通用户
+
+用户可以在一个统一的 Web 工作空间中管理：
+
+- 任务
+- 文件夹
+- 子任务
+- 标签
+- 重复规则
+- 财务账本
+- 账户
+- 分类
+- 交易
+- 拆分项
+- 预算
+- 财务事件
+- 附件
+- 主题偏好
+- 帮助文档
+
+### 1.3.2 对高级用户
+
+用户可以：
+
+- 自部署系统
+- 管理个人数据
+- 使用 API 连接外部工具
+- 自定义主题和界面体验
+- 未来接入外部 Agent、MCP Client、自动化工具
+
+### 1.3.3 对外部 Agent / 自动化工具
+
+长期目标是让用户授权的外部工具能够：
+
+- 安全读取结构化数据
+- 创建和修改任务
+- 创建和查询财务记录
+- 查询 Resource 关系图谱
+- 接收 Webhook 事件
+- 通过 MCP 工具接口操作系统
+- 所有操作均受权限、审计和幂等机制约束
+
+---
+
+# 2. 产品设计原则
+
+## 2.1 Web-first
+
+产品采用 Web-first 策略。
+
+用户无需安装原生客户端，可通过浏览器访问：
+
+- PC
+- 手机
+- 平板
+
+当前前端基于 React + Umi，前端静态产物由 Nginx 托管。
+
+## 2.2 API-first
+
+后端能力应通过清晰、稳定、结构化的 API 暴露。
+
+API-first 的目的：
+
+- 支持前后端解耦
+- 支持未来移动端或其他客户端
+- 支持外部脚本和自动化工具
+- 支持未来外部 Agent 接入
+- 支持 MCP Server 复用同一套服务能力
+
+## 2.3 Self-hostable
+
+产品应支持个人或小团队自部署。
+
+当前部署方式包括：
+
+- Docker
+- Docker Compose
+- Nginx 托管前端静态构建产物
+- 后端容器运行 FastAPI 服务
+- `deploy.sh` 自动构建、推送镜像并通过 SSH 部署到远端
+
+## 2.4 Structured Data First
+
+产品中的核心数据应尽量使用结构化模型，而不是仅依赖富文本或页面内容。
+
+当前已经结构化的模块包括：
+
+- Todo
+- Finance
+- Theme
+- Auth
+
+长期目标是建立统一 Resource 中心模型，使任务、交易、事件、附件、插件资源等都能被统一搜索、关联、授权和审计。
+
+## 2.5 External-agent-ready
+
+系统长期目标是为外部 Agent 做好准备，而不是在系统内部运行 Agent。
+
+外部 Agent 接入原则：
+
+- 用户显式授权
+- 使用受控凭证
+- 使用明确 scopes
+- 通过公开 API 或 MCP 接口访问
+- 所有写操作记录 AuditLog
+- 所有关键操作产生 DomainEvent
+- 通过 Webhook 对外通知事件
+
+## 2.6 Progressive Extensibility
+
+扩展能力应渐进式开放：
+
+1. 当前模块稳定：Auth / Todo / Finance / Theme / Help
+2. 增强 API 能力
+3. 引入 Workspace 和 Resource 中心模型
+4. 引入 AuditLog / DomainEvent / Webhook / Idempotency
+5. 引入 MCP Server
+6. 引入 Workflow DAG 自动化
+7. 远期引入插件系统
+
+---
+
+# 3. 当前技术栈
+
+## 3.1 后端技术栈
+
+当前后端技术栈：
+
+| 类型          | 技术                                            |
+| ------------- | ----------------------------------------------- |
+| 语言          | Python 3.12+                                    |
+| Web 框架      | FastAPI                                         |
+| ORM           | SQLAlchemy 2.x                                  |
+| 数据校验      | Pydantic 2.x                                    |
+| 默认数据库    | SQLite，当前默认 `sqlite:///./data/tool_web.db` |
+| 认证          | JWT                                             |
+| Cookie        | 支持 httpOnly cookie                            |
+| Header Auth   | 支持 Authorization header                       |
+| 密码哈希      | bcrypt                                          |
+| ASGI Server   | Uvicorn                                         |
+| 环境变量      | python-dotenv                                   |
+| 日期处理      | python-dateutil                                 |
+| 表单/文件上传 | python-multipart                                |
+
+当前项目没有使用：
 
 - NestJS
 - Prisma
 - PostgreSQL
-- Redis or queue system for async jobs
-- REST API as primary API
-- MCP Server as external Agent/tool interface
-- GraphQL only as future-compatible design, not required in this implementation
+- Redis
+- 队列系统
+- MCP Server
 
-------
+## 3.2 前端技术栈
 
-# 1. Locked Product Decisions
+当前前端技术栈：
 
-## 1.1 Product Boundary
+| 类型     | 技术                                                         |
+| -------- | ------------------------------------------------------------ |
+| UI 框架  | React 19                                                     |
+| 语言     | TypeScript                                                   |
+| 应用框架 | Umi 4                                                        |
+| 请求库   | Axios                                                        |
+| 图表     | Recharts                                                     |
+| Markdown | React Markdown + remark-gfm                                  |
+| UI 组件  | Radix UI dialog / dropdown-menu / popover / select / tabs / toast / tooltip |
+| 拖拽     | dnd-kit                                                      |
+| 多语言   | zh / en                                                      |
 
-The system is:
+说明：
 
-- An Agent-ready structured personal workspace.
-- A workspace-owned data platform.
-- A resource graph and automation platform.
-- A webhook and MCP-compatible data access layer for external Agents.
+- 历史上的 Vite 相关配置已经被移除。
+- 当前以前端 Umi 脚本为主。
 
-The system is not:
+## 3.3 部署方式
 
-- An internal AI Agent runtime.
-- An AI chat product.
-- An Agent planning engine.
-- An Agent memory store.
-- A tool that allows external Agents to directly call internal services or access the database.
+当前部署能力：
 
-## 1.2 External Agent Rule
+- Docker
+- Docker Compose
+- Nginx 托管前端静态构建产物
+- `deploy.sh` 构建 backend / frontend 镜像
+- 镜像推送 Docker Hub
+- 通过 SSH 到远端执行 compose 部署
+- 前端默认暴露端口：`8003`
 
-External Agents must only access the system through:
+## 3.4 测试技术栈
 
-- REST API
-- API Token / Personal Access Token
-- External Client Registration
-- Webhook subscriptions
-- MCP Server tools
+当前测试技术栈：
 
-External Agents must not:
+- pytest
+- httpx
+- pytest-asyncio
 
-- Call internal NestJS services directly.
-- Access PostgreSQL directly.
-- Run code inside the application runtime.
-- Bypass permission, scope, audit, idempotency, or rate-limit middleware.
+已有后端测试覆盖：
 
-## 1.3 Ownership Model
+- Auth 基础场景
+- Folders 基础场景
+- Todos 基础场景
+- Finance Transactions 基础场景
 
-All user data must belong to a `workspace`.
+---
 
-Users are members of workspaces.
+# 4. 当前已实现能力
 
-The database must support multi-member workspaces even if the UI initially behaves like a personal single-user workspace.
+## 4.1 Auth 用户系统
 
-## 1.4 Resource Model
+当前已实现：
 
-Only root domain objects that are visible, searchable, relatable, API-operable, or external-agent-operable should be resources.
+- 用户注册
+- 用户登录
+- 用户登出
+- 密码修改
+- 账号删除
+- JWT 认证
+- httpOnly cookie 认证
+- Authorization header 认证
+- bcrypt 密码哈希
 
-Examples that should be resources:
+当前数据归属主要基于 `user_id`。
+
+## 4.2 Todo 任务模块
+
+当前已实现：
+
+- 任务创建
+- 任务编辑
+- 任务删除
+- 任务完成状态
+- 文件夹
+- 子任务
+- 标签
+- 重复规则
+
+Todo 是当前核心业务模块之一，但长期产品核心会从具体模块升级为统一 Resource 平台。
+
+## 4.3 Finance 财务模块
+
+当前已实现：
+
+- 账本
+- 账户
+- 分类
+- 标签
+- 交易
+- 拆分项
+- 预算
+- 财务事件
+- 附件
+- 简单关系
+
+当前 Finance 定位是 **轻量个人财务管理模块**。
+
+长期目标是升级为 **单币种专业复式记账模型**：
+
+- 每个 ledger 一个 currency
+- account 继承 ledger currency
+- transaction / journal_entry / journal_line 使用 ledger currency
+- 表结构预留 currency 字段
+- 暂不实现多币种和汇率系统
+
+## 4.4 Theme 自定义主题
+
+Theme 是正式产品能力，不只是辅助功能。
+
+当前定位：
+
+> 允许用户高度自定义界面主题，提升个人工作空间的可塑性和长期使用体验。
+
+Theme 能力应作为“个性化工作空间”的重要组成部分持续增强。
+
+未来 Theme 可继续扩展：
+
+- 颜色主题
+- 字体偏好
+- 布局密度
+- 明暗模式
+- 自定义组件风格
+- 多设备主题同步
+
+## 4.5 Help 文档
+
+Help 是辅助模块，用于承载产品说明、使用帮助和引导内容。
+
+它不是核心业务模块，但对自部署用户、API 用户和未来 Agent 接入用户很重要。
+
+## 4.6 国际化
+
+当前前端支持：
+
+- 中文 zh
+- 英文 en
+
+国际化是正式产品能力，也属于非功能需求的一部分。
+
+未来要求：
+
+- 新增页面必须支持 i18n
+- 新增核心文案不得硬编码单语言
+- API 错误信息应支持稳定错误码，前端负责本地化展示
+
+---
+
+# 5. 当前数据模型特点与限制
+
+## 5.1 当前数据模型特点
+
+当前数据模型具有以下特点：
+
+- 主要以 `user_id` 做数据归属
+- 主键多为自增整数 `Integer`
+- 业务模块各自建模
+- Todo 和 Finance 已具备相对独立的业务表
+- 已存在简单关系能力
+- 附件主要服务于当前业务模块
+- 当前数据库默认 SQLite
+
+## 5.2 当前尚未实现的基础设施
+
+当前尚未实现：
+
+- Workspace 多租户模型
+- Workspace Member / Role / Scope
+- 统一 Resource 中心模型
+- External Client 模型
+- API Credential / Personal Access Token 管理
+- 完整 AuditLog
+- DomainEvent
+- Webhook Subscription / Delivery
+- Idempotency Key
+- MCP Server
+- 统一搜索索引
+- 统一 Relation Graph
+- Workflow DAG 自动化
+- 插件系统
+- Redis / 队列系统
+- PostgreSQL 生产级适配
+
+## 5.3 当前限制
+
+当前系统更接近一个单用户个人 Web 应用，而不是完整的多租户 Agent-ready 数据平台。
+
+主要限制：
+
+1. 数据归属基于 `user_id`，未来协作和外部授权场景不够灵活。
+2. 外部 API 不宜直接暴露自增整数 ID。
+3. 缺少统一 Resource 层，跨模块搜索、关联、权限、审计成本较高。
+4. 缺少 AuditLog，无法完整回答“谁在什么时候通过什么方式修改了什么”。
+5. 缺少 DomainEvent 和 Webhook，外部系统无法稳定订阅数据变化。
+6. 缺少 Idempotency，对外部 Agent、脚本和自动化重试不够安全。
+7. SQLite 适合当前轻量部署，但对多租户、高并发、队列消费、复杂搜索存在天然限制。
+
+---
+
+# 6. 目标架构方向
+
+## 6.1 当前层与目标层分离
+
+文档中需要区分两层：
+
+### 当前实现层
+
+当前实现层基于：
+
+- FastAPI
+- SQLAlchemy
+- SQLite
+- user_id 数据归属
+- 现有 Auth / Todo / Finance / Theme / Help 模块
+
+### 目标架构层
+
+目标架构层面向长期能力：
+
+- Workspace-owned data
+- Resource-centered architecture
+- External Client / API Credential
+- AuditLog
+- DomainEvent
+- Webhook
+- Idempotency
+- MCP Server
+- Workflow DAG
+- Plugin system
+
+目标架构必须基于当前技术栈演进，不应假设项目已经切换到 NestJS / Prisma / PostgreSQL。
+
+## 6.2 Workspace 模型
+
+长期应从 `user_id` 数据归属升级为 `workspace_id` 数据归属。
+
+建议模型：
+
+- User：真实用户账户
+- Workspace：数据容器
+- WorkspaceMember：用户在 workspace 中的成员关系
+- Role：owner / admin / member / viewer
+- Scope：更细粒度权限控制
+
+产品上可以先表现为个人 workspace，但数据库和后端服务应支持未来协作。
+
+## 6.3 Resource 中心模型
+
+长期核心不是 Todo 或 Finance，而是统一 Resource 平台。
+
+Resource 应代表所有可被用户看到、搜索、关联、授权、审计、外部 Agent 操作的根对象。
+
+应成为 Resource 的对象：
 
 - Todo
 - Folder
@@ -82,1344 +485,196 @@ Examples that should be resources:
 - Plugin Installation
 - Custom Plugin Resource
 
-Examples that should usually not be resources:
+通常不应成为 Resource 的对象：
 
-- Join tables
-- Tags relation rows
-- Journal lines
-- Webhook delivery rows
-- Audit log rows
-- Workspace member rows
-- API credential scope rows
-- Internal queue rows
+- 中间表
+- 标签关联行
+- Journal Line
+- Webhook Delivery
+- AuditLog
+- Workspace Member
+- API Credential Scope
 
-## 1.5 ID Strategy
+## 6.4 ID 策略
 
-Use:
+长期建议：
 
-- Internal primary key: `BigInt`
-- External public identifier: `ULID`
+- 内部数据库可继续使用整数主键
+- 对外 API 使用稳定 public_id
+- public_id 建议使用 ULID 或 UUID
 
-Rules:
+规则：
 
-- External APIs must only expose ULIDs.
-- MCP tools must only expose ULIDs.
-- Webhook payloads must only expose ULIDs.
-- Internal services may use BigInt.
-- Never expose internal numeric IDs externally.
+- 外部 API 不暴露内部整数 ID
+- Webhook payload 不暴露内部整数 ID
+- MCP 工具不暴露内部整数 ID
+- 前端路由和外部链接优先使用 public_id
 
-------
+## 6.5 数据库策略
 
-# 2. Do Not Implement
+当前默认数据库：SQLite。
 
-Do not implement the following unless explicitly requested later:
+建议定位：
 
-- Internal Agent runtime
-- Agent sessions
-- Agent messages
-- Agent memory
-- Agent plans
-- Agent tool execution engine
-- Built-in LLM orchestration
-- Direct database access for external Agents
-- Plugin direct access to core application tables
-- GraphQL API implementation
-- Elasticsearch / OpenSearch
-- Full OAuth server
-- Multi-currency accounting logic
-- Plugin-created arbitrary database tables
+- SQLite：开发环境、个人轻量自部署、小规模单机部署
+- PostgreSQL：未来生产级部署、高级部署、多租户、复杂搜索、Webhook/队列场景
 
-GraphQL may be considered in service/data-layer design, but do not build GraphQL resolvers in this refactor.
+当前不要求立即切换 PostgreSQL，但未来设计应避免强绑定 SQLite-only 能力。
 
-OAuth-style external authorization may be reserved in schema design, but first implementation should focus on API credentials and external client registration.
+---
 
-------
+# 7. 外部 Agent 接入规划
 
-# 3. Core Database Refactor
+## 7.1 产品边界
 
-## 3.1 Workspace and Membership
+外部 Agent 是系统外部调用方，不是系统内部运行主体。
 
-Create or refactor these models:
+系统需要管理：
 
-```prisma
-model Workspace {
-  id          BigInt   @id @default(autoincrement())
-  publicId   String   @unique
-  name        String
-  slug        String?  @unique
-  type        String   // personal | team | organization
-  status      String   // active | disabled | archived
+- 谁授权了外部 Agent
+- 外部 Agent 使用哪个凭证
+- 凭证有哪些权限
+- 外部 Agent 读写了哪些资源
+- 写操作是否可审计、可追踪、可回放
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  archivedAt  DateTime?
-  trashedAt   DateTime?
-  deletedAt   DateTime?
+系统不需要管理：
 
-  members     WorkspaceMember[]
-  resources   Resource[]
+- Agent 的对话上下文
+- Agent 的推理过程
+- Agent 的长期记忆
+- Agent 的内部工具链
+- Agent 的执行计划
 
-  @@index([status])
-}
+## 7.2 External Client
 
-model WorkspaceMember {
-  id           BigInt   @id @default(autoincrement())
-  workspaceId BigInt
-  userId       BigInt
+长期应引入 External Client 概念。
 
-  role         String   // owner | admin | member | viewer
-  scopes       Json?
-  status       String   // active | invited | disabled | removed
+External Client 类型包括：
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+- agent
+- script
+- cli
+- integration
+- mcp_client
+- webhook_consumer
+- automation_tool
 
-  workspace    Workspace @relation(fields: [workspaceId], references: [id])
-  user         User      @relation(fields: [userId], references: [id])
+External Client 可以绑定 API Credential，并通过 scopes 控制权限。
 
-  @@unique([workspaceId, userId])
-  @@index([userId])
-  @@index([workspaceId, role])
-}
-```
+## 7.3 API Credential
 
-Implementation requirements:
+长期支持：
 
-- On user registration, create a personal workspace automatically.
-- Add workspace context middleware or guard.
-- All domain queries must be scoped by `workspaceId`.
-- Never query workspace-owned data by `userId` alone.
+- API Token
+- Personal Access Token
+- 未来预留 OAuth-style grant
 
-------
+要求：
 
-# 4. External Client, Credential, Actor
+- 只存储 token hash
+- token 创建后只显示一次
+- 支持过期时间
+- 支持吊销
+- 支持 last_used_at
+- 支持 scopes
 
-## 4.1 External Client
+## 7.4 MCP Server
 
-External clients represent external Agents, scripts, CLI tools, integrations, MCP clients, webhook consumers, or automation tools.
+MCP Server 是长期 Agent 接入方式之一，当前尚未实现。
 
-```prisma
-model ExternalClient {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
+未来可暴露工具：
 
-  name            String
-  clientType      String   // agent | script | cli | integration | mcp_client | webhook_consumer | automation_tool
-  provider        String?  // openai | anthropic | custom | zapier | n8n | other
-  description     String?
-  websiteUrl      String?
-  status          String   // active | disabled | revoked
+- resource.search
+- resource.get
+- resource.create
+- resource.update
+- resource.relate
+- todo.create
+- todo.update
+- todo.complete
+- finance_transaction.create
+- finance_transaction.get
+- calendar_event.create
 
-  createdByUserId BigInt?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+MCP 必须复用同一套：
 
-  workspace       Workspace @relation(fields: [workspaceId], references: [id])
+- 认证
+- workspace 上下文
+- scope 权限
+- audit log
+- idempotency
+- rate limit
 
-  @@index([workspaceId, clientType])
-  @@index([workspaceId, status])
-}
-```
+---
 
-## 4.2 API Credential
+# 8. Webhook、DomainEvent 与 Idempotency
 
-```prisma
-model ApiCredential {
-  id               BigInt   @id @default(autoincrement())
-  publicId         String   @unique
-  workspaceId      BigInt
+## 8.1 DomainEvent
 
-  externalClientId BigInt?
-  createdByUserId  BigInt?
+长期应引入 DomainEvent，作为系统内部事件流。
 
-  credentialType   String   // api_token | personal_access_token | oauth_grant_reserved
-  name             String
-  tokenHash        String   @unique
-  scopes           Json
-  status           String   // active | revoked | expired
+DomainEvent 用于驱动：
 
-  expiresAt        DateTime?
-  revokedAt        DateTime?
-  lastUsedAt       DateTime?
-
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  workspace        Workspace @relation(fields: [workspaceId], references: [id])
-
-  @@index([workspaceId, status])
-  @@index([externalClientId])
-}
-```
-
-Rules:
-
-- Store only token hashes.
-- Never store raw tokens after creation.
-- Support scoped credentials.
-- Every external API request must resolve to an Actor.
-
-## 4.3 Actor
-
-Actor is the audit identity of an operation.
-
-```prisma
-model Actor {
-  id                BigInt   @id @default(autoincrement())
-  publicId          String   @unique
-  workspaceId       BigInt
-
-  actorType         String   // user | external_client | credential | automation | plugin | system
-  userId            BigInt?
-  externalClientId  BigInt?
-  apiCredentialId   BigInt?
-  pluginId          BigInt?
-  automationRuleId  BigInt?
-
-  displayName       String
-  status            String   // active | disabled
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  workspace         Workspace @relation(fields: [workspaceId], references: [id])
-
-  @@index([workspaceId, actorType])
-}
-```
-
-Requirements:
-
-- User frontend operations must have a user actor.
-- External Agent/API/MCP operations must have an external-client or credential actor.
-- Automation operations must have an automation actor.
-- Plugin operations must have a plugin actor.
-- System jobs must have a system actor.
-- All write operations must receive actor context.
-
-------
-
-# 5. Resource System
-
-## 5.1 Resource Type Definition
-
-Do not implement resource type as a Prisma enum.
-
-Resource types must be rows so that plugins can register new types.
-
-```prisma
-model ResourceTypeDefinition {
-  id                     BigInt   @id @default(autoincrement())
-  publicId               String   @unique
-
-  namespace              String   // core | todo | finance | calendar | plugin:<pluginPublicId>
-  key                    String
-  typeName               String   @unique // core.todo, finance.transaction, calendar.event
-  displayName            String
-  description            String?
-
-  ownershipModel         String   // workspace | user | system
-  schemaJson             Json?
-  capabilitiesJson       Json?
-  defaultPermissionsJson Json?
-  uiSchemaJson           Json?
-
-  isSystem               Boolean  @default(false)
-  pluginId               BigInt?
-  status                 String   // active | deprecated | disabled
-
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-
-  @@unique([namespace, key])
-  @@index([status])
-}
-```
-
-Seed built-in resource types:
-
-- `core.folder`
-- `core.project`
-- `core.todo`
-- `calendar.event`
-- `finance.account`
-- `finance.transaction`
-- `finance.journal_entry`
-- `finance.budget`
-- `file.attachment`
-- `dashboard.dashboard`
-- `dashboard.widget`
-- `automation.rule`
-- `plugin.installation`
-
-## 5.2 Resource
-
-```prisma
-model Resource {
-  id             BigInt   @id @default(autoincrement())
-  publicId       String   @unique
-
-  workspaceId    BigInt
-  typeId         BigInt
-  typeName       String
-
-  title          String
-  summary        String?
-  metadata       Json?
-
-  status         String   // active | archived | trashed | deleted
-  visibility     String   // private | workspace | shared
-
-  createdByActorId BigInt?
-  updatedByActorId BigInt?
-  deletedByActorId BigInt?
-
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  archivedAt     DateTime?
-  trashedAt      DateTime?
-  deletedAt      DateTime?
-
-  workspace      Workspace @relation(fields: [workspaceId], references: [id])
-  type           ResourceTypeDefinition @relation(fields: [typeId], references: [id])
-
-  @@index([workspaceId, typeName])
-  @@index([workspaceId, status])
-  @@index([workspaceId, updatedAt])
-  @@index([workspaceId, archivedAt])
-  @@index([workspaceId, trashedAt])
-  @@index([workspaceId, deletedAt])
-}
-```
-
-Rules:
-
-- Root domain tables must contain `resourceId`.
-- `resources.typeName` is a cached denormalized field for query convenience.
-- Validate `typeName` against `resource_type_definitions`.
-- The resource row must be created in the same transaction as the domain row.
-- Resource lifecycle timestamps drive archive/trash/delete behavior.
-
-------
-
-# 6. Deletion Semantics
-
-Use three levels:
-
-- `archivedAt`: hidden from active views but still normal data.
-- `trashedAt`: visible in trash/recycle bin.
-- `deletedAt`: soft-deleted and hidden from normal queries.
-- Permanent deletion: physical deletion performed by background cleanup job.
-
-Rules:
-
-- Domain objects must follow their linked resource lifecycle.
-- API delete should default to trash, not permanent delete.
-- Permanent delete requires explicit endpoint and permission.
-- Audit log must record archive, trash, restore, soft delete, and permanent delete intent.
-- Permanent delete must not break accounting integrity unless explicitly allowed by domain rules.
-
-------
-
-# 7. Relation Graph
-
-## 7.1 Relation Type
-
-```prisma
-model RelationType {
-  id                BigInt   @id @default(autoincrement())
-  publicId          String   @unique
-
-  namespace         String
-  key               String
-  typeName          String   @unique // core.related_to, core.depends_on, finance.paid_for
-
-  displayName       String
-  description       String?
-
-  allowedFromTypes  Json?
-  allowedToTypes    Json?
-
-  isDirectional     Boolean  @default(true)
-  inverseTypeName   String?
-  isSystem          Boolean  @default(false)
-  pluginId          BigInt?
-
-  status            String   // active | deprecated | disabled
-
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@unique([namespace, key])
-}
-```
-
-Seed relation types:
-
-- `core.related_to`
-- `core.depends_on`
-- `core.blocks`
-- `core.parent_of`
-- `core.duplicates`
-- `calendar.scheduled_for`
-- `finance.paid_for`
-- `finance.reimburses`
-- `finance.belongs_to_event`
-- `file.attached_to`
-
-## 7.2 Resource Relation
-
-```prisma
-model ResourceRelation {
-  id                  BigInt   @id @default(autoincrement())
-  publicId            String   @unique
-
-  workspaceId          BigInt
-  fromResourceId       BigInt
-  toResourceId         BigInt
-  relationTypeId       BigInt
-  relationTypeName     String
-
-  source               String   // user | external_client | automation | plugin | import | system
-  confidence           Decimal? @db.Decimal(5, 4)
-  evidence             Json?
-
-  status               String   // proposed | confirmed | rejected | active | archived
-  confirmedByActorId   BigInt?
-  rejectedByActorId    BigInt?
-
-  createdByActorId     BigInt?
-  updatedByActorId     BigInt?
-
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-
-  @@unique([workspaceId, fromResourceId, toResourceId, relationTypeName])
-  @@index([workspaceId, fromResourceId])
-  @@index([workspaceId, toResourceId])
-  @@index([workspaceId, relationTypeName])
-  @@index([workspaceId, status])
-}
-```
-
-Requirements:
-
-- Relations must always connect resources inside the same workspace.
-- Relation creation must validate relation type constraints.
-- External clients may propose relations if their scope allows it.
-- Relations can be confirmed or rejected by users.
-- Relation APIs must support graph traversal by resource ULID.
-
-------
-
-# 8. Tags, Attachments, Notes, Comments, Activity
-
-## 8.1 Unified Tags
-
-```prisma
-model Tag {
-  id          BigInt   @id @default(autoincrement())
-  publicId    String   @unique
-  workspaceId BigInt
-
-  name        String
-  color       String?
-  scopeType   String   // global | ledger | folder | project | plugin
-  scopeId     BigInt?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@unique([workspaceId, scopeType, scopeId, name])
-  @@index([workspaceId])
-}
-
-model ResourceTag {
-  id          BigInt @id @default(autoincrement())
-  workspaceId BigInt
-  resourceId BigInt
-  tagId      BigInt
-
-  createdAt  DateTime @default(now())
-
-  @@unique([resourceId, tagId])
-  @@index([workspaceId, tagId])
-}
-```
-
-## 8.2 Attachments
-
-Attachments should be resources.
-
-```prisma
-model Attachment {
-  id          BigInt   @id @default(autoincrement())
-  resourceId  BigInt   @unique
-  workspaceId BigInt
-
-  filename    String
-  storageKey  String
-  mimeType    String?
-  sizeBytes   BigInt?
-  checksum    String?
-  metadata    Json?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([workspaceId])
-}
-
-model ResourceAttachment {
-  id                   BigInt @id @default(autoincrement())
-  workspaceId           BigInt
-  ownerResourceId       BigInt
-  attachmentResourceId  BigInt
-
-  createdAt             DateTime @default(now())
-
-  @@unique([ownerResourceId, attachmentResourceId])
-  @@index([workspaceId, ownerResourceId])
-}
-```
-
-## 8.3 Notes, Comments, Activity
-
-```prisma
-model ResourceNote {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  resourceId      BigInt
-  authorActorId   BigInt?
-
-  body            String
-  visibility      String   // private | workspace
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, resourceId])
-}
-
-model ResourceComment {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  resourceId      BigInt
-  authorActorId   BigInt?
-
-  body            String
-  status          String   // active | edited | deleted
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  deletedAt       DateTime?
-
-  @@index([workspaceId, resourceId])
-}
-
-model ActivityItem {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  resourceId      BigInt?
-  actorId         BigInt?
-
-  activityType    String
-  title           String
-  summary         String?
-  metadata        Json?
-
-  createdAt       DateTime @default(now())
-
-  @@index([workspaceId, resourceId, createdAt])
-}
-```
-
-Activity is user-facing.
-Audit log is security/system-facing.
-Do not merge them.
-
-------
-
-# 9. Audit Log
-
-## 9.1 Audit Model
-
-```prisma
-model AuditLog {
-  id                BigInt   @id @default(autoincrement())
-  publicId          String   @unique
-
-  workspaceId        BigInt
-  actorId            BigInt?
-  userId             BigInt?
-  externalClientId   BigInt?
-  apiCredentialId    BigInt?
-
-  resourceId         BigInt?
-  resourceTypeName   String?
-
-  action             String // create | update | archive | trash | restore | soft_delete | permanent_delete | relate | unrelate | permission_change
-  domain             String // resource | todo | finance | calendar | plugin | automation | webhook | auth
-
-  beforeSnapshot     Json?
-  afterSnapshot      Json?
-  diff               Json?
-
-  requestId          String?
-  idempotencyKey     String?
-  ipAddress          String?
-  userAgent          String?
-  metadata           Json?
-
-  createdAt          DateTime @default(now())
-
-  @@index([workspaceId, createdAt])
-  @@index([workspaceId, actorId])
-  @@index([workspaceId, resourceId])
-  @@index([requestId])
-  @@index([idempotencyKey])
-}
-```
-
-## 9.2 Audit Detail Rules
-
-Use full snapshots for critical domains:
-
-- Finance
-- Permissions
-- API credentials
-- External clients
-- Plugins
+- Webhook
 - Automation
-- Webhooks
-- Permanent delete operations
+- Notification
+- Search Index
+- Activity Timeline
 
-Use diff for ordinary domains:
+事件命名建议：
 
-- Todo
-- Calendar
-- Dashboard
-- Notes
-- Comments
+- generic event：`resource.created`
+- specific event：`core.todo.created`
 
-All create/update/delete/relate operations must create audit logs.
+一个事件可同时保存 generic 和 specific 类型。
 
-------
+## 8.2 Webhook
 
-# 10. Idempotency
+Webhook 是外部系统和外部 Agent 订阅系统变化的方式。
 
-Implement idempotency for:
+长期要求：
 
-- External API calls
-- API Token calls
-- External Client calls
-- MCP calls
-- Webhook callbacks
-- Optional frontend writes
+- 支持事件订阅
+- 支持 HMAC 签名
+- 支持 retry policy
+- 支持 delivery log
+- 支持 dead-letter
+- 支持手动重放
+- 支持 payload 模式：thin / summary / full
 
-```prisma
-model IdempotencyKey {
-  id              BigInt   @id @default(autoincrement())
-  workspaceId     BigInt
-  actorId         BigInt?
+默认 payload 模式建议为 summary。
 
-  key             String
-  requestMethod   String
-  requestPath     String
-  requestHash     String
-  responseSnapshot Json?
-  statusCode      Int?
-  status          String // processing | completed | failed
+## 8.3 Idempotency
 
-  expiresAt       DateTime
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+外部调用方、MCP、Webhook callback 和自动化写操作应支持幂等。
 
-  @@unique([workspaceId, actorId, key])
-  @@index([expiresAt])
-}
-```
+目的：
 
-Requirements:
+- 防止外部 Agent 重试导致重复创建
+- 防止脚本异常重复提交
+- 防止网络重试造成重复交易或重复任务
 
-- External clients should send `Idempotency-Key` header for write requests.
-- Same key + same request hash returns cached response.
-- Same key + different request hash returns conflict.
-- Expire old keys via cleanup job.
+长期建议支持 `Idempotency-Key` header。
 
-------
+---
 
-# 11. Domain Events, Webhooks, and Automation Event Stream
+# 9. 自动化与 Workflow
 
-## 11.1 Domain Event
+## 9.1 自动化目标
 
-```prisma
-model DomainEvent {
-  id                 BigInt   @id @default(autoincrement())
-  publicId           String   @unique
+自动化是长期能力，目标是让用户能基于系统事件配置规则和流程。
 
-  workspaceId         BigInt
-  actorId             BigInt?
-  resourceId          BigInt?
-  resourceTypeName    String?
+基础模型：
 
-  eventType           String // resource.created, resource.updated
-  specificEventType   String // core.todo.created, finance.transaction.created
-  payload             Json
+- Trigger
+- Condition
+- Action
 
-  occurredAt          DateTime @default(now())
-  processedAt         DateTime?
+长期模型：Workflow DAG。
 
-  @@index([workspaceId, occurredAt])
-  @@index([workspaceId, eventType])
-  @@index([workspaceId, specificEventType])
-  @@index([workspaceId, resourceId])
-}
-```
+## 9.2 Workflow DAG
 
-Event naming rule:
-
-- Store generic event type.
-- Store specific event type.
-- Webhooks may subscribe to either.
-
-Examples:
-
-- `resource.created` + `core.todo.created`
-- `resource.updated` + `finance.transaction.updated`
-- `resource.deleted` + `calendar.event.deleted`
-- `relation.created` + `core.related_to.created`
-
-## 11.2 Webhook Subscription
-
-```prisma
-model WebhookSubscription {
-  id                 BigInt   @id @default(autoincrement())
-  publicId           String   @unique
-
-  workspaceId         BigInt
-  externalClientId    BigInt?
-
-  name               String
-  url                String
-  secretHash         String?
-  eventTypes         Json
-  payloadMode        String // thin | summary | full
-  status             String // active | disabled
-
-  retryPolicy        Json?
-
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-
-  @@index([workspaceId, status])
-}
-```
-
-## 11.3 Webhook Delivery
-
-```prisma
-model WebhookDelivery {
-  id                  BigInt   @id @default(autoincrement())
-  publicId            String   @unique
-
-  workspaceId          BigInt
-  subscriptionId       BigInt
-  domainEventId        BigInt
-
-  status              String // pending | delivered | failed | dead_letter
-  attemptCount        Int    @default(0)
-  nextAttemptAt       DateTime?
-
-  requestPayload      Json?
-  responseStatus      Int?
-  responseBody        String?
-  errorMessage        String?
-
-  deliveredAt         DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-
-  @@index([workspaceId, status])
-  @@index([nextAttemptAt])
-}
-```
-
-Webhook requirements:
-
-- HMAC sign all deliveries.
-- Include event ULID.
-- Include resource ULID.
-- Include payload mode.
-- Support thin, summary, and full payload modes.
-- Default payload mode: summary.
-- Retry with configurable retry policy.
-- Failed deliveries eventually become dead-letter.
-- Allow manual replay.
-
-## 11.4 Event Flow
-
-All write operations should:
-
-1. Validate permissions.
-2. Open database transaction.
-3. Create/update domain row.
-4. Create/update resource row if needed.
-5. Create audit log.
-6. Create domain event.
-7. Commit transaction.
-8. Async workers consume domain events for:
-   - Webhook deliveries
-   - Automation rules
-   - Notifications
-   - Activity timeline generation
-   - Search indexing
-
-Do not send webhooks synchronously inside the write transaction.
-
-------
-
-# 12. Authorization and Scopes
-
-## 12.1 Role + Scope Model
-
-Use workspace role plus scopes.
-
-Roles:
-
-- owner
-- admin
-- member
-- viewer
-
-Scope naming must support:
-
-- Global scopes
-- Resource-type scopes
-- Module scopes
-
-Examples:
-
-```text
-resource.read
-resource.write
-resource:core.todo.read
-resource:core.todo.write
-resource:finance.transaction.read
-resource:finance.transaction.write
-relation.read
-relation.create
-relation.update
-relation.delete
-webhook.manage
-automation.manage
-automation.run
-plugin.install
-plugin.manage
-mcp.use
-finance.read
-finance.write
-calendar.read
-calendar.write
-```
-
-Requirements:
-
-- Workspace role grants default capabilities.
-- API credentials must be explicitly scoped.
-- External clients must not exceed the scopes of the credential used.
-- MCP tools must use the same permission system as REST APIs.
-- Permission checks must occur before service execution.
-- All denied writes should be audit-logged if security-relevant.
-
-------
-
-# 13. REST API Design
-
-## 13.1 API Rules
-
-- Public API paths should use `/api/v1`.
-- External IDs must be ULIDs only.
-- Do not accept internal BigInt IDs in API payloads.
-- All write APIs must support actor context, audit, domain events, and idempotency.
-- Domain APIs should return domain objects with a `resource` field.
-- Resource API should return Resource Envelope.
-- GraphQL should not be implemented now.
-
-## 13.2 Resource API
-
-Implement:
-
-```http
-GET    /api/v1/resources
-GET    /api/v1/resources/:resourceId
-PATCH  /api/v1/resources/:resourceId
-POST   /api/v1/resources/:resourceId/archive
-POST   /api/v1/resources/:resourceId/trash
-POST   /api/v1/resources/:resourceId/restore
-DELETE /api/v1/resources/:resourceId
-GET    /api/v1/resources/:resourceId/relations
-GET    /api/v1/resources/:resourceId/activity
-GET    /api/v1/resources/:resourceId/comments
-GET    /api/v1/resources/:resourceId/notes
-```
-
-Resource envelope shape:
-
-```json
-{
-  "resource": {
-    "id": "01J...",
-    "type": "core.todo",
-    "title": "Pay invoice",
-    "summary": "Due tomorrow",
-    "status": "active",
-    "createdAt": "...",
-    "updatedAt": "..."
-  },
-  "data": {},
-  "relations": [],
-  "permissions": []
-}
-```
-
-## 13.3 Domain APIs
-
-Keep domain APIs for frontend and business logic:
-
-```http
-/todos
-/calendar-events
-/finance/transactions
-/finance/accounts
-/finance/budgets
-```
-
-Domain API responses must include:
-
-```json
-{
-  "resource": {
-    "id": "01J...",
-    "type": "core.todo"
-  },
-  "data": {}
-}
-```
-
-------
-
-# 14. MCP Server
-
-## 14.1 MCP Scope
-
-Implement MCP-compatible tools for external clients.
-
-Expose:
-
-- Resource CRUD tools
-- Domain tools for Todo / Calendar / Finance
-- Search tools
-- Relation tools
-
-Do not expose automation management tools through MCP in this refactor.
-
-MCP must share:
-
-- API credential authentication
-- External client identity
-- Workspace scoping
-- Scope authorization
-- Audit logging
-- Idempotency
-- Rate limiting
-
-## 14.2 Suggested MCP Tools
-
-```text
-resource.search
-resource.get
-resource.create
-resource.update
-resource.archive
-resource.trash
-resource.restore
-resource.relate
-resource.unrelate
-relation.list
-todo.create
-todo.update
-todo.complete
-calendar_event.create
-calendar_event.update
-finance_transaction.create
-finance_transaction.get
-finance_account.list
-```
-
-Tool responses must use ULIDs.
-
-------
-
-# 15. Search
-
-Use hybrid PostgreSQL-first search.
-
-Implement:
-
-- PostgreSQL full-text search
-- Trigram fuzzy search
-- Later vector embedding support
-
-Do not implement Elasticsearch/OpenSearch now.
-
-Suggested table:
-
-```prisma
-model SearchIndex {
-  id               BigInt   @id @default(autoincrement())
-  workspaceId      BigInt
-  resourceId       BigInt   @unique
-  resourceTypeName String
-
-  title            String
-  summary          String?
-  content          String?
-  metadata         Json?
-
-  searchText       String
-  embedding        Unsupported("vector")?
-
-  updatedAt        DateTime @updatedAt
-
-  @@index([workspaceId, resourceTypeName])
-}
-```
-
-If pgvector is not yet installed, omit the `embedding` field and leave a migration note.
-
-Search indexing should be triggered from `domain_events`.
-
-------
-
-# 16. Todo Domain
-
-Refactor Todo as a resource-backed domain model.
-
-```prisma
-model Todo {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-
-  folderResourceId BigInt?
-  parentTodoId      BigInt?
-
-  title           String
-  description     String?
-  status          String   // open | in_progress | completed | canceled
-  priority        String?  // low | medium | high | urgent
-
-  dueAt           DateTime?
-  startAt         DateTime?
-  scheduledAt     DateTime?
-  completedAt     DateTime?
-  timezone        String?
-
-  estimateMinutes Int?
-  sortOrder       Int?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, status])
-  @@index([workspaceId, dueAt])
-  @@index([workspaceId, parentTodoId])
-}
-```
-
-Todo requirements:
-
-- Create linked resource with type `core.todo`.
-- Completing todo updates both domain row and resource activity.
-- Parent-child todos must prevent cycles.
-- Due date should be datetime, not date-only.
-- Todo changes emit domain events.
-
-------
-
-# 17. Calendar Domain
-
-Use `calendar_events`, not generic `events`.
-
-```prisma
-model CalendarEvent {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-
-  title           String
-  description     String?
-  location        String?
-
-  startsAt        DateTime
-  endsAt          DateTime
-  timezone        String
-  allDay          Boolean  @default(false)
-
-  recurrenceRuleId BigInt?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, startsAt])
-  @@index([workspaceId, endsAt])
-}
-```
-
-Rules:
-
-- Validate `startsAt <= endsAt`.
-- Emit `calendar.event.created`, `calendar.event.updated`, `calendar.event.deleted`.
-- Calendar events are resources.
-- Calendar events may relate to todos, transactions, attachments, projects, or finance events.
-
-------
-
-# 18. Finance Domain: Single-currency Double-entry Accounting
-
-## 18.1 Finance Rule
-
-Implement professional double-entry accounting, but single-currency per ledger.
-
-Rules:
-
-- Each ledger has one currency.
-- Each account inherits ledger currency.
-- Each transaction, journal entry, and journal line must use ledger currency.
-- Keep `currency` fields for future compatibility, but reject cross-currency writes.
-- No exchange rates in this implementation.
-
-## 18.2 Ledger
-
-```prisma
-model Ledger {
-  id          BigInt   @id @default(autoincrement())
-  publicId    String   @unique
-  workspaceId BigInt
-
-  name        String
-  currency    String   // ISO 4217, single currency
-  status      String   // active | archived
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([workspaceId])
-}
-```
-
-## 18.3 Account
-
-Accounts should be resources.
-
-```prisma
-model FinanceAccount {
-  id          BigInt   @id @default(autoincrement())
-  resourceId  BigInt   @unique
-  workspaceId BigInt
-  ledgerId    BigInt
-
-  name        String
-  accountType String  // asset | liability | equity | income | expense
-  currency    String
-  status      String  // active | archived
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([workspaceId, ledgerId])
-  @@index([ledgerId, accountType])
-}
-```
-
-## 18.4 User-visible Transaction
-
-Keep transactions as user-visible objects.
-
-```prisma
-model FinanceTransaction {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-  ledgerId        BigInt
-
-  title           String
-  description     String?
-  occurredAt      DateTime
-  transactionType String   // income | expense | transfer | adjustment
-  amount          Decimal  @db.Decimal(18, 4)
-  currency        String
-
-  journalEntryId  BigInt?
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, occurredAt])
-  @@index([ledgerId, occurredAt])
-}
-```
-
-## 18.5 Journal Entry and Lines
-
-Journal entries should be resources.
-
-Journal lines do not need to be resources.
-
-```prisma
-model JournalEntry {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-  ledgerId        BigInt
-
-  occurredAt      DateTime
-  description     String?
-  currency        String
-  sourceType      String?  // transaction | import | adjustment | automation
-  sourceId        BigInt?
-
-  status          String   // draft | posted | voided
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, occurredAt])
-  @@index([ledgerId, occurredAt])
-}
-
-model JournalLine {
-  id              BigInt   @id @default(autoincrement())
-  workspaceId     BigInt
-  ledgerId        BigInt
-  journalEntryId  BigInt
-  accountId       BigInt
-
-  debit           Decimal  @db.Decimal(18, 4)
-  credit          Decimal  @db.Decimal(18, 4)
-  currency        String
-  description     String?
-
-  createdAt       DateTime @default(now())
-
-  @@index([journalEntryId])
-  @@index([accountId])
-}
-```
-
-Accounting validation:
-
-- Every posted journal entry must balance.
-- Sum debit must equal sum credit.
-- Debit and credit cannot both be positive on the same line.
-- Debit and credit cannot both be zero.
-- Journal entry currency must equal ledger currency.
-- Journal line currency must equal ledger currency.
-- Account currency must equal ledger currency.
-- Posted entries should not be edited directly; use reversal or adjustment entries.
-
-------
-
-# 19. Finance Events
-
-Use `finance_events` separately from `calendar_events` and `domain_events`.
-
-Finance events represent domain context such as trip, reimbursement cycle, project spending period, tax period, or subscription lifecycle.
-
-```prisma
-model FinanceEvent {
-  id          BigInt   @id @default(autoincrement())
-  resourceId  BigInt   @unique
-  workspaceId BigInt
-  ledgerId    BigInt?
-
-  title       String
-  description String?
-  startsAt    DateTime?
-  endsAt      DateTime?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([workspaceId])
-}
-```
-
-Finance events can be related to transactions using resource relations.
-
-------
-
-# 20. Automation and Workflow DAG
-
-## 20.1 Automation Rule
-
-Automation rules should be resources.
-
-```prisma
-model AutomationRule {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-
-  name            String
-  description     String?
-  status          String   // active | disabled | archived
-
-  triggerJson     Json
-  workflowJson    Json
-  version         Int      @default(1)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, status])
-}
-```
-
-## 20.2 Workflow Run
-
-```prisma
-model WorkflowRun {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  automationRuleId BigInt?
-
-  triggerEventId  BigInt?
-  status          String   // pending | running | waiting | succeeded | failed | canceled
-
-  input           Json?
-  output          Json?
-  error           Json?
-
-  startedAt       DateTime?
-  completedAt     DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, status])
-  @@index([triggerEventId])
-}
-```
-
-## 20.3 Workflow Node Types
-
-Support schema-level design for:
+未来 Workflow DAG 应支持：
 
 - Trigger
 - Condition
@@ -1431,113 +686,15 @@ Support schema-level design for:
 - External client callback
 - MCP tool call
 
-Implementation note:
+当前不要求实现完整 DAG，但数据模型和服务边界应允许未来扩展。
 
-- It is acceptable to implement only a minimal executor first.
-- The schema and service interfaces must support the full node set.
-- Workflow execution must consume `domain_events`.
-- Workflow writes must create audit logs and domain events.
+---
 
-------
+# 10. 插件系统规划
 
-# 21. Notifications
+插件系统是远期能力，不进入近期核心路线。
 
-Implement unified notifications.
-
-```prisma
-model Notification {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  userId          BigInt?
-
-  resourceId      BigInt?
-  notificationType String
-  title           String
-  body            String?
-  channel         String   // in_app | email | webhook
-  status          String   // unread | read | dismissed | sent | failed
-
-  createdAt       DateTime @default(now())
-  readAt          DateTime?
-
-  @@index([workspaceId, userId, status])
-}
-
-model NotificationRule {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-
-  name            String
-  triggerJson     Json
-  channelsJson    Json
-  status          String
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, status])
-}
-```
-
-Notification requirements:
-
-- Support in-app, email, webhook channels.
-- Support notification center.
-- Generate notifications from domain events and automation rules.
-
-------
-
-# 22. Plugin System
-
-## 22.1 Plugin Model
-
-```prisma
-model Plugin {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-
-  name            String
-  slug            String   @unique
-  version         String
-  description     String?
-  author          String?
-
-  manifestJson    Json
-  status          String   // active | disabled | deprecated
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-}
-```
-
-## 22.2 Plugin Installation
-
-Plugin installations should be resources.
-
-```prisma
-model PluginInstallation {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-  pluginId        BigInt
-
-  status          String   // installed | enabled | disabled | uninstalled
-  configJson      Json?
-  grantedScopes   Json?
-  dataPolicy      String   // retain | export | delete
-
-  installedAt     DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@unique([workspaceId, pluginId])
-}
-```
-
-## 22.3 Plugin Manifest
-
-Plugin manifest must declare:
+长期插件系统应支持：
 
 - permissions / scopes
 - resource types
@@ -1547,378 +704,324 @@ Plugin manifest must declare:
 - actions
 - automation triggers
 - automation actions
-- external network access
+- external network access declaration
 - sandbox runtime requirements
 
-## 22.4 Plugin Private Data
+插件代码不应直接访问核心数据库。
 
-First implementation should use generic JSONB storage.
+第一阶段可以使用 `plugin_data` JSON 存储插件私有数据，未来再考虑插件私有 schema/table。
 
-```prisma
-model PluginData {
-  id              BigInt   @id @default(autoincrement())
-  publicId        String   @unique
-  workspaceId     BigInt
-  pluginId        BigInt
+插件卸载应支持：
 
-  namespace       String
-  key             String
-  value           Json
+- 保留数据
+- 导出数据
+- 删除数据
 
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+---
 
-  @@unique([workspaceId, pluginId, namespace, key])
-}
-```
+# 11. Finance 长期方向
 
-Rules:
+## 11.1 当前定位
 
-- Plugins cannot directly access core application tables.
-- Plugins can operate core data only through permission-checked APIs.
-- Plugin uninstall must support retain, export, and delete strategies.
-- Future plugin private schema/table support may be designed later.
+当前 Finance 是轻量个人财务管理模块。
 
-------
+当前能力包括：
 
-# 23. Dashboard and Widgets
+- 账本
+- 账户
+- 分类
+- 标签
+- 交易
+- 拆分项
+- 预算
+- 财务事件
+- 附件
+- 简单关系
 
-Dashboard and widgets should be resources when user-visible and configurable.
+## 11.2 长期目标
 
-```prisma
-model Dashboard {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
+长期目标是升级为单币种专业复式记账模型。
 
-  name            String
-  isDefault       Boolean  @default(false)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId])
-}
-
-model DashboardWidget {
-  id              BigInt   @id @default(autoincrement())
-  resourceId      BigInt   @unique
-  workspaceId     BigInt
-  dashboardId     BigInt
-
-  widgetType      String
-  resourceTypeName String?
-  configJson      Json?
-  positionJson    Json?
-  breakpoint      String   // mobile | tablet | desktop
-  visible         Boolean  @default(true)
-
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@index([workspaceId, dashboardId])
-}
-```
-
-------
-
-# 24. Migration Strategy
-
-Because destructive refactor is allowed, prioritize clean target schema.
-
-Recommended order:
-
-## Package 1: Foundation Schema
-
-Create:
-
-- Workspace
-- WorkspaceMember
-- Actor
-- ExternalClient
-- ApiCredential
-- ResourceTypeDefinition
-- Resource
-- AuditLog
-- IdempotencyKey
-
-Seed:
-
-- Default personal workspace for existing users
-- Built-in resource type definitions
-- Default actors for existing users
-
-## Package 2: Resource-backed Todo and Calendar
-
-Refactor:
-
-- Todo
-- Folder
-- CalendarEvent
-- Recurrence-related tables if present
-
-Add:
-
-- `resourceId`
-- `workspaceId`
-- Lifecycle timestamp alignment
-
-## Package 3: Relation Graph
-
-Create:
-
-- RelationType
-- ResourceRelation
-
-Seed relation types.
-
-Replace polymorphic relation tables using `from_type/from_id/to_type/to_id`.
-
-## Package 4: Events and Webhooks
-
-Create:
-
-- DomainEvent
-- WebhookSubscription
-- WebhookDelivery
-
-Add:
-
-- Outbox flow
-- Async workers
-- HMAC signing
-- Retry
-- Dead-letter
-- Manual replay
-
-## Package 5: Audit and Idempotency Integration
-
-Integrate into all write flows:
-
-- actor context
-- idempotency middleware/interceptor
-- audit service
-- domain event creation
-
-## Package 6: Finance Double-entry Refactor
-
-Create/refactor:
+核心模型：
 
 - Ledger
 - FinanceAccount
 - FinanceTransaction
 - JournalEntry
 - JournalLine
+- Budget
 - FinanceEvent
 
-Implement accounting validation.
+## 11.3 单币种规则
 
-## Package 7: MCP Server
+长期规则：
 
-Add MCP interface with:
+- 每个 ledger 一个 currency
+- account 必须继承 ledger currency
+- transaction 必须使用 ledger currency
+- journal_entry 必须使用 ledger currency
+- journal_line 必须使用 ledger currency
+- 表中可以预留 currency 字段
+- 暂不实现多币种汇率和重估损益
 
-- Resource tools
-- Todo tools
-- Calendar tools
-- Finance tools
-- Search tools
-- Relation tools
+## 11.4 复式记账规则
 
-Reuse REST auth/authorization/audit/idempotency logic.
+长期规则：
 
-## Package 8: Automation and Notifications
+- Posted journal entry 必须借贷平衡
+- debit 总和必须等于 credit 总和
+- 同一 journal line 不能同时有 debit 和 credit
+- posted entry 不建议直接修改，应通过 reversal 或 adjustment 处理
 
-Create:
+---
 
-- AutomationRule
-- WorkflowRun
-- Notification
-- NotificationRule
+# 12. Theme 与个性化工作空间
 
-Implement event-driven automation skeleton.
+Theme 是产品正式能力。
 
-## Package 9: Plugin System
+当前 Theme 应从“用户主题”升级为“个性化工作空间”的基础能力。
 
-Create:
+未来可以扩展：
 
-- Plugin
-- PluginInstallation
-- PluginData
+- 自定义颜色
+- 自定义字体
+- 自定义暗色/亮色模式
+- 自定义卡片样式
+- 自定义图表风格
+- 自定义布局密度
+- 多设备同步主题
+- 主题导入导出
 
-Add manifest validation and registration for resource types and relation types.
+Theme 与未来 Dashboard / Widget / Plugin UI 可以形成统一的个性化体系。
 
-## Package 10: Search and Activity
+---
 
-Create:
+# 13. 国际化与可访问性
 
-- SearchIndex
-- ActivityItem
-- ResourceNote
-- ResourceComment
+## 13.1 国际化
 
-Add domain-event-driven indexing.
+当前支持：
 
-------
+- zh
+- en
 
-# 25. NestJS Module Refactor
+长期要求：
 
-Create or refactor these modules:
+- 所有新增用户可见文案必须进入 i18n
+- API 返回稳定错误码
+- 前端负责错误码本地化
+- 日期、数字、货币应根据语言和地区格式化
 
-```text
-WorkspaceModule
-ActorModule
-ExternalClientModule
-CredentialModule
-AuthorizationModule
-ResourceModule
-ResourceTypeModule
-RelationModule
-AuditModule
-DomainEventModule
-WebhookModule
-IdempotencyModule
-TodoModule
-CalendarModule
-FinanceModule
-McpModule
-AutomationModule
-NotificationModule
-PluginModule
-SearchModule
-ActivityModule
-```
+## 13.2 可访问性
 
-Shared infrastructure:
+未来 UI 应关注：
 
-```text
-WorkspaceContextGuard
-ActorContextInterceptor
-ScopeGuard
-IdempotencyInterceptor
-AuditService
-DomainEventService
-ResourceService
-OutboxWorker
-WebhookDeliveryWorker
-SearchIndexWorker
-AutomationWorker
-```
+- 键盘可访问
+- 对话框焦点管理
+- 颜色对比度
+- 表单错误提示
+- 移动端触控体验
 
-Rules:
+Radix UI 组件应继续作为可访问性基础。
 
-- Domain services should not manually duplicate audit logic.
-- Use shared transaction-aware helpers for:
-  - creating resource rows
-  - writing audit logs
-  - writing domain events
-- Avoid circular dependencies between domain modules and ResourceModule.
-- Prefer domain events for cross-module reactions.
+---
 
-------
+# 14. 非功能需求
 
-# 26. Testing Requirements
+## 14.1 性能
 
-## 26.1 Unit Tests
+目标：
 
-Add tests for:
+| 指标          | 目标                           |
+| ------------- | ------------------------------ |
+| 首屏加载      | 尽量控制在 3 秒以内            |
+| 常规 API 响应 | P95 ≤ 500ms，复杂查询除外      |
+| Todo 基础操作 | 应保持轻量快速                 |
+| Finance 查询  | 支持按账本、账户、时间范围过滤 |
 
-- Scope evaluation
-- Workspace scoping
-- Actor resolution
-- Resource type validation
-- Relation type validation
-- Idempotency conflict behavior
-- Audit snapshot/diff creation
-- Finance journal balancing
-- Webhook HMAC signing
-- Plugin manifest validation
+## 14.2 安全
 
-## 26.2 Integration Tests
+当前已有：
 
-Add tests for:
+- JWT
+- httpOnly cookie
+- Authorization header
+- bcrypt 密码哈希
 
-- User registration creates personal workspace
-- Creating todo creates resource + audit + domain event
-- External client token can access only scoped resources
-- MCP call produces audit log
-- Webhook delivery retries and moves to dead-letter
-- Resource relation cannot cross workspace boundary
-- Finance transaction creates balanced journal entry
-- Plugin cannot access data outside granted scopes
-- Archive/trash/restore lifecycle works consistently
+长期需要：
 
-## 26.3 Security Tests
+- Workspace 级数据隔离
+- Scope 权限
+- API Credential hash 存储
+- AuditLog
+- Rate Limit
+- Idempotency
+- Webhook HMAC 签名
+- 敏感操作二次确认
 
-Add tests for:
+## 14.3 可维护性
 
-- Internal BigInt IDs are never exposed
-- External API rejects BigInt IDs
-- Workspace isolation
-- Revoked credentials cannot access API
-- Credential scopes cannot exceed workspace permissions
-- Webhook signatures validate correctly
-- Idempotency key reuse with different body returns conflict
+要求：
 
-------
+- FastAPI 路由按模块组织
+- SQLAlchemy 模型清晰分层
+- Pydantic schema 与 ORM 模型边界清楚
+- 服务层封装业务逻辑
+- 测试覆盖核心业务路径
+- 避免前端页面直接绑定后端内部实现细节
 
-# 27. Acceptance Criteria
+## 14.4 可部署性
 
-The refactor is successful when:
+要求：
 
-1. All root domain objects are workspace-owned.
-2. All externally visible objects use ULID public IDs.
-3. All root domain objects that are user-visible/searchable/relatable/API-operable are backed by resources.
-4. External clients can be registered and scoped.
-5. API credentials are stored as hashes and never exposed after creation.
-6. Every write operation has actor context.
-7. Every create/update/delete/relate operation creates an audit log.
-8. Every create/update/delete/relate operation creates a domain event.
-9. Webhooks are delivered asynchronously with HMAC signatures, retries, logs, dead-letter state, and replay support.
-10. MCP tools use the same permissions, actor context, audit, and idempotency as REST APIs.
-11. Resource relations use resource IDs, not polymorphic from_type/from_id fields.
-12. Relation types are validated and can be system-defined or plugin-defined.
-13. Finance uses single-currency double-entry accounting.
-14. Posted journal entries must balance.
-15. Calendar events, finance events, and domain events are separate concepts and separate tables.
-16. Plugins declare capabilities through manifest.
-17. Plugins cannot directly access core database tables.
-18. Search is backed by Postgres FTS/trigram with future vector support.
-19. GraphQL is not implemented, but service boundaries do not block future GraphQL resolvers.
-20. No internal Agent runtime tables or execution logic are introduced.
+- 保持 Docker 部署能力
+- 保持 Docker Compose 部署能力
+- 保持 Nginx 静态前端部署方式
+- 生产配置通过环境变量管理
+- SQLite 数据文件路径可配置
+- 未来支持 PostgreSQL 连接配置
 
-------
+---
 
-# 28. Codex Implementation Guidance
+# 15. 路线图
 
-When implementing, work package by package.
+## 15.1 当前状态
 
-Do not attempt to modify every domain in one PR.
+当前已经具备：
 
-Recommended PR order:
+- Auth
+- Todo
+- Finance
+- Theme
+- Help
+- zh/en 多语言
+- Docker 部署
+- 基础测试
+- SQLite 默认数据库
+- FastAPI + SQLAlchemy 后端
+- React + Umi 前端
 
-1. Foundation schema and seed data.
-2. Workspace context and actor context.
-3. Resource type and resource service.
-4. Todo resource migration.
-5. Relation graph.
-6. Audit/domain event integration.
-7. External client and API credential auth.
-8. Webhook outbox.
-9. Finance double-entry refactor.
-10. MCP tools.
-11. Automation skeleton.
-12. Plugin manifest and plugin data.
-13. Search/activity/notes/comments.
-14. Final cleanup and regression tests.
+## 15.2 近期目标
 
-For each package:
+近期目标应聚焦当前架构增强，不做大规模平台化重构。
 
-- Update Prisma schema.
-- Create migration.
-- Update seed script.
-- Add service-layer transaction helpers.
-- Add DTOs.
-- Add guards/interceptors where required.
-- Add tests before moving to next package.
-- Keep external API IDs as ULIDs.
-- Never expose internal numeric IDs.
+建议优先级：
+
+1. 完善当前 PRD 与技术文档
+2. 梳理现有 SQLAlchemy 模型
+3. 明确 API 规范
+4. 为外部 API 引入 public_id
+5. 完善测试覆盖
+6. 增强 Theme 自定义能力
+7. 优化 Todo / Finance 当前体验
+8. 明确 SQLite 数据备份和迁移策略
+
+## 15.3 中期目标
+
+中期目标是从单用户模块化应用演进为结构化数据平台。
+
+建议能力：
+
+1. Workspace 模型
+2. WorkspaceMember / Role / Scope
+3. Resource 中心模型
+4. 统一 Relation Graph
+5. AuditLog
+6. DomainEvent
+7. Idempotency
+8. External Client / API Credential
+9. Webhook
+10. PostgreSQL 可选支持
+
+## 15.4 长期目标
+
+长期目标是 Agent-ready 平台化能力。
+
+建议能力：
+
+1. MCP Server
+2. Workflow DAG 自动化
+3. 单币种复式记账 Finance
+4. 统一搜索：Postgres FTS + trigram + 未来 vector
+5. Dashboard / Widget 系统
+6. 插件系统
+7. 插件注册 Resource Type / Relation Type
+8. 多 workspace 协作体验
+9. 高级权限与审计能力
+10. 数据导入导出和备份恢复
+
+---
+
+# 16. 产品版本规划
+
+## 当前版本：已实现基础产品
+
+包含：
+
+- 用户系统
+- Todo
+- Finance
+- Theme
+- Help
+- 多语言
+- Docker 部署
+- 基础测试
+
+## 近期版本：稳定化与 API 化
+
+目标：
+
+- 整理 API
+- 强化测试
+- 增加 public_id
+- 优化现有模块
+- 增强主题自定义
+- 完善部署文档
+
+## 中期版本：平台底座
+
+目标：
+
+- Workspace
+- Resource
+- Relation
+- AuditLog
+- DomainEvent
+- Webhook
+- Idempotency
+- External Client
+
+## 长期版本：Agent-ready Workspace
+
+目标：
+
+- MCP Server
+- Workflow DAG
+- 插件系统
+- 高级搜索
+- Dashboard / Widget
+- 专业 Finance
+- 多用户协作
+
+---
+
+# 17. 文档维护原则
+
+本文档应与实际项目保持同步。
+
+当以下内容变化时，需要更新文档：
+
+- 技术栈变化
+- 数据库类型变化
+- 核心模型变化
+- API 认证方式变化
+- 新增核心模块
+- 部署方式变化
+- 外部 Agent 接入方式变化
+- MCP / Webhook / Plugin 等长期能力进入实现阶段
+
+产品文档和 Codex 工程修改建议应分开维护：
+
+- 产品文档说明产品目标、现状、能力和路线图
+- Codex Engineering Brief 说明具体代码修改、迁移、测试和验收标准
+

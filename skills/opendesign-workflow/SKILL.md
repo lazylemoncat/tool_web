@@ -15,13 +15,6 @@ Use this skill to operate Open Design as a local design/prototype workspace whil
 4. Prefer generating an Open Design artifact from a clear feature brief when source files cannot be previewed directly.
 5. Keep generated Open Design prototype files separate from the product repository unless the user explicitly asks to port the design back.
 
-Common paths from this workspace:
-
-```text
-Open Design repo: C:\Users\pc6\Desktop\work2\openDesign
-Target app repo:  C:\Users\pc6\Desktop\work2\tool_web\tool_web
-```
-
 ## Starting Open Design
 
 Use the Open Design repo as the working directory. If a normal instance is enough, use the default ports:
