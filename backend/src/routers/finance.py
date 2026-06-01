@@ -31,6 +31,17 @@ from ..schemas.finance import (
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
 
+CATEGORY_STATS_COLORS = (
+    "#EF4444",
+    "#10B981",
+    "#3B82F6",
+    "#F59E0B",
+    "#8B5CF6",
+    "#6C5CE7",
+    "#14B8A6",
+    "#F97316",
+)
+
 
 # --- Helpers ---
 
@@ -969,17 +980,30 @@ def get_stats(
         Transaction.type == TransactionType.expense,
         Transaction.occurred_at >= start,
         Transaction.parent_transaction_id == None,
-    ).all()
+    ).options(joinedload(Transaction.category)).all()
 
     cat_totals = {}
+    cat_icons = {}
     for tx in txs:
-        cat_name = tx.category.name if tx.category else "uncategorized"
+        cat_name = tx.category.name if tx.category else "未分类"
+        cat_icon = tx.category.icon if tx.category else "\U0001f4c2"
         cat_totals[cat_name] = cat_totals.get(cat_name, Decimal("0")) + (tx.amount or Decimal("0"))
-    category_data = [{"name": k, "value": float(v)} for k, v in cat_totals.items()]
+        cat_icons[cat_name] = cat_icon
+    category_data = [
+        {
+            "category_name": name,
+            "category_icon": cat_icons[name],
+            "total": total,
+            "color": CATEGORY_STATS_COLORS[index % len(CATEGORY_STATS_COLORS)],
+        }
+        for index, (name, total) in enumerate(
+            sorted(cat_totals.items(), key=lambda item: item[1], reverse=True)
+        )
+    ]
 
     trend_data = []
     for i in range(5, -1, -1):
-        m = now.month - i - 1
+        m = now.month - i
         y = now.year
         if m <= 0:
             m += 12
@@ -990,7 +1014,15 @@ def get_stats(
             m_end = datetime(y + 1, 1, 1)
         else:
             m_end = datetime(y, m + 1, 1)
-        amt = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+        income = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+            Transaction.user_id == current_user.id,
+            Transaction.ledger_id == ledger_id,
+            Transaction.type == TransactionType.income,
+            Transaction.occurred_at >= m_start,
+            Transaction.occurred_at < m_end,
+            Transaction.parent_transaction_id == None,
+        ).scalar() or Decimal("0")
+        expense = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
             Transaction.user_id == current_user.id,
             Transaction.ledger_id == ledger_id,
             Transaction.type == TransactionType.expense,
@@ -998,6 +1030,6 @@ def get_stats(
             Transaction.occurred_at < m_end,
             Transaction.parent_transaction_id == None,
         ).scalar() or Decimal("0")
-        trend_data.append({"date": month_label, "amount": float(amt)})
+        trend_data.append({"month": month_label, "income": income, "expense": expense})
 
     return StatsResponse(category_data=category_data, trend_data=trend_data)

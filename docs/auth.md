@@ -570,3 +570,5 @@ services:
 # Current Frontend Note
 
 Authentication state is still owned by `frontend/src/context/AuthContext.tsx`, but the route guard and authenticated shell now live in `frontend/src/layouts/index.tsx`. Global providers and `themeBridge` initialization live in `frontend/src/app.tsx`. Older references in historical sections to `frontend/src/App.tsx` or `frontend/src/main.tsx` mean the pre-Umi Vite entry.
+
+The current Next.js login page is `frontend/src/app/login/page.tsx`. It calls `frontend/src/lib/api.ts` directly, does not auto-refresh on `/api/v1/auth/login` 401 responses, and supports the `mfa_required` response by collecting a TOTP code or recovery code before calling `/api/v1/auth/mfa/verify`.

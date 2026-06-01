@@ -225,6 +225,8 @@ Base: `/api/v1/finance`
 | | `/relations` | POST |
 | | `/relations/{id}` | DELETE |
 
+Stats 接口用于前端仪表盘图表通信: `category_data` 返回分类名, 图标, 金额和颜色; `trend_data` 返回最近 6 个月的收入和支出序列, 字段名与 `frontend/src/lib/financeTypes.ts` 保持一致.
+
 ## 数据模型
 
 ### 表清单

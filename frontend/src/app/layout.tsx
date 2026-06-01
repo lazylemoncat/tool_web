@@ -1,35 +1,36 @@
-import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
-import "./globals.css";
-import "@/styles/prototype.css";
-import ThemeRegistry from "@/components/ThemeRegistry";
-import { AuthProvider } from "@/context/AuthContext";
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
+import type { Metadata } from 'next';
+import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
+import ThemeRegistry from '@/components/theme/ThemeRegistry';
+import { AuthProvider } from '@/context/AuthContext';
+import AuthGuard from '@/components/auth/AuthGuard';
+import LayoutClient from '@/components/layout/LayoutClient';
 
 export const metadata: Metadata = {
-  title: "ToolWeb",
-  description: "多功能工具平台 — 任务管理、记账、日历",
+  title: 'ToolWeb',
+  description: '任务管理和个人记账工具',
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="zh-CN" className={plusJakarta.variable} suppressHydrationWarning>
+    <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet"
+        />
+      </head>
       <body>
-        <ThemeRegistry>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeRegistry>
+        <AppRouterCacheProvider>
+          <ThemeRegistry>
+            <AuthProvider>
+              <AuthGuard>
+                <LayoutClient>{children}</LayoutClient>
+              </AuthGuard>
+            </AuthProvider>
+          </ThemeRegistry>
+        </AppRouterCacheProvider>
       </body>
     </html>
   );

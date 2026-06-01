@@ -168,6 +168,8 @@ Query 参数:
 | `GET` | `/api/v1/finance/dashboard?ledger_id=` | 仪表盘汇总 |
 | `GET` | `/api/v1/finance/stats?ledger_id=&period=` | 图表数据 |
 
+`/stats` 返回前端图表可直接消费的结构: `category_data[]` 包含 `category_name`, `category_icon`, `total`, `color`; `trend_data[]` 包含最近 6 个月的 `month`, `income`, `expense`.
+
 ### 关系 (Relation)
 | 方法 | 路径 | 说明 |
 |------|------|------|
