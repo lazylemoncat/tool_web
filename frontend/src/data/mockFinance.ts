@@ -1,15 +1,106 @@
-import type {
-  Book,
-  FinanceAccount,
-  FinanceCategory,
-  FinanceTag,
-  Budget,
-  FinanceEvent,
-  Transaction,
-  DashboardStats,
-  CategoryBreakdown,
-  MonthlyTrend,
-} from '@/lib/financeTypes';
+interface Book {
+  id: string;
+  name: string;
+  emoji: string;
+  currency: string;
+  description: string;
+  createdAt: string;
+  isActive: boolean;
+}
+
+interface FinanceAccount {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  initialBalance: number;
+  isArchived: boolean;
+  emoji: string;
+}
+
+interface FinanceCategory {
+  id: string;
+  name: string;
+  emoji: string;
+  parentId: string | null;
+  children: FinanceCategory[];
+}
+
+interface FinanceTag {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface Budget {
+  id: string;
+  name: string;
+  emoji: string;
+  categoryName: string;
+  amount: number;
+  used: number;
+  cycle: string;
+  overspendThreshold: number;
+}
+
+interface FinanceEvent {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  color: string;
+  incomeTotal: number;
+  expenseTotal: number;
+  transactionCount: number;
+}
+
+interface SubTransaction {
+  id: string;
+  note: string;
+  amount: number;
+  type: 'income' | 'expense';
+}
+
+interface Transaction {
+  id: string;
+  type: 'income' | 'expense';
+  amount: number;
+  category: string;
+  categoryEmoji: string;
+  note: string;
+  date: string;
+  account: string;
+  tags: string[];
+  parentId: string | null;
+  subTransactions: SubTransaction[];
+  bookId: string;
+}
+
+interface DashboardStats {
+  totalAssets: number;
+  totalAssetsDelta: number;
+  monthlyIncome: number;
+  monthlyIncomeDelta: number;
+  monthlyExpense: number;
+  monthlyExpenseDelta: number;
+  monthlyBalance: number;
+  savingsRate: number;
+}
+
+interface CategoryBreakdown {
+  name: string;
+  emoji: string;
+  amount: number;
+  color: string;
+}
+
+interface MonthlyTrend {
+  month: string;
+  income: number;
+  expense: number;
+}
 
 // ===== Books =====
 export const mockBooks: Book[] = [

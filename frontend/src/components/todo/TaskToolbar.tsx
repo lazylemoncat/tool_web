@@ -28,6 +28,8 @@ export default function TaskToolbar({
   priorityFilter, onPriorityChange, tagFilter, onTagFilterChange,
   allTags, multiSelectMode, onToggleMultiSelect, onNewTask,
 }: TaskToolbarProps) {
+  const selectedTagValue = tagFilter === null ? '' : String(tagFilter);
+
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, mb: 2, minHeight: 42, flexWrap: 'wrap' }}>
       <TextField placeholder="搜索任务…" value={searchQuery} onChange={(e) => onSearchChange(e.target.value)} size="small"
@@ -58,14 +60,14 @@ export default function TaskToolbar({
         </ToggleButton>
       </ToggleButtonGroup>
 
-      <Select value={tagFilter ?? ''} onChange={(e) => onTagFilterChange(e.target.value === '' ? null : (e.target.value as number))} displayEmpty size="small"
+      <Select value={selectedTagValue} onChange={(e) => onTagFilterChange(e.target.value === '' ? null : Number(e.target.value))} displayEmpty size="small"
         sx={{ height: 36, minWidth: 120, flexShrink: 0, fontSize: '0.8125rem', fontWeight: 500,
           '& .MuiOutlinedInput-notchedOutline': { borderColor: 'oklch(82% 0.01 275)', borderWidth: '1.5px' },
           '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'oklch(82% 0.01 275)' },
           borderRadius: 7 }}
         MenuProps={{ slotProps: { paper: { sx: { borderRadius: 2 } } } }}>
         <MenuItem value=""><em>按标签筛选</em></MenuItem>
-        {allTags.map((tag) => <MenuItem key={tag.id} value={tag.id}>#{tag.name}</MenuItem>)}
+        {allTags.map((tag) => <MenuItem key={tag.id} value={String(tag.id)}>#{tag.name}</MenuItem>)}
       </Select>
 
       <Button variant="contained" startIcon={

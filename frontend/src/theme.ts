@@ -38,8 +38,13 @@ const shared: ThemeOptions = {
     MuiButton: {
       styleOverrides: {
         root: { borderRadius: 28, textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem' },
-        containedPrimary: { boxShadow: 'none', '&:hover': { boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)' } },
       },
+      variants: [
+        {
+          props: { variant: 'contained', color: 'primary' },
+          style: { boxShadow: 'none', '&:hover': { boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)' } },
+        },
+      ],
     },
     MuiTextField: {
       styleOverrides: {

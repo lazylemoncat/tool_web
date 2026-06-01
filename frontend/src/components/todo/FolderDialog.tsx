@@ -47,7 +47,7 @@ export default function FolderDialog({ open, onClose, onSave }: FolderDialogProp
       </Box>
       <DialogContent sx={{ pt: 2.5 }}>
         <Box sx={{ mb: 2.25 }}>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.75 }}>文件夹名称</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>文件夹名称</Typography>
           <TextField fullWidth placeholder="输入文件夹名称" value={name} onChange={(e) => { setName(e.target.value); setError(''); }} error={!!error} size="small" />
           {/* Fixed-height error slot — prevents dialog re-center on error toggle */}
           <Box sx={{ height: '1.25em', mt: 0.5, display: 'flex', alignItems: 'center' }}>
@@ -57,7 +57,7 @@ export default function FolderDialog({ open, onClose, onSave }: FolderDialogProp
           </Box>
         </Box>
         <Box>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.75 }}>颜色标识</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>颜色标识</Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
             {COLORS.map((c) => (
               <Box key={c} onClick={() => setColor(c)} sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: c, cursor: 'pointer', border: '2px solid', borderColor: color === c ? 'text.primary' : 'transparent', transition: 'all 0.15s', '&:hover': { transform: 'scale(1.15)' } }} />

@@ -36,6 +36,8 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - `login`: 调用 `POST /api/v1/auth/login`, 成功后从响应的 `user` 字段写入 `AuthContext`; 当后端返回 `mfa_required` 时, 登录页会进入验证码/恢复码验证步骤并调用 `POST /api/v1/auth/mfa/verify`.
 - 全局登录态: 调用 `GET /api/v1/auth/me`, 从响应的 `user` 字段恢复登录态, 退出调用 `POST /api/v1/auth/logout`.
 - 顶部导航: `GlobalNav` 通过当前 pathname 计算 active 状态, 首页精确匹配 `/`, Todo 匹配 `/todo` 及子路径, Finance 匹配 `/finance` 及子路径, 避免进入记账模块时任务入口被错误强调.
+- MUI 样式传参: `Typography` 和 `slotProps` 中的子组件样式统一通过 `sx` 传入, 例如 `ListItemText.slotProps.primary.sx`, 避免把 `fontWeight`, `fontSize` 等样式字段直接作为组件 prop 导致 Next build 类型检查失败.
+- MUI 主题覆写: `frontend/src/theme.ts` 中组件变体样式使用 `components.Mui*.variants`, 不把 `containedPrimary` 等旧 class key 写入 `styleOverrides`, 以匹配当前 MUI 类型.
 - `/`: Material/MUI 工作台, 对齐 `index.html`; 支持 Todo/记账入口, 月度记账摘要, 最近任务, 管理模式, 添加/移除卡片, 导航管理和偏好设置弹窗.
 - `/todo`: Material/MUI TODO 页面, 对齐 `todo.html`; 调用 folders, tags 和 todos 接口, 支持读取, 搜索, 状态/优先级/文件夹/标签筛选, 新建, 编辑, 删除, 切换完成, 多选批量完成/移动/删除, 文件夹新建/编辑/删除.
 - TODO 侧边栏: 文件夹按后端返回的 `children` 递归渲染, 箭头向右表示收起, 向下表示展开; 新建子文件夹弹窗使用点击位置作为固定锚点, 避免输入时因行内按钮重排导致弹窗漂移.

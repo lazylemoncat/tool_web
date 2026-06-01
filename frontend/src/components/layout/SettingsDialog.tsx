@@ -56,7 +56,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
       <DialogContent sx={{ pt: 2.5 }}>
         {/* Default start page */}
         <Box sx={{ mb: 2.5 }}>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.75 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>
             默认起始页
           </Typography>
           <Select fullWidth defaultValue="todo" size="small">
@@ -68,7 +68,7 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
         {/* Theme toggle */}
         <Box sx={{ mb: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" fontWeight={500}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
             深色模式
           </Typography>
           <Switch checked={mode === 'dark'} onChange={toggle} color="primary" />
@@ -76,21 +76,21 @@ export default function SettingsDialog({ open, onClose }: SettingsDialogProps) {
 
         {/* Notification toggles */}
         <Box sx={{ mb: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" fontWeight={500}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
             新任务提醒
           </Typography>
           <Switch defaultChecked color="primary" />
         </Box>
 
         <Box sx={{ mb: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" fontWeight={500}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
             任务逾期通知
           </Typography>
           <Switch defaultChecked color="primary" />
         </Box>
 
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="body2" fontWeight={500}>
+          <Typography variant="body2" sx={{ fontWeight: 500 }}>
             紧凑模式
           </Typography>
           <Switch color="primary" />

@@ -107,7 +107,7 @@ export default function NavManageDialog({ open, onClose }: NavManageDialogProps)
               <ListItemText
                 primary={item.label}
                 slotProps={{
-                  primary: { fontSize: '0.875rem', fontWeight: 500 },
+                  primary: { sx: { fontSize: '0.875rem', fontWeight: 500 } },
                 }}
               />
               <Switch

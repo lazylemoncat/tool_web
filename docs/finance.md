@@ -6,6 +6,8 @@ Finance 模块是 Tool Web 中的个人财务管理系统, 与 Todo 模块共享
 
 当前 Next.js 前端 `frontend/src/app/(auth)/finance/page.tsx` 已接入后端 Finance API, 支持读取账本、账户、分类、仪表盘和交易列表, 并支持新建账本、账户、分类和交易.
 
+原型 mock 数据位于 `frontend/src/data/mockFinance.ts`, 仅保留给历史原型和本地参考使用. 该文件使用独立 mock 类型, 不再从 `frontend/src/lib/financeTypes.ts` 导入真实后端 API 类型, 避免旧原型字段影响生产构建类型检查.
+
 ## 核心概念
 
 ### 1. Ledger (账本)

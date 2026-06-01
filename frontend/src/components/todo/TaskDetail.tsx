@@ -36,7 +36,7 @@ export default function TaskDetail({ task, folders, onEdit, onDelete }: TaskDeta
       {/* Children (subtasks) from API */}
       {task.children && task.children.length > 0 && (
         <Box sx={{ mb: 2 }}>
-          <Typography variant="body2" fontWeight={600} color="text.secondary" sx={{ mb: 0.75 }}>子任务</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>子任务</Typography>
           {task.children.map((child) => (
             <Box key={child.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
               <Box sx={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid', borderColor: child.is_completed ? 'primary.main' : 'oklch(82% 0.01 275)', bgcolor: child.is_completed ? 'primary.main' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
