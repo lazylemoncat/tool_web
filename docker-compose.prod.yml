@@ -12,7 +12,7 @@ services:
   backend:
     image: ${DOCKER_USER:-user}/tool-web-backend:latest
     ports:
-      - "8001:8000"
+      - "8004:8000"
     volumes:
       - ./backend/data:/app/data
     environment:

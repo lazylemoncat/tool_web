@@ -33,4 +33,4 @@ fi
 
 echo ""
 echo "Frontend running at http://localhost:8003"
-echo "Backend running at http://localhost:8001"
+echo "Backend running at http://localhost:8004"

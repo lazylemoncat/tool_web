@@ -29,7 +29,7 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - `/api/:path*` -> `API_PROXY_TARGET/api/:path*`
 - `/uploads/:path*` -> `API_PROXY_TARGET/uploads/:path*`
 
-本地开发默认 `API_PROXY_TARGET=http://localhost:8001`. Docker Compose 中设置为 `http://backend:8000`.
+本地开发默认 `API_PROXY_TARGET=http://localhost:8004`. Docker Compose 中设置为 `http://backend:8000`.
 
 ## 已接入页面
 
@@ -55,9 +55,9 @@ npm install
 npm run dev
 ```
 
-开发服务默认运行在 `http://localhost:3000`, 后端本地服务默认运行在 `http://localhost:8001`.
+开发服务默认运行在 `http://localhost:3000`, 后端本地服务默认运行在 `http://localhost:8004`.
 
-Docker Compose 运行时前端暴露在 `http://localhost:8003`, 后端暴露在 `http://localhost:8001`.
+Docker Compose 运行时前端暴露在 `http://localhost:8003`, 后端暴露在 `http://localhost:8004`.
 
 ## 验证
 

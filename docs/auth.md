@@ -38,7 +38,7 @@ Tool Web 提供基于 **JWT (JSON Web Token)** 的用户认证系统, 支持以�
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/register \
+curl -X POST http://localhost:8004/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "myuser", "password": "mypassword"}'
 ```
@@ -91,7 +91,7 @@ curl -X POST http://localhost:8001/api/v1/auth/register \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/login \
+curl -X POST http://localhost:8004/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "myuser", "password": "mypassword"}'
 ```
@@ -128,7 +128,7 @@ curl -X POST http://localhost:8001/api/v1/auth/login \
 
 需要携带有效的 Bearer Token:
 ```bash
-curl -X GET http://localhost:8001/api/v1/auth/me \
+curl -X GET http://localhost:8004/api/v1/auth/me \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -139,7 +139,7 @@ Token 无效或用户不存在时返回 401.
 ### 4. 更新用户偏好设置
 
 ```bash
-curl -X PUT http://localhost:8001/api/v1/auth/preferences \
+curl -X PUT http://localhost:8004/api/v1/auth/preferences \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"preferences": {"theme": "dark", "language": "en"}}'
@@ -155,7 +155,7 @@ curl -X PUT http://localhost:8001/api/v1/auth/preferences \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/logout \
+curl -X POST http://localhost:8004/api/v1/auth/logout \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -173,7 +173,7 @@ curl -X POST http://localhost:8001/api/v1/auth/logout \
 
 **API 调用**:
 ```bash
-curl -X PUT http://localhost:8001/api/v1/auth/password \
+curl -X PUT http://localhost:8004/api/v1/auth/password \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"old_password": "oldpass", "new_password": "newpass123"}'
@@ -203,7 +203,7 @@ curl -X PUT http://localhost:8001/api/v1/auth/password \
 
 **API 调用**:
 ```bash
-curl -X DELETE http://localhost:8001/api/v1/auth/account \
+curl -X DELETE http://localhost:8004/api/v1/auth/account \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"password": "mypassword"}'
@@ -228,7 +228,7 @@ curl -X DELETE http://localhost:8001/api/v1/auth/account \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/refresh \
+curl -X POST http://localhost:8004/api/v1/auth/refresh \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -565,7 +565,7 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
 ```
 
-前端 Nginx 将 `/api` 请求代理到 `http://backend:8001`, 认证请求在容器网络内部完成.
+前端 Nginx 将 `/api` 请求代理到 `http://backend:8004`, 认证请求在容器网络内部完成.
 
 # Current Frontend Note
 

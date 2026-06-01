@@ -95,10 +95,10 @@ JWT_SECRET=<your-secret> docker compose up -d
 ```bash
 cd backend
 uv sync
-uv run uvicorn src.main:app --host 0.0.0.0 --port 8001
+uv run uvicorn src.main:app --host 0.0.0.0 --port 8004
 ```
 
-后端运行在 `http://localhost:8001`, API 文档位于 `http://localhost:8001/docs`.
+后端运行在 `http://localhost:8004`, API 文档位于 `http://localhost:8004/docs`.
 
 启动前端:
 
@@ -108,7 +108,7 @@ npm install
 npm run dev
 ```
 
-前端由 Umi dev server 启动, 默认运行在 `http://localhost:8000`. `.umirc.ts` 会将 `/api` 请求代理到后端 `http://localhost:8001`.
+前端由 Umi dev server 启动, 默认运行在 `http://localhost:8000`. `.umirc.ts` 会将 `/api` 请求代理到后端 `http://localhost:8004`.
 
 ### 构建与检查
 

@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     root: __dirname,
   },
   async rewrites() {
-    const target = process.env.API_PROXY_TARGET || "http://localhost:8001";
+    const target = process.env.API_PROXY_TARGET || "http://localhost:8004";
     return [
       {
         source: "/api/:path*",
