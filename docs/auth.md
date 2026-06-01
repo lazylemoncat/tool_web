@@ -26,6 +26,8 @@ Tool Web 提供基于 **JWT (JSON Web Token)** 的用户认证系统, 支持以�
 
 ## 使用方法
 
+当前 Next.js 前端登录页调用 `POST /api/v1/auth/login`, 注册页调用 `POST /api/v1/auth/register`, 全局登录态通过 `GET /api/v1/auth/me` 校验. 请求使用 cookie 认证并携带 `credentials: "include"`.
+
 ### 1. 注册新账号
 
 **前端操作**:

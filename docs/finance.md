@@ -4,6 +4,8 @@
 
 Finance 模块是 Tool Web 中的个人财务管理系统, 与 Todo 模块共享认证和 UI 框架. 支持多账本、多账户、收支记录、分类管理、预算控制、事件聚合.
 
+当前 Next.js 前端 `frontend/src/app/(auth)/finance/page.tsx` 已接入后端 Finance API, 支持读取账本、账户、分类、仪表盘和交易列表, 并支持新建账本、账户、分类和交易.
+
 ## 核心概念
 
 ### 1. Ledger (账本)

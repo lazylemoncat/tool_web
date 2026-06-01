@@ -2,7 +2,7 @@
 
 Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, 用户认证, 自定义主题和帮助文档等模块. 项目面向 Web 用户和自动化 Agent 同时提供能力: 前端提供响应式交互界面, 后端暴露 RESTful API.
 
-项目仍处于开发阶段, 当前前端已从 Vite + React Router 迁移到 Umi, 以便后续通过路由配置, 全局布局, 运行时入口和页面级主题上下文来降低维护成本.
+项目仍处于开发阶段, 当前前端已迁移为 Next.js + React + MUI, 通过 Next rewrites 将 `/api/*` 和 `/uploads/*` 代理到 FastAPI 后端.
 
 ## 功能
 
@@ -18,10 +18,10 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 
 | 层 | 技术 |
 |---|---|
-| 前端 | React 19, TypeScript, Umi 4, Axios, Radix UI, dnd-kit, Recharts |
+| 前端 | Next.js 16, React 19, TypeScript, MUI |
 | 后端 | FastAPI, SQLAlchemy ORM, bcrypt, PyJWT |
 | 数据库 | SQLite |
-| 部署 | Docker Compose, Nginx |
+| 部署 | Docker Compose, Next.js, FastAPI |
 | 测试 | pytest, TestClient |
 
 ## 项目结构
