@@ -35,9 +35,29 @@ const shared: ThemeOptions = {
         label: { padding: '0 2px' },
       },
     },
+    MuiOutlinedInput: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+          fontSize: '0.875rem',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#CDCBD5',
+            borderWidth: '1.5px',
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#CDCBD5',
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#6C5CE7',
+            borderWidth: '1.5px',
+            boxShadow: '0 0 0 3px #E8E0FF',
+          },
+        },
+      },
+    },
     MuiButton: {
       styleOverrides: {
-        root: { borderRadius: 28, textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem' },
+        root: { borderRadius: 16, textTransform: 'none', fontWeight: 600, fontSize: '0.8125rem' },
       },
       variants: [
         {
