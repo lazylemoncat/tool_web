@@ -161,6 +161,16 @@ export async function refreshTokenApi(): Promise<void> {
   await refreshToken();
 }
 
+export async function register(body: {
+  username: string;
+  password: string;
+}): Promise<AuthResponse> {
+  return apiFetch<AuthResponse>('POST', '/api/v1/auth/register', body, {
+    skipCsrf: true,
+    skipAuthRefresh: true,
+  });
+}
+
 // ===== Todos =====
 export async function listTodos(params?: {
   folder_id?: number;
