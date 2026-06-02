@@ -228,7 +228,7 @@ export default function LoginPage() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                mb: 3,
+                mb: 4,
               }}
             >
               <FormControlLabel
@@ -265,7 +265,8 @@ export default function LoginPage() {
                 variant="contained"
                 disabled={submitting}
                 sx={{
-                  py: 1.75,
+                  py: 2,
+                  height: 48,
                   borderRadius: '16px',
                   fontSize: '0.9375rem',
                   fontWeight: 600,
@@ -289,8 +290,8 @@ export default function LoginPage() {
               <Typography
                 sx={{
                   textAlign: 'center',
-                  mt: 3.5,
-                  fontSize: '0.8125rem',
+                  mt: 5,
+                  fontSize: '0.875rem',
                   color: 'text.secondary',
                 }}
               >

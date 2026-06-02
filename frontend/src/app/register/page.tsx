@@ -150,7 +150,8 @@ export default function RegisterPage() {
               variant="contained"
               disabled={submitting}
               sx={{
-                py: 1.75,
+                py: 2,
+                height: 48,
                 borderRadius: '16px',
                 fontSize: '0.9375rem',
                 fontWeight: 600,
@@ -174,8 +175,8 @@ export default function RegisterPage() {
             <Typography
               sx={{
                 textAlign: 'center',
-                mt: 3.5,
-                fontSize: '0.8125rem',
+                mt: 5,
+                fontSize: '0.875rem',
                 color: 'text.secondary',
               }}
             >

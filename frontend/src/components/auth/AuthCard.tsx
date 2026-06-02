@@ -39,21 +39,25 @@ export default function AuthCard({
       sx={{
         width: '100%',
         maxWidth: 440,
+        minHeight: { xs: 'auto', sm: 540 },
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
         bgcolor: 'background.paper',
         borderRadius: '16px',
         boxShadow: `0 10px 24px -4px rgba(0,0,0,${shadowMode}), 0 4px 8px -4px rgba(0,0,0,${shadowAccent})`,
-        p: { xs: '28px 24px 32px', sm: '48px 40px 40px' },
+        p: { xs: '32px 24px 36px', sm: '52px 44px 44px' },
         animation: `${cardEnter} 0.5s ease-out`,
         position: 'relative',
         zIndex: 1,
       }}
     >
       {/* Brand: ToolWeb 带 primary 色前缀 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: { xs: 3, sm: 4 } }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: { xs: 4, sm: 5 } }}>
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: '22px',
+            fontSize: '24px',
             letterSpacing: '-0.02em',
             color: 'text.primary',
           }}
@@ -72,7 +76,7 @@ export default function AuthCard({
           fontSize: { xs: 24, sm: 28 },
           letterSpacing: '-0.02em',
           lineHeight: 1.2,
-          mb: 3,
+          mb: 4,
           color: 'text.primary',
         }}
       >
