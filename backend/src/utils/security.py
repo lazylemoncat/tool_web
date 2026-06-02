@@ -5,6 +5,7 @@
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
+from typing import Any
 
 from dotenv import load_dotenv, find_dotenv
 
@@ -48,7 +49,7 @@ def create_token(user_id: int, username: str, remember_me: bool = False) -> str:
 
 
 def decode_token(token: str, verify_exp: bool = True) -> dict:
-    options = {} if verify_exp else {"verify_exp": False}
+    options: Any = {} if verify_exp else {"verify_exp": False}
     return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM], options=options)
 
 

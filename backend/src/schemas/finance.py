@@ -52,7 +52,7 @@ class AccountCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     type: str = "cash"
     currency: str = Field(default="CNY", min_length=1, max_length=10)
-    initial_balance: Decimal = Field(default=0, ge=0)
+    initial_balance: Decimal = Field(default=Decimal("0"), ge=0)
 
 
 class AccountUpdate(BaseModel):

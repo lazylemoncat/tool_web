@@ -594,3 +594,7 @@ TodoApp (状态中心)
 # Current Frontend Note
 
 The Todo page now lives at `frontend/src/pages/TodoPage.tsx`. The Umi route is configured in `frontend/.umirc.ts`, while authentication, i18n, theme loading, and the shared app shell live in `frontend/src/layouts/index.tsx`. Older references in historical sections to `frontend/src/App.tsx` mean the pre-Umi app root.
+
+## Backend Type Checking
+
+Todo, folder, recurrence, and tag ORM models in `backend/src/models/todo.py` and `backend/src/models/tag.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Relationship fields are typed as lists or nullable parent objects so mypy can validate router code without treating instance attributes as `Column` objects.

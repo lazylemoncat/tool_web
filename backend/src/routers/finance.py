@@ -27,6 +27,7 @@ from ..schemas.finance import (
     BudgetCreate, BudgetUpdate, BudgetOut,
     AttachmentOut, RelationCreate, RelationOut,
     DashboardSummary, StatsResponse, ReorderBatch,
+    CategoryStatsItem, TrendStatsItem,
 )
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
@@ -515,7 +516,7 @@ def create_transaction(
 
     db.commit()
     db.refresh(tx)
-    tx = db.query(Transaction).options(
+    refreshed_tx = db.query(Transaction).options(
         joinedload(Transaction.account),
         joinedload(Transaction.category),
         joinedload(Transaction.event),
@@ -524,7 +525,9 @@ def create_transaction(
         joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
-    return _build_transaction_out(tx, db)
+    if not refreshed_tx:
+        raise HTTPException(404, "transaction not found")
+    return _build_transaction_out(refreshed_tx, db)
 
 
 @router.put("/transactions/{tx_id}", response_model=TransactionOut)
@@ -602,7 +605,7 @@ def update_transaction(
 
     db.commit()
     db.refresh(tx)
-    tx = db.query(Transaction).options(
+    refreshed_tx = db.query(Transaction).options(
         joinedload(Transaction.account),
         joinedload(Transaction.category),
         joinedload(Transaction.event),
@@ -611,7 +614,9 @@ def update_transaction(
         joinedload(Transaction.children),
         joinedload(Transaction.split_items).joinedload(SplitItem.category),
     ).filter(Transaction.id == tx.id).first()
-    return _build_transaction_out(tx, db)
+    if not refreshed_tx:
+        raise HTTPException(404, "transaction not found")
+    return _build_transaction_out(refreshed_tx, db)
 
 
 @router.delete("/transactions/{tx_id}", status_code=204)
@@ -719,8 +724,8 @@ def event_summary(
     event_out.transaction_count = len(txs)
     amounts = [tx.amount or Decimal("0") for tx in txs]
     event_out.total_amount = sum(amounts, Decimal("0"))
-    total_expense = sum(a for tx, a in zip(txs, amounts) if tx.type == TransactionType.expense)
-    total_income = sum(a for tx, a in zip(txs, amounts) if tx.type == TransactionType.income)
+    total_expense = sum((a for tx, a in zip(txs, amounts) if tx.type == TransactionType.expense), Decimal("0"))
+    total_income = sum((a for tx, a in zip(txs, amounts) if tx.type == TransactionType.income), Decimal("0"))
 
     return EventSummary(
         event=event_out,
@@ -982,26 +987,26 @@ def get_stats(
         Transaction.parent_transaction_id == None,
     ).options(joinedload(Transaction.category)).all()
 
-    cat_totals = {}
-    cat_icons = {}
+    cat_totals: dict[str, Decimal] = {}
+    cat_icons: dict[str, str] = {}
     for tx in txs:
         cat_name = tx.category.name if tx.category else "未分类"
         cat_icon = tx.category.icon if tx.category else "\U0001f4c2"
         cat_totals[cat_name] = cat_totals.get(cat_name, Decimal("0")) + (tx.amount or Decimal("0"))
         cat_icons[cat_name] = cat_icon
-    category_data = [
-        {
-            "category_name": name,
-            "category_icon": cat_icons[name],
-            "total": total,
-            "color": CATEGORY_STATS_COLORS[index % len(CATEGORY_STATS_COLORS)],
-        }
+    category_data: list[CategoryStatsItem] = [
+        CategoryStatsItem(
+            category_name=name,
+            category_icon=cat_icons[name],
+            total=total,
+            color=CATEGORY_STATS_COLORS[index % len(CATEGORY_STATS_COLORS)],
+        )
         for index, (name, total) in enumerate(
             sorted(cat_totals.items(), key=lambda item: item[1], reverse=True)
         )
     ]
 
-    trend_data = []
+    trend_data: list[TrendStatsItem] = []
     for i in range(5, -1, -1):
         m = now.month - i
         y = now.year
@@ -1030,6 +1035,6 @@ def get_stats(
             Transaction.occurred_at < m_end,
             Transaction.parent_transaction_id == None,
         ).scalar() or Decimal("0")
-        trend_data.append({"month": month_label, "income": income, "expense": expense})
+        trend_data.append(TrendStatsItem(month=month_label, income=income, expense=expense))
 
     return StatsResponse(category_data=category_data, trend_data=trend_data)

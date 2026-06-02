@@ -8,6 +8,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
+from ..auth.adapters.stores import AuthStore
 from ..database import get_db
 from ..middleware.auth import get_current_user
 from ..middleware.logging import get_security_logger
@@ -37,12 +38,12 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
 
-def _auth_response(user: User, remember_me: bool = False) -> AuthResponse:
+def _auth_response(user: User, db: Session, remember_me: bool = False) -> AuthResponse:
     token = create_token(user.id, user.username, remember_me=remember_me)
     return AuthResponse(
         token=token,
         username=user.username,
-        preferences=user.preferences or {},
+        preferences=AuthStore(db).get_preferences(user.id),
     )
 
 
@@ -93,7 +94,7 @@ def register(body: RegisterRequest, request: Request, response: Response, db: Se
         user.username,
         _get_client_ip(request),
     )
-    auth_resp = _auth_response(user)
+    auth_resp = _auth_response(user, db)
     _set_token_cookie(response, auth_resp.token)
     return auth_resp
 
@@ -144,14 +145,14 @@ def login(body: LoginRequest, request: Request, response: Response, db: Session 
         user.username,
         _get_client_ip(request),
     )
-    auth_resp = _auth_response(user, remember_me=body.remember_me)
+    auth_resp = _auth_response(user, db, remember_me=body.remember_me)
     _set_token_cookie(response, auth_resp.token, remember_me=body.remember_me)
     return auth_resp
 
 
 @router.get("/me", response_model=AuthResponse)
 def me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return _auth_response(current_user)
+    return _auth_response(current_user, db)
 
 
 @router.put("/preferences", status_code=204)
@@ -160,7 +161,7 @@ def update_preferences(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    current_user.preferences = body.preferences
+    AuthStore(db).update_preferences(current_user.id, body.preferences)
     db.commit()
 
 
@@ -208,7 +209,7 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
 
     sec_log.info("event=token_refresh username=%s ip=%s", user.username, _get_client_ip(request))
 
-    auth_resp = _auth_response(user)
+    auth_resp = _auth_response(user, db)
     _set_token_cookie(response, auth_resp.token)
     return auth_resp
 

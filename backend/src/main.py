@@ -5,6 +5,8 @@ FastAPI 入口: CORS 配置, 路由注册, 日志中间件, 数据库初始化.
 import os
 
 from contextlib import asynccontextmanager
+from typing import cast
+
 from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv())
@@ -13,6 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ExceptionHandler
 
 from .auth.core.errors import AuthError
 from .auth.fastapi_adapter.exceptions import auth_error_handler
@@ -71,10 +74,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-app.add_exception_handler(RequestValidationError, validation_error_handler)
-app.add_exception_handler(HTTPException, http_exception_handler)
-app.add_exception_handler(AppError, app_error_handler)
-app.add_exception_handler(AuthError, auth_error_handler)
+app.add_exception_handler(RequestValidationError, cast(ExceptionHandler, validation_error_handler))
+app.add_exception_handler(HTTPException, cast(ExceptionHandler, http_exception_handler))
+app.add_exception_handler(AppError, cast(ExceptionHandler, app_error_handler))
+app.add_exception_handler(AuthError, cast(ExceptionHandler, auth_error_handler))
 
 app.include_router(auth_router)
 app.include_router(folder.router)
