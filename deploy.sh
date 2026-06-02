@@ -21,28 +21,20 @@ for var in DOCKER_USER SSH_HOST SSH_USER REMOTE_PATH JWT_SECRET; do
   fi
 done
 
+FRONTEND_IMAGE="${DOCKER_USER}/tool-web-frontend:latest"
 BACKEND_IMAGE="${DOCKER_USER}/tool-web-backend:latest"
+COMPOSE_BUILD_FILES=(-f docker-compose.yml -f docker-compose.prod.yml)
 
 echo "=== Building images ==="
 if [ "${NO_CACHE:-0}" = "1" ]; then
-  docker compose build --no-cache
+  docker compose "${COMPOSE_BUILD_FILES[@]}" build --no-cache frontend backend
 else
-  docker compose build
+  docker compose "${COMPOSE_BUILD_FILES[@]}" build frontend backend
 fi
-
-echo ""
-echo "=== Tagging images ==="
-BACKEND_LOCAL_IMAGE="$(docker compose images -q backend)"
-
-if [ -z "${BACKEND_LOCAL_IMAGE}" ]; then
-  echo "ERROR: Failed to resolve local compose image IDs."
-  exit 1
-fi
-
-docker tag "${BACKEND_LOCAL_IMAGE}" "${BACKEND_IMAGE}"
 
 echo ""
 echo "=== Pushing images to Docker Hub ==="
+docker push "${FRONTEND_IMAGE}"
 docker push "${BACKEND_IMAGE}"
 
 echo ""
@@ -56,7 +48,7 @@ ssh "${SSH_USER}@${SSH_HOST}" "
   docker compose -f docker-compose.prod.yml pull
   docker compose -f docker-compose.prod.yml up -d
   if [ \"${RESET_AUTH_SCHEMA:-0}\" = \"1\" ]; then
-    docker compose -f docker-compose.prod.yml exec -T backend uv run python -c \"from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')\"
+    docker compose -f docker-compose.prod.yml exec -T backend /app/.venv/bin/python -c \"from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')\"
   fi
 "
 

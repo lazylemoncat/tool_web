@@ -28,7 +28,7 @@ docker compose up -d
 
 if [ "${RESET_AUTH_SCHEMA:-0}" = "1" ]; then
   echo "Resetting auth schema..."
-  docker compose exec -T backend uv run python -c "from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')"
+  docker compose exec -T backend /app/.venv/bin/python -c "from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print('Auth schema reset complete.')"
 fi
 
 echo ""

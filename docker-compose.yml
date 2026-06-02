@@ -1,10 +1,13 @@
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        API_PROXY_TARGET: ${DOCKER_API_PROXY_TARGET:-http://backend:8000}
     ports:
       - "8003:3000"
     environment:
-      - API_PROXY_TARGET=http://backend:8000
+      - API_PROXY_TARGET=${DOCKER_API_PROXY_TARGET:-http://backend:8000}
     depends_on:
       - backend
     restart: unless-stopped
