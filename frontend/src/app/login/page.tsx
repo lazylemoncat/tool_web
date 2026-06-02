@@ -1,15 +1,21 @@
 'use client';
 
+// 登录页面入口, 负责账号密码登录, MFA 验证切换, 表单状态和认证成功跳转.
 import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
+import OutlinedInput from '@mui/material/OutlinedInput';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import Checkbox from '@mui/material/Checkbox';
 import FormControlLabel from '@mui/material/FormControlLabel';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
+import FormHelperText from '@mui/material/FormHelperText';
 import CircularProgress from '@mui/material/CircularProgress';
 import Link from '@mui/material/Link';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard, { staggerSx } from '@/components/auth/AuthCard';
 import PasswordInput from '@/components/auth/PasswordInput';
@@ -20,6 +26,46 @@ import type { MfaMethod } from '@/lib/types';
 type MfaChallenge = {
   challengeId: string;
   methods: MfaMethod[];
+};
+
+const loginCardSx = {
+  minHeight: { xs: 'auto', sm: 545 },
+  p: { xs: '32px 24px 36px', sm: '48px 40px 40px' },
+  boxShadow: '0 10px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)',
+};
+
+const authFieldLabelSx = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'text.secondary',
+  mb: '6px',
+  letterSpacing: '0.01em',
+};
+
+const authTextInputSx = {
+  height: 50,
+  bgcolor: 'transparent',
+  '& .MuiOutlinedInput-input': {
+    height: '100%',
+    boxSizing: 'border-box',
+    py: 0,
+    px: 2,
+    fontSize: 15,
+  },
+  '& .MuiOutlinedInput-input::placeholder': {
+    color: 'text.secondary',
+    opacity: 0.60,
+  },
+};
+
+const rememberBoxSx = {
+  width: 22,
+  height: 22,
+  borderRadius: '7px',
+  border: '1.5px solid',
+  borderColor: '#B8BBC6',
+  bgcolor: 'background.paper',
+  transition: 'border-color 0.2s, background-color 0.2s, box-shadow 0.2s',
 };
 
 function pickMfaMethod(methods: string[] | undefined): MfaMethod {
@@ -103,8 +149,8 @@ export default function LoginPage() {
   };
 
   return (
-    <AuthLayout>
-      <AuthCard title="欢迎回来">
+    <AuthLayout showDecorations>
+      <AuthCard title="欢迎回来" cardSx={loginCardSx}>
         {/* Error Banner */}
         {error && (
           <Alert
@@ -184,24 +230,29 @@ export default function LoginPage() {
           <Box component="form" onSubmit={handleSubmit} noValidate>
             {/* 用户名 */}
             <Box sx={staggerSx(0)}>
-              <TextField
-                fullWidth
-                label="用户名"
-                value={username}
-                onChange={(e) => {
-                  setUsername(e.target.value);
-                  clearFieldError('username');
-                }}
-                margin="normal"
-                size="small"
-                autoFocus
-                disabled={submitting}
-                error={!!fieldErrors.username}
-                helperText={fieldErrors.username}
-                placeholder="输入你的用户名"
-                autoComplete="username"
-                sx={{ mb: 0, '& .MuiFormHelperText-root': { fontSize: '0.75rem' } }}
-              />
+              <FormControl fullWidth error={!!fieldErrors.username} sx={{ mb: 3.8 }}>
+                <FormLabel htmlFor="login-username" sx={authFieldLabelSx}>
+                  用户名
+                </FormLabel>
+                <OutlinedInput
+                  id="login-username"
+                  value={username}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    clearFieldError('username');
+                  }}
+                  autoFocus
+                  disabled={submitting}
+                  placeholder="输入你的用户名"
+                  autoComplete="username"
+                  sx={authTextInputSx}
+                />
+                {fieldErrors.username && (
+                  <FormHelperText sx={{ mx: 0, mt: 0.75, fontSize: '0.75rem' }}>
+                    {fieldErrors.username}
+                  </FormHelperText>
+                )}
+              </FormControl>
             </Box>
 
             {/* 密码 */}
@@ -218,6 +269,8 @@ export default function LoginPage() {
                 placeholder="输入你的密码"
                 autoComplete="current-password"
                 disabled={submitting}
+                labelSx={authFieldLabelSx}
+                inputSx={authTextInputSx}
               />
             </Box>
 
@@ -228,21 +281,53 @@ export default function LoginPage() {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                mb: 4,
+                minHeight: 28,
+                mb: 3.5,
               }}
             >
               <FormControlLabel
                 control={
                   <Checkbox
-                    size="small"
                     checked={rememberMe}
                     onChange={(e) => setRememberMe(e.target.checked)}
                     disabled={submitting}
-                    sx={{ '&.Mui-checked': { color: 'primary.main' } }}
+                    disableRipple
+                    icon={<Box component="span" sx={rememberBoxSx} />}
+                    checkedIcon={
+                      <Box
+                        component="span"
+                        sx={{
+                          ...rememberBoxSx,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          borderColor: 'primary.main',
+                          bgcolor: 'primary.main',
+                          boxShadow: '0 3px 8px rgba(108,92,231,0.28)',
+                        }}
+                      >
+                        <CheckRoundedIcon sx={{ fontSize: 17, color: 'primary.contrastText' }} />
+                      </Box>
+                    }
+                    sx={{
+                      p: 0,
+                      borderRadius: '8px',
+                      '&:hover span': {
+                        borderColor: 'primary.main',
+                        bgcolor: 'rgba(108,92,231,0.06)',
+                      },
+                      '&.Mui-checked:hover span': {
+                        bgcolor: 'primary.main',
+                      },
+                      '&.Mui-focusVisible span': {
+                        boxShadow: '0 0 0 3px #E8E0FF',
+                      },
+                    }}
                   />
                 }
+                sx={{ m: 0, gap: 1.25 }}
                 label={
-                  <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+                  <Typography sx={{ fontSize: '0.875rem', lineHeight: '22px', color: 'text.secondary' }}>
                     记住我
                   </Typography>
                 }
@@ -266,10 +351,11 @@ export default function LoginPage() {
                 disabled={submitting}
                 sx={{
                   py: 2,
-                  height: 48,
+                  height: 49,
                   borderRadius: '16px',
                   fontSize: '0.9375rem',
                   fontWeight: 600,
+                  letterSpacing: '0.01em',
                   '&:active': { transform: 'scale(0.98)' },
                   '&:hover': {
                     boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)',

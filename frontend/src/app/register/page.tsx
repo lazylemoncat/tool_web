@@ -1,20 +1,54 @@
 'use client';
 
+// 注册页面入口, 负责账号创建, 密码确认, 密码强度反馈和注册成功跳转.
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import TextField from '@mui/material/TextField';
+import OutlinedInput from '@mui/material/OutlinedInput';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
+import FormControl from '@mui/material/FormControl';
+import FormLabel from '@mui/material/FormLabel';
+import FormHelperText from '@mui/material/FormHelperText';
 import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard, { staggerSx } from '@/components/auth/AuthCard';
 import PasswordInput from '@/components/auth/PasswordInput';
 import PasswordStrengthBar from '@/components/auth/PasswordStrengthBar';
 import { register as apiRegister, ApiError } from '@/lib/api';
+
+const registerCardSx = {
+  minHeight: 'auto',
+  p: { xs: '32px 24px 28px', sm: '48px 40px 40px' },
+  boxShadow: '0 10px 24px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.06)',
+};
+
+const registerFieldLabelSx = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'text.secondary',
+  mb: '6px',
+  letterSpacing: '0.01em',
+};
+
+const registerTextInputSx = {
+  height: 50,
+  bgcolor: 'transparent',
+  '& .MuiOutlinedInput-input': {
+    height: '100%',
+    boxSizing: 'border-box',
+    py: 0,
+    px: 2,
+    fontSize: 15,
+  },
+  '& .MuiOutlinedInput-input::placeholder': {
+    color: 'text.secondary',
+    opacity: 0.60,
+  },
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -72,8 +106,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <AuthLayout>
-      <AuthCard title="创建账号">
+    <AuthLayout showDecorations>
+      <AuthCard title="创建账号" cardSx={registerCardSx}>
         {/* Error Banner */}
         {error && (
           <Alert
@@ -87,24 +121,29 @@ export default function RegisterPage() {
         <Box component="form" onSubmit={handleSubmit} noValidate>
           {/* 用户名 */}
           <Box sx={staggerSx(0)}>
-            <TextField
-              fullWidth
-              label="用户名"
-              value={username}
-              onChange={(e) => {
-                setUsername(e.target.value);
-                clearFieldError('username');
-              }}
-              margin="normal"
-              size="small"
-              autoFocus
-              disabled={submitting}
-              error={!!fieldErrors.username}
-              helperText={fieldErrors.username}
-              placeholder="输入用户名"
-              autoComplete="username"
-              sx={{ mb: 0, '& .MuiFormHelperText-root': { fontSize: '0.75rem' } }}
-            />
+            <FormControl fullWidth error={!!fieldErrors.username} sx={{ mb: 3.3 }}>
+              <FormLabel htmlFor="register-username" sx={registerFieldLabelSx}>
+                用户名
+              </FormLabel>
+              <OutlinedInput
+                id="register-username"
+                value={username}
+                onChange={(e) => {
+                  setUsername(e.target.value);
+                  clearFieldError('username');
+                }}
+                autoFocus
+                disabled={submitting}
+                placeholder="输入用户名"
+                autoComplete="username"
+                sx={registerTextInputSx}
+              />
+              {fieldErrors.username && (
+                <FormHelperText sx={{ mx: 0, mt: '4px', fontSize: 12 }}>
+                  {fieldErrors.username}
+                </FormHelperText>
+              )}
+            </FormControl>
           </Box>
 
           {/* 密码 */}
@@ -121,6 +160,9 @@ export default function RegisterPage() {
               placeholder="至少 8 位"
               autoComplete="new-password"
               disabled={submitting}
+              sx={{ mb: 0 }}
+              labelSx={registerFieldLabelSx}
+              inputSx={registerTextInputSx}
             />
             <PasswordStrengthBar password={password} />
           </Box>
@@ -139,6 +181,9 @@ export default function RegisterPage() {
               placeholder="再次输入密码"
               autoComplete="new-password"
               disabled={submitting}
+              sx={{ mb: 3.3 }}
+              labelSx={registerFieldLabelSx}
+              inputSx={registerTextInputSx}
             />
           </Box>
 
@@ -150,11 +195,12 @@ export default function RegisterPage() {
               variant="contained"
               disabled={submitting}
               sx={{
-                py: 2,
-                height: 48,
+                py: 0,
+                height: 49,
                 borderRadius: '16px',
                 fontSize: '0.9375rem',
                 fontWeight: 600,
+                letterSpacing: '0.01em',
                 '&:active': { transform: 'scale(0.98)' },
                 '&:hover': {
                   boxShadow: '0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06)',
@@ -165,7 +211,7 @@ export default function RegisterPage() {
               {submitting ? (
                 <CircularProgress size={20} sx={{ color: '#fff' }} />
               ) : (
-                '注册'
+                '创建账号'
               )}
             </Button>
           </Box>
@@ -175,7 +221,7 @@ export default function RegisterPage() {
             <Typography
               sx={{
                 textAlign: 'center',
-                mt: 5,
+                mt: '28px',
                 fontSize: '0.875rem',
                 color: 'text.secondary',
               }}

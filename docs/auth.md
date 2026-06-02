@@ -362,6 +362,11 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
 | 文件 | 作用 |
 |------|------|
 | `frontend/src/app/login/page.tsx` | Next.js 登录页: 调用登录和 MFA 验证接口, 处理登录错误显示 |
+| `frontend/src/app/register/page.tsx` | Next.js 注册页: 调用注册接口, 校验用户名/密码/确认密码, 按 `register.html` 还原注册表单视觉 |
+| `frontend/src/components/auth/AuthLayout.tsx` | 认证页外层布局: 提供居中舞台和注册页装饰背景 |
+| `frontend/src/components/auth/AuthCard.tsx` | 认证卡片: 提供品牌, 标题, 卡片尺寸, 阴影和入场动画 |
+| `frontend/src/components/auth/PasswordInput.tsx` | 密码输入控件: 外置标签, outlined 输入框和显示/隐藏密码按钮 |
+| `frontend/src/components/auth/PasswordStrengthBar.tsx` | 注册页密码强度条: 四段式强度反馈 |
 | `frontend/src/app/layout.tsx` | Next.js 根布局: 挂载 `AuthProvider`, `AuthGuard`, 主题注册和应用壳层 |
 | `frontend/src/components/auth/AuthGuard.tsx` | 路由守卫: 未登录用户跳转登录页, 已登录用户进入受保护页面 |
 | `frontend/src/context/AuthContext.tsx` | 认证状态管理: `useAuth()` hook, 登录态恢复, 当前用户状态维护, 退出登录 |

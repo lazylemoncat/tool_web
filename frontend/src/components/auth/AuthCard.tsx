@@ -1,8 +1,9 @@
 'use client';
 
+// 认证卡片容器, 负责登录/注册页的品牌区, 标题区, 入场动画和表单插槽布局.
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { keyframes, useTheme } from '@mui/material/styles';
+import { keyframes, useTheme, type SxProps, type Theme } from '@mui/material/styles';
 
 const cardEnter = keyframes`
   0% { opacity: 0; transform: translateY(20px) scale(0.97); }
@@ -26,9 +27,11 @@ export function staggerSx(index: number) {
 export default function AuthCard({
   title,
   children,
+  cardSx,
 }: {
   title: string;
   children: React.ReactNode;
+  cardSx?: SxProps<Theme>;
 }) {
   const theme = useTheme();
   const shadowMode = theme.palette.mode === 'dark' ? '0.30' : '0.12';
@@ -36,36 +39,36 @@ export default function AuthCard({
 
   return (
     <Box
-      sx={{
-        width: '100%',
-        maxWidth: 440,
-        minHeight: { xs: 'auto', sm: 540 },
-        display: 'flex',
-        flexDirection: 'column',
-        justifyContent: 'center',
-        bgcolor: 'background.paper',
-        borderRadius: '16px',
-        boxShadow: `0 10px 24px -4px rgba(0,0,0,${shadowMode}), 0 4px 8px -4px rgba(0,0,0,${shadowAccent})`,
-        p: { xs: '32px 24px 36px', sm: '52px 44px 44px' },
-        animation: `${cardEnter} 0.5s ease-out`,
-        position: 'relative',
-        zIndex: 1,
-      }}
+      sx={[
+        {
+          width: '100%',
+          maxWidth: 440,
+          minHeight: { xs: 'auto', sm: 545 },
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          bgcolor: 'background.paper',
+          borderRadius: '16px',
+          boxShadow: `0 18px 42px -14px rgba(0,0,0,${shadowMode}), 0 8px 18px -12px rgba(0,0,0,${shadowAccent})`,
+          p: { xs: '32px 24px 36px', sm: '52px 40px 44px' },
+          animation: `${cardEnter} 0.5s ease-out`,
+          position: 'relative',
+          zIndex: 1,
+        },
+        ...(Array.isArray(cardSx) ? cardSx : cardSx ? [cardSx] : []),
+      ]}
     >
-      {/* Brand: ToolWeb 带 primary 色前缀 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: { xs: 4, sm: 5 } }}>
+      {/* Brand: ToolWeb */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: '24px', sm: '32px' } }}>
         <Typography
           sx={{
             fontWeight: 700,
-            fontSize: '24px',
+            fontSize: '22px',
             letterSpacing: '-0.02em',
             color: 'text.primary',
           }}
         >
-          <Box component="span" sx={{ color: 'primary.main' }}>
-            Tool
-          </Box>
-          Web
+          ToolWeb
         </Typography>
       </Box>
 

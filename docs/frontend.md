@@ -34,6 +34,8 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 ## 已接入页面
 
 - `login`: 调用 `POST /api/v1/auth/login`, 成功后从响应的 `user` 字段写入 `AuthContext`; 当后端返回 `mfa_required` 时, 登录页会进入验证码/恢复码验证步骤并调用 `POST /api/v1/auth/mfa/verify`.
+- 登录页视觉: `/login` 使用与注册页一致的低透明装饰圆背景, 440px `AuthCard`, 16px 圆角和顶部对齐内容; 登录表单使用外置字段标签, 50px 高度的 MUI outlined 输入框, 49px 主按钮, 以及自定义 22px 圆角 "记住我" 勾选框.
+- 注册页视觉: `/register` 以根目录 `register.html` 为基准, 使用带低透明装饰圆的 `AuthLayout`, 440px `AuthCard`, `48px 40px 40px` 桌面内边距, 外置字段标签, 始终占位的四段密码强度条, "创建账号" 按钮和 28px 底部返回登录间距.
 - 全局登录态: 调用 `GET /api/v1/auth/me`, 从响应的 `user` 字段恢复登录态, 退出调用 `POST /api/v1/auth/logout`.
 - 顶部导航: `GlobalNav` 通过当前 pathname 计算 active 状态, 首页精确匹配 `/`, Todo 匹配 `/todo` 及子路径, Finance 匹配 `/finance` 及子路径, 避免进入记账模块时任务入口被错误强调.
 - MUI 样式传参: `Typography` 和 `slotProps` 中的子组件样式统一通过 `sx` 传入, 例如 `ListItemText.slotProps.primary.sx`, 避免把 `fontWeight`, `fontSize` 等样式字段直接作为组件 prop 导致 Next build 类型检查失败.

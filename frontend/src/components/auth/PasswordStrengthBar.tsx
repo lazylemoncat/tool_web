@@ -1,5 +1,6 @@
 'use client';
 
+// 注册页密码强度条, 按长度, 大小写, 数字和特殊字符计算四段式强度反馈.
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 
@@ -20,8 +21,6 @@ interface PasswordStrengthBarProps {
 }
 
 export default function PasswordStrengthBar({ password }: PasswordStrengthBarProps) {
-  if (!password) return null;
-
   const { score, label } = getPasswordStrength(password);
 
   const getSegmentColor = (index: number) => {
@@ -32,8 +31,8 @@ export default function PasswordStrengthBar({ password }: PasswordStrengthBarPro
   };
 
   return (
-    <Box sx={{ mb: 2.5 }}>
-      <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5 }}>
+    <Box sx={{ mb: 3.3 }}>
+      <Box sx={{ display: 'flex', gap: '4px', mt: '8px' }}>
         {[0, 1, 2, 3].map((i) => (
           <Box
             key={i}
@@ -51,13 +50,13 @@ export default function PasswordStrengthBar({ password }: PasswordStrengthBarPro
         <Typography
           variant="caption"
           sx={{
-            mt: 0.5,
+            mt: '4px',
             display: 'block',
             color: 'text.secondary',
-            fontSize: '12px',
+            fontSize: '11px',
           }}
         >
-          {label}
+          密码强度：{label}
         </Typography>
       )}
     </Box>
