@@ -39,11 +39,12 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - 登录页 i18n 与忘记密码: `frontend/src/context/I18nContext.tsx` 管理当前语言并持久化到 `localStorage` 的 `toolweb-language`; `frontend/src/i18n/messages.ts` 提供中文和英文词典. 表单校验, MFA, 常见认证 API 错误和忘记密码弹窗会随当前语言切换. "忘记密码?" 会打开 2FA 重置密码弹窗, 调用 `POST /api/v1/auth/password/reset`.
 - 注册页视觉与交互: `/register` 以根目录 `register.html` 为基准, 使用带低透明装饰圆的 `AuthLayout`, 440px `AuthCard`, 外置字段标签, 四段密码强度条和 "创建账号" 按钮. 用户名达到 3 个字符后调用 `GET /api/v1/auth/username-availability` 实时提示是否可用; 密码强度旁的问号 tooltip 展示密码规则; 确认密码输入后实时提示是否一致. 注册成功后 `AuthContext.register()` 写入当前用户并跳转首页.
 - 全局登录态: 调用 `GET /api/v1/auth/me`, 从响应的 `user` 字段恢复登录态, 退出调用 `POST /api/v1/auth/logout`.
-- 顶部导航: `GlobalNav` 通过当前 pathname 计算 active 状态, 首页精确匹配 `/`, Todo 匹配 `/todo` 及子路径, Finance 匹配 `/finance` 及子路径, 避免进入记账模块时任务入口被错误强调.
+- 顶部导航: `GlobalNav` 通过当前 pathname 计算 active 状态, 首页精确匹配 `/`, Todo 匹配 `/todo` 及子路径, Calendar 匹配 `/calendar` 及子路径, Finance 匹配 `/finance` 及子路径, 避免进入其他模块时任务入口被错误强调.
 - MUI 样式传参: `Typography` 和 `slotProps` 中的子组件样式统一通过 `sx` 传入, 例如 `ListItemText.slotProps.primary.sx`, 避免把 `fontWeight`, `fontSize` 等样式字段直接作为组件 prop 导致 Next build 类型检查失败.
 - MUI 主题覆写: `frontend/src/theme.ts` 中组件变体样式使用 `components.Mui*.variants`, 不把 `containedPrimary` 等旧 class key 写入 `styleOverrides`, 以匹配当前 MUI 类型.
 - `/`: Material/MUI 工作台, 对齐 `index.html`; 支持 Todo/记账入口, 月度记账摘要, 最近任务, 管理模式, 添加/移除卡片, 导航管理和偏好设置弹窗, 并在标题区显示当前项目版本.
 - `/todo`: Material/MUI TODO 页面, 对齐 `todo.html`; 调用 folders, tags 和 todos 接口, 支持读取, 搜索, 状态/优先级/文件夹/标签筛选, 新建, 编辑, 删除, 切换完成, 多选批量完成/移动/删除, 文件夹新建/编辑/删除, 以及 `kanban` 模式文件夹的看板视图切换.
+- `/calendar`: Material/MUI 日历模块, 位于 `frontend/src/components/calendar/`; 月视图按原型还原为连续月份滚动, sticky 月份工具条,大号日期格,农历/节假日标签,事件色条和右侧详情/筛选抽屉.周视图还原为周概览,周统计和选中日期日程三卡片.日视图使用全天分区和带时间列/圆点/连接线的时间轴.日程视图按日期分组展示未来事件.支持来源筛选,关键词搜索,订阅同步 stub,以及手动日程/账单提醒的前端内存 CRUD.新建/编辑弹窗日期字段使用 MUI X `DatePicker` 和共享 `DATE_PICKER_DISPLAY_FORMAT`.
 - TODO 侧边栏: 文件夹按后端返回的 `children` 递归渲染, 箭头向右表示收起, 向下表示展开; `mode: "kanban"` 的文件夹名称右侧显示看板图标; 新建子文件夹弹窗使用点击位置作为固定锚点, 避免输入时因行内按钮重排导致弹窗漂移.
 - TODO 任务弹窗: 新建任务继承当前选中文件夹作为隐藏 `folder_id`, 不再显示所属文件夹下拉框; 标签输入使用 MUI Autocomplete 的 `renderValue` 渲染已选标签 Chip, 兼容当前 MUI 版本并避免未知 DOM prop warning.
 - TODO Kanban 新建任务: 第一列的新增按钮复用任务弹窗, 并通过隐藏字段提交当前 `sprint_id` 和目标 `column_id`, 保存后按当前 sprint 刷新, 确保新任务立即出现在对应列.

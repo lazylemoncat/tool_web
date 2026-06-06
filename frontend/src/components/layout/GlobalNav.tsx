@@ -83,6 +83,7 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage }: GlobalNav
       <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, mr: 'auto' }}>
         <NavLink href="/" label="首页" active={isActive('/')} />
         <NavLink href="/todo" label="任务" active={isActive('/todo')} />
+        <NavLink href="/calendar" label="日历" active={isActive('/calendar')} />
         <NavLink href="/finance" label="记账" active={isActive('/finance')} />
       </Box>
 
