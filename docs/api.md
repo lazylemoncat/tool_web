@@ -2,6 +2,8 @@
 
 Base URL: `/api/v1`
 
+前端通过 Next.js 代理访问 API: 浏览器请求 `/api/v1/*`, Next 根据 `API_PROXY_TARGET` 转发到 FastAPI. 本地默认后端地址为 `http://localhost:8004`, Docker Compose 内部地址为 `http://backend:8000`.
+
 ## 统一响应格式
 
 ```json
@@ -165,6 +167,8 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/dashboard?ledger_id=` | 仪表盘汇总 |
 | `GET` | `/api/v1/finance/stats?ledger_id=&period=` | 图表数据 |
+
+`/stats` 返回前端图表可直接消费的结构: `category_data[]` 包含 `category_name`, `category_icon`, `total`, `color`; `trend_data[]` 包含最近 6 个月的 `month`, `income`, `expense`.
 
 ### 关系 (Relation)
 | 方法 | 路径 | 说明 |

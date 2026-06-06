@@ -14,11 +14,11 @@ class UserTheme(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name = Column(String(100), nullable=False)
     config_json = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="themes")
+    user = relationship("User")

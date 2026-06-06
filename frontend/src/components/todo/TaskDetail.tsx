@@ -1,125 +1,64 @@
-/*
- 任务详情只读弹窗: 展示完整任务信息、子任务、重复规则、标签等.
-*/
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Button from '@mui/material/Button';
+import type { TodoOut, FolderOut } from '@/lib/types';
+import dayjs from 'dayjs';
 
-import React from 'react'
-import { Todo } from '../../hooks/useTodos'
-import { useLocale } from '../../i18n'
-import { Button } from '../ui'
-import PriorityTag from '../common/PriorityTag'
-
-interface Props {
-  todo: Todo
-  onClose: () => void
-  onEdit: (todo: Todo) => void
+interface TaskDetailProps {
+  task: TodoOut;
+  folders?: FolderOut[];
+  onEdit?: () => void;
+  onDelete?: () => void;
 }
 
-function describeRRule(rrule: string, t: (key: string) => string, locale: string): string {
-  if (rrule === 'FREQ=DAILY') return t('recurrence.daily')
-  if (rrule === 'FREQ=WEEKLY') return t('recurrence.weekly')
-  if (rrule === 'FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR') return t('recurrence.weekdays')
-  if (rrule === 'FREQ=WEEKLY;BYDAY=SA,SU') return t('recurrence.weekends')
-  if (rrule === 'FREQ=MONTHLY') return t('recurrence.monthly')
-  // Parse custom BYDAY patterns
-  const m = rrule.match(/FREQ=WEEKLY;BYDAY=([A-Z,]+)/)
-  if (m) {
-    const dayMap: Record<string, string> = locale === 'zh'
-      ? { MO: '一', TU: '二', WE: '三', TH: '四', FR: '五', SA: '六', SU: '日' }
-      : { MO: 'Mon', TU: 'Tue', WE: 'Wed', TH: 'Thu', FR: 'Fri', SA: 'Sat', SU: 'Sun' }
-    const days = m[1].split(',').map(d => dayMap[d] || d)
-    return locale === 'zh' ? `每${days.join('、')}` : `Every ${days.join(', ')}`
-  }
-  return rrule
-}
-
-const TaskDetail: React.FC<Props> = ({ todo, onClose, onEdit }) => {
-  const { t, locale } = useLocale()
-  const completedSubCount = todo.children?.filter(c => c.is_completed).length || 0
-  const totalSubCount = todo.children?.length || 0
+export default function TaskDetail({ task, folders, onEdit, onDelete }: TaskDetailProps) {
+  const folderName = folders?.find((f) => f.id === task.folder_id)?.name || (task.folder_id ? '未命名' : '无');
+  const createdAt = task.created_at ? dayjs(task.created_at).format('YYYY-MM-DD HH:mm') : '-';
+  const updatedAt = task.updated_at ? dayjs(task.updated_at).format('YYYY-MM-DD HH:mm') : '-';
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal task-detail-modal" onClick={e => e.stopPropagation()}>
-        <div className="detail-header">
-          <h2>{t('auth.taskDetail')}</h2>
-          <button className="detail-close" onClick={onClose} aria-label={t('app.close')}>×</button>
-        </div>
+    <Box sx={{ mt: 0.25, px: { xs: 2, sm: 8.5 }, py: 2.5, bgcolor: 'oklch(94% 0.005 275)', borderRadius: '0 0 12px 12px' }}>
+      <Box sx={{ display: 'flex', gap: 5, flexWrap: 'wrap', mb: 2 }}>
+        <Box sx={{ minWidth: 140 }}>
+          <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>创建时间</Typography>
+          <Typography variant="body2">{createdAt}</Typography>
+        </Box>
+        <Box sx={{ minWidth: 140 }}>
+          <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>更新时间</Typography>
+          <Typography variant="body2">{updatedAt}</Typography>
+        </Box>
+        <Box sx={{ minWidth: 140 }}>
+          <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>所属文件夹</Typography>
+          <Typography variant="body2">{folderName}</Typography>
+        </Box>
+      </Box>
 
-        <div className="detail-body">
-          <div className="detail-field">
-            <label>{t('todo.taskName')}</label>
-            <span className="detail-title">{todo.title}</span>
-          </div>
+      {/* Children (subtasks) from API */}
+      {task.children && task.children.length > 0 && (
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>子任务</Typography>
+          {task.children.map((child) => (
+            <Box key={child.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+              <Box sx={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid', borderColor: child.is_completed ? 'primary.main' : 'oklch(82% 0.01 275)', bgcolor: child.is_completed ? 'primary.main' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                ...(child.is_completed && { '&::after': { content: '""', width: 6, height: 3, borderLeft: '1.5px solid #fff', borderBottom: '1.5px solid #fff', transform: 'rotate(-45deg) translateY(-0.5px)' } }),
+              }} />
+              <Typography variant="body2" sx={{ textDecoration: child.is_completed ? 'line-through' : 'none', color: child.is_completed ? 'text.secondary' : 'text.primary' }}>{child.title}</Typography>
+            </Box>
+          ))}
+        </Box>
+      )}
 
-          <div className="detail-field">
-            <label>{t('auth.status')}</label>
-            <span>{todo.is_completed ? `✓ ${t('todo.completed')}` : `○ ${t('todo.active')}`}</span>
-          </div>
+      {/* Note */}
+      {task.note && (
+        <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 2, whiteSpace: 'pre-wrap', '& code': { bgcolor: 'action.hover', px: 0.75, borderRadius: '4px', fontFamily: 'monospace', fontSize: '0.8125rem' } }}>
+          {task.note}
+        </Typography>
+      )}
 
-          <div className="detail-field">
-            <label>{t('todo.priority')}</label>
-            <PriorityTag priority={todo.priority} />
-          </div>
-
-          {todo.due_date && (
-            <div className="detail-field">
-              <label>{t('todo.dueDate')}</label>
-              <span>{todo.due_date}</span>
-            </div>
-          )}
-
-          {todo.tags && todo.tags.length > 0 && (
-            <div className="detail-field">
-              <label>{t('tag.tags')}</label>
-              <div className="detail-tags">
-                {todo.tags.map(tag => <span key={tag.id} className="tag-badge">{tag.name}</span>)}
-              </div>
-            </div>
-          )}
-
-          <div className="detail-section">
-            <label>{t('todo.note')}</label>
-            <div className="detail-note">{todo.note || t('auth.noNote')}</div>
-          </div>
-
-          {todo.recurrence_rules && todo.recurrence_rules.length > 0 && (
-            <div className="detail-section">
-              <label>{t('recurrence.enable')}</label>
-              <ul className="detail-rrules">
-                {todo.recurrence_rules.map((r, i) => (
-                  <li key={i}>{describeRRule(r.rrule_string, t, locale)} <code>({r.rrule_string})</code></li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {totalSubCount > 0 && (
-            <div className="detail-section">
-              <label>{t('auth.subtasks')} ({completedSubCount}/{totalSubCount})</label>
-              <ul className="detail-subtasks">
-                {todo.children!.map(child => (
-                  <li key={child.id} className={child.is_completed ? 'completed' : ''}>
-                    {child.is_completed ? '✓' : '○'} {child.title}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="detail-meta">
-            <div><label>{t('auth.createdTime')}</label> {new Date(todo.created_at).toLocaleString()}</div>
-            <div><label>{t('auth.updatedTime')}</label> {new Date(todo.updated_at).toLocaleString()}</div>
-            {todo.completed_at && <div><label>{t('auth.completedTime')}</label> {new Date(todo.completed_at).toLocaleString()}</div>}
-          </div>
-        </div>
-
-        <div className="detail-footer">
-          <Button onClick={() => onEdit(todo)}>{t('app.edit')}</Button>
-          <Button variant="secondary" onClick={onClose}>{t('app.close')}</Button>
-        </div>
-      </div>
-    </div>
-  )
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        <Button variant="contained" size="small" onClick={onEdit} sx={{ borderRadius: 2, fontSize: '0.8125rem', fontWeight: 600 }}>编辑</Button>
+        <Button variant="outlined" size="small" onClick={onDelete} sx={{ borderRadius: 2, fontSize: '0.8125rem', fontWeight: 600, borderColor: 'oklch(82% 0.01 275)', color: 'error.main', '&:hover': { bgcolor: 'oklch(95% 0.08 25)', borderColor: 'error.main' } }}>删除</Button>
+      </Box>
+    </Box>
+  );
 }
-
-export default TaskDetail

@@ -7,9 +7,7 @@ dist/
 
 # Node
 node_modules/
-frontend/dist/
-frontend/src/.umi/
-frontend/src/.umi-production/
+.next/
 
 # Database
 *.db

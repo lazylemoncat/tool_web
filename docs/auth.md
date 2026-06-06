@@ -26,6 +26,8 @@ Tool Web 提供基于 **JWT (JSON Web Token)** 的用户认证系统, 支持以�
 
 ## 使用方法
 
+当前 Next.js 前端登录页调用 `POST /api/v1/auth/login`, 注册页调用 `POST /api/v1/auth/register`, 全局登录态通过 `GET /api/v1/auth/me` 校验. 请求使用 cookie 认证并携带 `credentials: "include"`.
+
 ### 1. 注册新账号
 
 **前端操作**:
@@ -36,7 +38,7 @@ Tool Web 提供基于 **JWT (JSON Web Token)** 的用户认证系统, 支持以�
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/register \
+curl -X POST http://localhost:8004/api/v1/auth/register \
   -H "Content-Type: application/json" \
   -d '{"username": "myuser", "password": "mypassword"}'
 ```
@@ -89,7 +91,7 @@ curl -X POST http://localhost:8001/api/v1/auth/register \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/login \
+curl -X POST http://localhost:8004/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"username": "myuser", "password": "mypassword"}'
 ```
@@ -126,7 +128,7 @@ curl -X POST http://localhost:8001/api/v1/auth/login \
 
 需要携带有效的 Bearer Token:
 ```bash
-curl -X GET http://localhost:8001/api/v1/auth/me \
+curl -X GET http://localhost:8004/api/v1/auth/me \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -137,7 +139,7 @@ Token 无效或用户不存在时返回 401.
 ### 4. 更新用户偏好设置
 
 ```bash
-curl -X PUT http://localhost:8001/api/v1/auth/preferences \
+curl -X PUT http://localhost:8004/api/v1/auth/preferences \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"preferences": {"theme": "dark", "language": "en"}}'
@@ -153,7 +155,7 @@ curl -X PUT http://localhost:8001/api/v1/auth/preferences \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/logout \
+curl -X POST http://localhost:8004/api/v1/auth/logout \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -171,7 +173,7 @@ curl -X POST http://localhost:8001/api/v1/auth/logout \
 
 **API 调用**:
 ```bash
-curl -X PUT http://localhost:8001/api/v1/auth/password \
+curl -X PUT http://localhost:8004/api/v1/auth/password \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"old_password": "oldpass", "new_password": "newpass123"}'
@@ -201,7 +203,7 @@ curl -X PUT http://localhost:8001/api/v1/auth/password \
 
 **API 调用**:
 ```bash
-curl -X DELETE http://localhost:8001/api/v1/auth/account \
+curl -X DELETE http://localhost:8004/api/v1/auth/account \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"password": "mypassword"}'
@@ -226,7 +228,7 @@ curl -X DELETE http://localhost:8001/api/v1/auth/account \
 
 **API 调用**:
 ```bash
-curl -X POST http://localhost:8001/api/v1/auth/refresh \
+curl -X POST http://localhost:8004/api/v1/auth/refresh \
   -H "Authorization: Bearer <token>"
 ```
 
@@ -359,20 +361,18 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
 
 | 文件 | 作用 |
 |------|------|
-| `frontend/src/components/auth/AuthPage.tsx` | 登录/注册 UI 组件: 标签切换, 语言切换, 记住我, 密码显示切换, 密码强度指示, 表单输入, 客户端验证, 错误显示 |
-| `frontend/src/components/settings/AccountSettings.tsx` | 账户管理 UI 组件: 修改密码表单 (含密码强度指示和显示切换), 注销账号确认流程; 使用 AuthContext 方法而非直接调用 API |
-| `frontend/src/context/AuthContext.tsx` | 认证状态管理: `useAuth()` hook, login/register/logout/changePassword/deleteAccount 函数, token/localStorage 同步, 偏好设置同步, token 自动刷新 |
-| `frontend/src/api/client.ts` | Axios 实例: cookie-based JWT, 自动 refresh, 请求拦截器, 响应拦截器 (统一解包, 401 处理: 认证端点直接传递错误, 其他端点自动刷新/重载) |
-| `frontend/src/utils/token.ts` | JWT 工具: 解码 token payload, 检查 token 是否过期或即将过期, 判断是否需要触发 refresh |
-| `frontend/src/hooks/useErrorDisplay.ts` | 错误显示 hook: 将 API 英文错误消息映射为当前语言的用户友好文案 |
-| `frontend/src/utils/errorMapping.ts` | 错误消息映射表: 英文 API 消息 → i18n key, 含 Pydantic 校验错误模式匹配 |
-| `frontend/src/app.tsx` | Umi 运行时入口: 全局 Provider, ErrorBoundary, Toast/Tooltip, themeBridge 初始化 |
-| `frontend/src/layouts/index.tsx` | 应用布局: 会话检查加载态 (sessionChecked), 基于 token 有无的路由守卫 (无 token 显示 AuthPage, 有 token 显示主应用) |
-| `frontend/.umirc.ts` | Umi 路由配置: settings/auth 相关页面注册 |
-| `frontend/src/i18n.tsx` | 国际化系统: 懒加载 JSON 词典, `useLocale()` hook |
-| `frontend/src/locales/zh.json` | 中文翻译: `auth.*` 键 (登录/注册/改密/销户/语言切换), `errors.*` 键 (错误提示) |
-| `frontend/src/locales/en.json` | 英文翻译: `auth.*` 键, `errors.*` 键 |
-| `frontend/src/styles/index.css` | 样式文件: `.auth-*`, `.danger-zone`, `.success-message`, `.account-settings` 等 CSS 类 |
+| `frontend/src/app/login/page.tsx` | Next.js 登录页: 调用登录和 MFA 验证接口, 处理登录错误显示 |
+| `frontend/src/app/register/page.tsx` | Next.js 注册页: 调用注册接口, 校验用户名/密码/确认密码, 按 `register.html` 还原注册表单视觉 |
+| `frontend/src/components/auth/AuthLayout.tsx` | 认证页外层布局: 提供居中舞台和注册页装饰背景 |
+| `frontend/src/components/auth/AuthCard.tsx` | 认证卡片: 提供品牌, 标题, 卡片尺寸, 阴影和入场动画 |
+| `frontend/src/components/auth/PasswordInput.tsx` | 密码输入控件: 外置标签, outlined 输入框和显示/隐藏密码按钮 |
+| `frontend/src/components/auth/PasswordStrengthBar.tsx` | 注册页密码强度条: 四段式强度反馈 |
+| `frontend/src/app/layout.tsx` | Next.js 根布局: 挂载 `AuthProvider`, `AuthGuard`, 主题注册和应用壳层 |
+| `frontend/src/components/auth/AuthGuard.tsx` | 路由守卫: 未登录用户跳转登录页, 已登录用户进入受保护页面 |
+| `frontend/src/context/AuthContext.tsx` | 认证状态管理: `useAuth()` hook, 登录态恢复, 当前用户状态维护, 退出登录 |
+| `frontend/src/lib/api.ts` | Fetch API client: 统一调用 `/api/v1/*`, 携带 cookie, 处理 refresh 和 API 错误 |
+| `frontend/src/lib/types.ts` | 前后端共享的认证响应类型 |
+| `frontend/next.config.ts` | Next.js rewrites: 将 `/api` 和 `/uploads` 代理到 `API_PROXY_TARGET` |
 
 ### 前端数据流
 
@@ -380,35 +380,35 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
 ```
 页面加载
     → AuthProvider mount
-    → axios POST /api/v1/auth/refresh (携带 httpOnly cookie)
-    → 后端验证 cookie, 返回 { token, username, preferences }
-    → 恢复内存 token + localStorage username + preferences
-    → sessionChecked = true
-    → layouts/index.tsx: token 非 null → 显示主应用路由
+    → apiFetch GET /api/v1/auth/me (携带 httpOnly cookie)
+    → 后端验证 cookie, 返回 { user }
+    → AuthContext 恢复 user
+    → isLoading = false
+    → AuthGuard: isAuthenticated = true → 显示受保护页面
     (若 cookie 无效或不存在)
-    → sessionChecked = true, token = null
-    → layouts/index.tsx: 显示 AuthPage 登录页
+    → user = null, isLoading = false
+    → AuthGuard: 跳转到 /login
 ```
 
 **登录/注册**:
 ```
-用户输入 (AuthPage)
-    → AuthContext.login() / AuthContext.register()
-    → axios POST /api/v1/auth/login 或 /register
-    → 后端返回 { token, username, preferences }
-    → 存入内存 token + localStorage username + preferences
-    → React state 更新 (token !== null)
-    → layouts/index.tsx 条件渲染: 显示主应用路由
+用户输入 (frontend/src/app/login/page.tsx)
+    → AuthContext.login()
+    → apiFetch POST /api/v1/auth/login
+    → 后端返回 { user } 或 MFA challenge
+    → 无 MFA 时 AuthContext 写入 user
+    → 有 MFA 时调用 POST /api/v1/auth/mfa/verify 后写入 user
+    → 登录页跳转到 /todo
 ```
 
 ### Token 管理
 
-- **存储**: JWT 通过 httpOnly secure cookie 自动传递, 前端内存中保留 token 副本用于过期检查
-- **发送**: Cookie 由浏览器自动携带 (同源请求); Axios 请求拦截器同时保留 `Authorization: Bearer <token>` 头作为后备方案
-- **会话恢复**: 页面加载时 `AuthProvider` 自动调用 `POST /auth/refresh` (使用原始 axios, 绕过拦截器). 若 httpOnly cookie 有效则恢复 token、username 和 preferences, 用户无需重新登录; 若无效则显示登录页
-- **刷新**: `frontend/src/utils/token.ts` 定期检查 token 过期时间, 在到期前 5 分钟自动调用 `/refresh` 获取新 token, 用户无感知
-- **过期处理**: 非认证端点的 401 响应触发自动刷新; 刷新失败则清除状态并 `window.location.reload()` 回到登录页. `/auth/login` 和 `/auth/register` 端点的 401 响应直接传递给调用方显示错误, 不触发刷新或重载
-- **退出**: `AuthContext.logout()` 调用 `/logout` 清除服务端 cookie, 同时清除前端内存 token 和 localStorage username, React state 置 null, 回到登录页
+- **存储**: JWT 通过 httpOnly cookie 自动传递, 前端只保存当前 `user` 状态
+- **发送**: Cookie 由浏览器自动携带, `apiFetch` 对所有相对路径请求使用 `credentials: "include"`
+- **会话恢复**: 页面加载时 `AuthProvider` 自动调用 `GET /api/v1/auth/me`. 若 httpOnly cookie 有效则恢复 `user`, 用户无需重新登录; 若无效则由 `AuthGuard` 跳转到 `/login`
+- **刷新**: `apiFetch` 在非认证请求遇到 401 时调用 `POST /api/v1/auth/refresh`, 成功后重试一次原请求
+- **过期处理**: refresh 失败时抛出 401 错误, 调用方或路由守卫进入未登录状态
+- **退出**: `AuthContext.logout()` 调用 `/api/v1/auth/logout` 清除服务端 cookie, 同时清除前端 `user`, 回到登录页
 
 ---
 
@@ -543,28 +543,42 @@ ADMIN_PASSWORD=your-admin-password
 ### docker-compose.yml (本地开发)
 ```yaml
 services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_PROXY_TARGET: ${DOCKER_API_PROXY_TARGET:-http://backend:8000}
+    environment:
+      - API_PROXY_TARGET=${DOCKER_API_PROXY_TARGET:-http://backend:8000}
   backend:
     build: ./backend
     environment:
       - DATABASE_URL=sqlite:///./data/tool_web.db
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-      - ALLOWED_ORIGINS=http://localhost:8003
+      - ALLOWED_ORIGINS=http://localhost:8003,http://localhost:3000
 ```
 
 ### docker-compose.prod.yml (生产环境)
 ```yaml
 services:
+  frontend:
+    image: ${DOCKER_USER:-user}/tool-web-frontend:latest
+    environment:
+      - API_PROXY_TARGET=${DOCKER_API_PROXY_TARGET:-http://backend:8000}
   backend:
     image: ${DOCKER_USER:-user}/tool-web-backend:latest
     environment:
+      - DATABASE_URL=sqlite:///./data/tool_web.db
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost:8003,http://localhost:3000}
 ```
 
-前端 Nginx 将 `/api` 请求代理到 `http://backend:8001`, 认证请求在容器网络内部完成.
+前端 Next.js 通过 `next.config.ts` 将 `/api` 和 `/uploads` 请求代理到 `API_PROXY_TARGET`. Docker Compose 使用 `DOCKER_API_PROXY_TARGET` 注入该值, 默认是 `http://backend:8000`, 认证请求在容器网络内部完成.
 
 # Current Frontend Note
 
-Authentication state is still owned by `frontend/src/context/AuthContext.tsx`, but the route guard and authenticated shell now live in `frontend/src/layouts/index.tsx`. Global providers and `themeBridge` initialization live in `frontend/src/app.tsx`. Older references in historical sections to `frontend/src/App.tsx` or `frontend/src/main.tsx` mean the pre-Umi Vite entry.
+Authentication state is owned by `frontend/src/context/AuthContext.tsx`, while the route guard and authenticated shell are mounted from `frontend/src/app/layout.tsx`. Older references in historical sections to Umi, Vite, `frontend/src/App.tsx`, or `frontend/src/main.tsx` mean pre-Next migration entries.
+
+The current Next.js login page is `frontend/src/app/login/page.tsx`. It calls `frontend/src/lib/api.ts` directly, does not auto-refresh on `/api/v1/auth/login` 401 responses, and supports the `mfa_required` response by collecting a TOTP code or recovery code before calling `/api/v1/auth/mfa/verify`.

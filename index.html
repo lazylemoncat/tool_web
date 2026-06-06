@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>ToolWeb 首页</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --primary: oklch(48% 0.18 285); --on-primary: #fff;
+      --primary-container: oklch(90% 0.08 285); --on-primary-container: oklch(20% 0.10 285);
+      --secondary: oklch(55% 0.12 300);
+      --secondary-container: oklch(92% 0.06 300); --on-secondary-container: oklch(22% 0.08 300);
+      --error: oklch(55% 0.18 25); --on-error: #fff;
+      --error-container: oklch(95% 0.08 25); --on-error-container: oklch(30% 0.12 25);
+      --warning: oklch(65% 0.16 75); --success: oklch(58% 0.14 145);
+      --bg: oklch(95% 0.004 275); --on-bg: oklch(15% 0.02 275);
+      --surface: oklch(99% 0.002 275); --on-surface: oklch(15% 0.02 275);
+      --surface-variant: oklch(93% 0.01 275); --on-surface-variant: oklch(42% 0.015 275);
+      --surface-dim: oklch(94% 0.005 275);
+      --outline: oklch(84% 0.008 275); --outline-variant: oklch(89% 0.005 275);
+      --shadow: 0 1px 3px oklch(0% 0 0 / 0.08), 0 1px 2px oklch(0% 0 0 / 0.06);
+      --shadow-md: 0 4px 10px oklch(0% 0 0 / 0.08), 0 2px 4px oklch(0% 0 0 / 0.06);
+      --shadow-lg: 0 10px 24px oklch(0% 0 0 / 0.10), 0 4px 8px oklch(0% 0 0 / 0.06);
+      --shadow-xl: 0 16px 48px oklch(0% 0 0 / 0.12), 0 8px 16px oklch(0% 0 0 / 0.08);
+      --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --radius-xs: 4px; --radius-s: 8px; --radius-m: 12px; --radius-l: 16px;
+      --nav-h: 64px; --transition: 0.3s;
+    }
+    [data-theme="dark"] {
+      --primary: oklch(78% 0.15 285); --on-primary: oklch(18% 0.10 285);
+      --primary-container: oklch(30% 0.14 285); --on-primary-container: oklch(90% 0.08 285);
+      --secondary: oklch(75% 0.10 300);
+      --secondary-container: oklch(32% 0.08 300); --on-secondary-container: oklch(92% 0.06 300);
+      --error: oklch(78% 0.16 25); --error-container: oklch(35% 0.12 25); --on-error-container: oklch(95% 0.08 25);
+      --warning: oklch(78% 0.14 75); --success: oklch(72% 0.14 145);
+      --bg: oklch(11% 0.012 275); --on-bg: oklch(92% 0.008 275);
+      --surface: oklch(16% 0.015 275); --on-surface: oklch(92% 0.008 275);
+      --surface-variant: oklch(23% 0.015 275); --on-surface-variant: oklch(68% 0.01 275);
+      --surface-dim: oklch(14% 0.015 275);
+      --outline: oklch(33% 0.015 275); --outline-variant: oklch(26% 0.015 275);
+      --shadow: 0 1px 3px oklch(0% 0 0 / 0.30), 0 1px 2px oklch(0% 0 0 / 0.24);
+      --shadow-md: 0 4px 10px oklch(0% 0 0 / 0.32), 0 2px 4px oklch(0% 0 0 / 0.24);
+      --shadow-lg: 0 10px 24px oklch(0% 0 0 / 0.34), 0 4px 8px oklch(0% 0 0 / 0.24);
+      --shadow-xl: 0 16px 48px oklch(0% 0 0 / 0.40), 0 8px 16px oklch(0% 0 0 / 0.28);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: var(--font-body); background: var(--bg); color: var(--on-surface); -webkit-font-smoothing: antialiased; transition: background var(--transition), color var(--transition); }
+    input, button, textarea, select { font: inherit; }
+    button { cursor: pointer; border: none; background: none; }
+    a { text-decoration: none; color: inherit; }
+    ul { list-style: none; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--outline); border-radius: 3px; }
+
+    /* Nav CSS is now provided by components/global-nav.js */
+
+    .hamburger { display: none; width: 36px; height: 36px; border-radius: 50%; align-items: center; justify-content: center; color: var(--on-surface-variant); flex-shrink: 0; }
+    .hamburger:hover { background: var(--surface-variant); }
+    .hamburger svg { width: 20px; height: 20px; }
+    .mobile-drawer-overlay { display: none; position: fixed; inset: 0; background: oklch(0% 0 0 / 0.40); z-index: 90; }
+    .mobile-drawer-overlay.open { display: block; }
+    .mobile-drawer {
+      position: fixed; left: 0; top: 0; bottom: 0; width: 270px;
+      background: var(--surface); z-index: 95;
+      transform: translateX(-100%); transition: transform 0.3s ease;
+      padding-top: var(--nav-h); box-shadow: var(--shadow-xl);
+      display: flex; flex-direction: column;
+    }
+    .mobile-drawer.open { transform: translateX(0); }
+    .mobile-drawer .topnav-link { padding: 14px 20px; font-size: 15px; border-bottom: none; }
+
+    /* ===== Page ===== */
+    .page-wrap { padding-top: var(--nav-h); min-height: 100vh; }
+
+    /* ===== Page Title ===== */
+    .page-head {
+      padding: 40px 32px 8px;
+      max-width: 1200px; margin: 0 auto;
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 20px;
+    }
+    .page-head-text h1 {
+      font-family: var(--font-display); font-size: 24px; font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.3;
+    }
+    .page-head-text p {
+      font-size: 14px; color: var(--on-surface-variant);
+      margin-top: 4px;
+    }
+    .btn-mgmt {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 999px;
+      border: 1.5px solid var(--outline); background: var(--surface);
+      font-size: 13px; font-weight: 600; color: var(--on-surface-variant);
+      transition: all 0.15s; white-space: nowrap; flex-shrink: 0;
+    }
+    .btn-mgmt:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-mgmt.active { background: var(--primary-container); border-color: var(--primary); color: var(--on-primary-container); }
+    .btn-mgmt svg { width: 16px; height: 16px; }
+
+    /* ===== Management Toolbar ===== */
+    .mgmt-toolbar {
+      display: none; align-items: center; gap: 10px;
+      padding: 12px 32px; max-width: 1200px; margin: 0 auto;
+    }
+    .mgmt-toolbar.open { display: flex; }
+    .mgmt-toolbar .mgmt-label {
+      font-size: 12px; font-weight: 600; color: var(--on-surface-variant);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-right: auto;
+    }
+    .mgmt-btn-sm {
+      padding: 7px 16px; border-radius: var(--radius-s); font-size: 13px; font-weight: 600;
+      border: 1.5px solid var(--outline); color: var(--on-surface-variant); background: var(--surface);
+      transition: all 0.15s; display: flex; align-items: center; gap: 6px;
+    }
+    .mgmt-btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+    .mgmt-btn-sm svg { width: 16px; height: 16px; }
+    .mgmt-btn-sm.primary { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+    .mgmt-btn-sm.primary:hover { filter: brightness(1.08); }
+
+    /* ===== Dashboard Card Grid ===== */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      padding: 16px 32px 40px;
+      max-width: 1200px; margin: 0 auto;
+    }
+    .card-sm { grid-column: span 1; }
+    .card-md { grid-column: span 2; }
+    .card-lg { grid-column: span 4; }
+
+    .card {
+      background: var(--surface); border-radius: var(--radius-l);
+      border: 1.5px solid var(--outline-variant); padding: 24px;
+      cursor: pointer; transition: all 0.2s; position: relative;
+      display: flex; flex-direction: column;
+    }
+    .card:hover { border-color: var(--primary); box-shadow: var(--shadow-md); }
+    .card.mgmt-active { border-color: var(--primary); }
+    .card a { display: flex; flex-direction: column; flex: 1; }
+    .card > div { display: flex; flex-direction: column; flex: 1; }
+
+    .card-drag-handle {
+      position: absolute; left: 6px; top: 6px;
+      width: 28px; height: 28px; border-radius: var(--radius-xs);
+      display: none; align-items: center; justify-content: center;
+      color: var(--outline); cursor: grab; z-index: 2;
+      transition: color 0.15s, background 0.15s;
+    }
+    .card.mgmt-active .card-drag-handle { display: flex; }
+    .card-drag-handle:hover { color: var(--primary); background: var(--primary-container); }
+    .card-drag-handle svg { width: 16px; height: 16px; }
+
+    .card-delete-btn {
+      position: absolute; right: 6px; top: 6px;
+      width: 28px; height: 28px; border-radius: 50%;
+      display: none; align-items: center; justify-content: center;
+      color: var(--on-surface-variant); z-index: 2;
+      transition: all 0.15s;
+    }
+    .card.mgmt-active .card-delete-btn { display: flex; }
+    .card-delete-btn:hover { background: var(--error-container); color: var(--error); }
+    .card-delete-btn svg { width: 16px; height: 16px; }
+
+    .card-icon {
+      width: 40px; height: 40px; border-radius: var(--radius-m);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 12px; flex-shrink: 0;
+    }
+    .card-icon svg { width: 20px; height: 20px; }
+    .card-icon.icon-todo { background: var(--primary-container); color: var(--on-primary-container); }
+    .card-icon.icon-finance { background: oklch(92% 0.08 145); color: oklch(22% 0.08 145); }
+    .card-icon.icon-cal { background: var(--secondary-container); color: var(--on-secondary-container); }
+    .card-icon.icon-recent { background: oklch(92% 0.04 240); color: oklch(22% 0.04 240); }
+    .card-icon.icon-chart { background: oklch(92% 0.06 75); color: oklch(22% 0.06 75); }
+    .card-icon.icon-settings { background: var(--surface-variant); color: var(--on-surface-variant); }
+    .card-icon.icon-help { background: oklch(92% 0.06 320); color: oklch(22% 0.06 320); }
+
+    .card h3 { font-family: var(--font-display); font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .card .card-desc { font-size: 13px; color: var(--on-surface-variant); line-height: 1.5; }
+    .card .card-badge {
+      display: inline-block; margin-top: 10px;
+      padding: 3px 10px; border-radius: 999px;
+      font-size: 11px; font-weight: 600;
+      background: var(--surface-variant); color: var(--on-surface-variant);
+      align-self: flex-start;
+    }
+    .card .card-badge.soon { background: oklch(92% 0.06 75 / 0.4); color: var(--warning); }
+    .card .card-badge.primary { background: var(--primary-container); color: var(--on-primary-container); }
+
+    .card-inner-list { margin-top: 10px; }
+    .card-inner-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 0; font-size: 13px;
+      border-bottom: 1px solid var(--outline-variant);
+    }
+    .card-inner-item:last-child { border-bottom: none; }
+    .card-inner-item .dot {
+      width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+    }
+    .card-inner-item .dot.high { background: var(--error); }
+    .card-inner-item .dot.medium { background: var(--warning); }
+    .card-inner-item .dot.low { background: var(--outline); }
+    .card-inner-item .text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* Chart card stats */
+    .card-chart-stats { display: flex; gap: 0; margin-top: 16px; border-top: 1px solid var(--outline-variant); padding-top: 16px; }
+    .card-chart-stat { flex: 1; text-align: center; }
+    .card-chart-stat .num { font-size: 18px; font-weight: 700; font-family: var(--font-display); }
+    .card-chart-stat .num.positive { color: var(--success); }
+    .card-chart-stat .num.negative { color: var(--error); }
+    .card-chart-stat .label { font-size: 11px; color: var(--on-surface-variant); margin-top: 2px; }
+
+    /* Chart SVG */
+    .chart-wrap { margin-top: 14px; flex: 1; min-height: 0; }
+    .chart-wrap svg { width: 100%; height: auto; display: block; }
+
+    /* Card-level tag/status row for medium cards */
+    .card-meta-row { display: flex; align-items: center; gap: 8px; margin-top: auto; padding-top: 12px; }
+
+    /* Drag simulation states */
+    .card.dragging {
+      opacity: 0.5; border-style: dashed;
+      box-shadow: var(--shadow-lg);
+    }
+    .card.drag-placeholder {
+      border: 2px dashed var(--primary);
+      background: var(--primary-container);
+      opacity: 0.3;
+      min-height: 100px;
+    }
+
+    /* ===== Add Card Dialog ===== */
+    .dialog-overlay { position: fixed; inset: 0; background: oklch(0% 0 0 / 0.40); display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px; backdrop-filter: blur(4px); }
+    .dialog-overlay.open { display: flex; }
+    .dialog { background: var(--surface); border-radius: var(--radius-l); box-shadow: var(--shadow-xl); width: 100%; max-width: 480px; max-height: 90vh; overflow-y: auto; animation: dialog-enter 0.25s ease-out; }
+    @keyframes dialog-enter { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .dialog-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 24px 0; }
+    .dialog-header h2 { font-family: var(--font-display); font-size: 18px; font-weight: 700; }
+    .dialog-close { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--on-surface-variant); transition: all 0.15s; }
+    .dialog-close:hover { background: var(--surface-variant); }
+    .dialog-body { padding: 16px 24px; }
+    .dialog-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; padding: 16px 24px 24px; }
+    .dialog-footer .btn { padding: 9px 20px; border-radius: var(--radius-l); font-size: 14px; font-weight: 600; transition: all 0.15s; }
+    .dialog-footer .btn-secondary { border: 1.5px solid var(--outline); color: var(--on-surface-variant); background: transparent; }
+    .dialog-footer .btn-secondary:hover { background: var(--surface-variant); }
+    .dialog-footer .btn-primary { background: var(--primary); color: var(--on-primary); }
+    .dialog-footer .btn-primary:hover { filter: brightness(1.08); }
+    .dialog-footer .btn-danger { background: var(--error); color: var(--on-error); }
+
+    .add-card-options { display: flex; flex-direction: column; gap: 6px; }
+    .add-card-opt {
+      display: flex; align-items: center; gap: 14px;
+      padding: 14px 16px; border-radius: var(--radius-m);
+      border: 1.5px solid var(--outline-variant); cursor: pointer;
+      transition: all 0.15s; background: var(--surface);
+    }
+    .add-card-opt:hover { border-color: var(--primary); background: var(--primary-container); }
+    .add-card-opt .opt-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-s);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .add-card-opt .opt-icon svg { width: 18px; height: 18px; }
+    .add-card-opt .opt-name { font-size: 14px; font-weight: 600; flex: 1; }
+    .add-card-opt .opt-badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; }
+    .add-card-opt .opt-badge.added { background: var(--primary-container); color: var(--on-primary-container); }
+    .add-card-opt .opt-badge.add { background: var(--surface-variant); color: var(--on-surface-variant); }
+
+    /* ===== Delete confirm ===== */
+    .confirm-text { font-size: 14px; color: var(--on-surface-variant); line-height: 1.6; }
+
+    /* ===== Nav Management Dialog ===== */
+    .toggle-switch { width: 40px; height: 22px; border-radius: 11px; background: var(--outline); cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; display: inline-block; }
+    .toggle-switch.on { background: var(--primary); }
+    .toggle-switch::after { content: ''; position: absolute; width: 18px; height: 18px; border-radius: 50%; background: #fff; top: 2px; left: 2px; transition: transform 0.2s; box-shadow: 0 1px 3px oklch(0% 0 0 / 0.2); }
+    .toggle-switch.on::after { transform: translateX(18px); }
+    .nav-mgmt-list { margin: 12px 0; }
+    .nav-mgmt-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-s); background: var(--surface-variant); margin-bottom: 6px; }
+    .nav-mgmt-item .mgmt-icon { width: 26px; height: 26px; border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: center; background: var(--primary-container); color: var(--on-primary-container); flex-shrink: 0; }
+    .nav-mgmt-item .mgmt-icon svg { width: 15px; height: 15px; }
+    .nav-mgmt-item .mgmt-name { flex: 1; font-size: 14px; font-weight: 500; }
+    .nav-mgmt-item .mgmt-actions { display: flex; gap: 4px; align-items: center; }
+    .nav-mgmt-item .mgmt-btn { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--on-surface-variant); transition: all 0.1s; }
+    .nav-mgmt-item .mgmt-btn:hover { background: var(--surface); color: var(--on-surface); }
+    .nav-mgmt-item .mgmt-btn.danger:hover { color: var(--error); background: var(--error-container); }
+    .nav-mgmt-empty { text-align: center; padding: 24px; font-size: 13px; color: var(--on-surface-variant); }
+
+    /* ===== Settings Dialog ===== */
+    .field-group { margin-bottom: 16px; }
+    .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--on-surface-variant); margin-bottom: 6px; }
+    .field-group .input, .field-group select {
+      display: block; width: 100%; padding: 10px 14px; font-size: 14px; background: transparent;
+      border: 1.5px solid var(--outline); border-radius: var(--radius-s);
+      color: var(--on-surface); outline: none; transition: border-color 0.2s;
+    }
+    .field-group .input:focus, .field-group select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-container); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+    .toggle-row label { font-size: 14px; cursor: pointer; }
+
+    /* ===== Snackbar ===== */
+    .snackbar { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--on-surface); color: var(--surface); padding: 14px 24px; border-radius: var(--radius-s); font-size: 14px; font-weight: 500; box-shadow: var(--shadow-lg); z-index: 300; transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); display: flex; align-items: center; gap: 10px; max-width: 90vw; pointer-events: none; }
+    .snackbar.visible { transform: translateX(-50%) translateY(0); pointer-events: auto; }
+
+    /* ===== Responsive ===== */
+    @media (max-width: 1024px) {
+      .card-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; padding: 16px 24px 32px; }
+      .card-sm { grid-column: span 1; }
+      .card-md { grid-column: span 2; }
+      .card-lg { grid-column: span 2; }
+    }
+    @media (max-width: 960px) {
+      .topnav-links { display: none; }
+      .hamburger { display: flex; }
+      .topnav { padding: 0 16px; }
+      .page-head { padding: 32px 20px 4px; flex-wrap: wrap; }
+      .page-head-text h1 { font-size: 22px; }
+      .mgmt-toolbar { padding: 12px 20px; flex-wrap: wrap; }
+      .card-grid { gap: 12px; padding: 12px 20px 28px; }
+    }
+    @media (max-width: 680px) {
+      .card-grid { grid-template-columns: 1fr; }
+      .card-sm, .card-md, .card-lg { grid-column: span 1; }
+      .card-chart-stats { flex-wrap: wrap; gap: 8px; }
+      .card-chart-stat { flex: 1; min-width: 60px; }
+    }
+    @media (max-width: 600px) {
+      .topnav-brand-text { display: none; }
+      .topnav-lang { display: none; }
+      .page-head { padding: 24px 16px 4px; }
+      .page-head-text h1 { font-size: 20px; }
+      .card-grid { padding: 12px 16px 24px; gap: 12px; }
+      .card { padding: 20px; }
+      .mgmt-toolbar { padding: 10px 16px; gap: 8px; }
+      .mgmt-toolbar .mgmt-label { font-size: 11px; }
+      .dialog { margin: 12px; }
+      .dialog-header { padding: 20px 20px 0; }
+      .dialog-body { padding: 12px 20px; }
+      .dialog-footer { padding: 12px 20px 20px; }
+    }
+    @media (max-width: 400px) {
+      .topnav { padding: 0 12px; }
+      .topnav-icon-btn { width: 32px; height: 32px; }
+      .topnav-avatar { width: 28px; height: 28px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- ===== Top Nav ===== -->
+  <!-- Global nav injected by components/global-nav.js -->
+  <div id="global-nav"></div>
+
+  <!-- Mobile drawer -->
+  <div class="mobile-drawer-overlay" id="mobileDrawerOverlay"></div>
+  <div class="mobile-drawer" id="mobileDrawer">
+    <a class="topnav-link active" href="index.html">首页</a>
+    <a class="topnav-link" href="todo.html">任务</a>
+    <a class="topnav-link" href="accounting.html">记账</a>
+    <a class="topnav-link" href="#" onclick="GlobalNav.showSettingsDialog(); closeMobileDrawer()">设置</a>
+    <a class="topnav-link" href="#" onclick="GlobalNav.showHelpSnackbar(); closeMobileDrawer()">帮助</a>
+    <a class="topnav-link" href="#" onclick="GlobalNav.showNavMgmtDialog(); closeMobileDrawer()">导航管理</a>
+  </div>
+
+  <!-- ===== Page ===== -->
+  <div class="page-wrap">
+    <!-- Page Head -->
+    <div class="page-head">
+      <div class="page-head-text">
+        <h1>工作台</h1>
+        <p>把任务管理和个人记账放在同一个清晰入口。</p>
+      </div>
+      <button class="btn-mgmt" id="mgmtToggle">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        管理模式
+      </button>
+    </div>
+
+    <!-- Management Toolbar -->
+    <div class="mgmt-toolbar" id="mgmtToolbar">
+      <span class="mgmt-label">管理模式</span>
+      <button class="mgmt-btn-sm" id="addCardBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        添加卡片
+      </button>
+      <button class="mgmt-btn-sm primary" id="exitMgmtBtn">退出管理模式</button>
+    </div>
+
+    <!-- ===== Dashboard Card Grid ===== -->
+    <div class="card-grid" id="cardGrid">
+
+      <!-- TODO (Medium card - 2 cols) -->
+      <div class="card card-md" data-card="todo">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('todo')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <a href="todo.html">
+          <div class="card-icon icon-todo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h3>TODO</h3>
+          <p class="card-desc">管理任务、文件夹、优先级和标签。</p>
+          <div class="card-meta-row">
+            <span class="card-badge primary">12 个待办</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- 记账 (Medium card - 2 cols) -->
+      <div class="card card-md" data-card="finance">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('finance')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div onclick="showSnackbar('记账模块即将上线')">
+          <div class="card-icon icon-finance">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3>记账</h3>
+          <p class="card-desc">记录收入支出，查看月度收支。</p>
+          <div class="card-meta-row">
+            <span class="card-badge soon">即将上线</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 本月记账 (Large card - full width, with chart) -->
+      <div class="card card-lg" data-card="monthly">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('monthly')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div onclick="showSnackbar('记账模块即将上线')" style="display:flex;flex-direction:column;flex:1;">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+            <div class="card-icon icon-chart" style="margin-bottom:0;width:36px;height:36px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <div>
+              <h3 style="margin-bottom:0;">本月记账</h3>
+              <p class="card-desc" style="font-size:12px;">2026 年 6 月 · 月度收支概览</p>
+            </div>
+          </div>
+          <!-- SVG Bar Chart -->
+          <div class="chart-wrap">
+            <svg viewBox="0 0 600 180" preserveAspectRatio="xMidYMid meet">
+              <!-- Grid lines -->
+              <line x1="40" y1="30" x2="580" y2="30" stroke="var(--outline-variant)" stroke-width="0.5"/>
+              <line x1="40" y1="68" x2="580" y2="68" stroke="var(--outline-variant)" stroke-width="0.5"/>
+              <line x1="40" y1="106" x2="580" y2="106" stroke="var(--outline-variant)" stroke-width="0.5"/>
+              <line x1="40" y1="144" x2="580" y2="144" stroke="var(--outline-variant)" stroke-width="0.5"/>
+              <!-- Y-axis labels -->
+              <text x="36" y="33" text-anchor="end" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">¥10k</text>
+              <text x="36" y="72" text-anchor="end" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">¥7.5k</text>
+              <text x="36" y="110" text-anchor="end" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">¥5k</text>
+              <text x="36" y="147" text-anchor="end" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">¥2.5k</text>
+              <!-- Baseline -->
+              <line x1="40" y1="148" x2="580" y2="148" stroke="var(--outline)" stroke-width="0.5"/>
+              <!-- Month bars data: income (success), expense (error) -->
+              <!-- Jan: income 8500 → h=102, expense 5200 → h=62 -->
+              <rect x="65" y="46" width="22" height="102" rx="3" fill="var(--success)" opacity="0.85"/>
+              <rect x="93" y="86" width="22" height="62" rx="3" fill="var(--error)" opacity="0.8"/>
+              <!-- Feb: income 9200 → h=110, expense 5800 → h=70 -->
+              <rect x="145" y="38" width="22" height="110" rx="3" fill="var(--success)" opacity="0.85"/>
+              <rect x="173" y="78" width="22" height="70" rx="3" fill="var(--error)" opacity="0.8"/>
+              <!-- Mar: income 8800 → h=105, expense 4900 → h=59 -->
+              <rect x="225" y="43" width="22" height="105" rx="3" fill="var(--success)" opacity="0.85"/>
+              <rect x="253" y="89" width="22" height="59" rx="3" fill="var(--error)" opacity="0.8"/>
+              <!-- Apr: income 9500 → h=113, expense 6100 → h=73 -->
+              <rect x="305" y="35" width="22" height="113" rx="3" fill="var(--success)" opacity="0.85"/>
+              <rect x="333" y="75" width="22" height="73" rx="3" fill="var(--error)" opacity="0.8"/>
+              <!-- May: income 9000 → h=107, expense 5400 → h=65 -->
+              <rect x="385" y="41" width="22" height="107" rx="3" fill="var(--success)" opacity="0.85"/>
+              <rect x="413" y="83" width="22" height="65" rx="3" fill="var(--error)" opacity="0.8"/>
+              <!-- Jun: income 8000 → h=95, expense 4200 → h=50 (current month highlight) -->
+              <rect x="465" y="53" width="22" height="95" rx="3" fill="var(--success)" opacity="1"/>
+              <rect x="493" y="98" width="22" height="50" rx="3" fill="var(--error)" opacity="0.9"/>
+              <!-- Current month underline indicator -->
+              <rect x="460" y="150" width="60" height="3" rx="1.5" fill="var(--primary)" opacity="0.6"/>
+              <!-- Month labels -->
+              <text x="76" y="164" text-anchor="middle" font-size="10" fill="var(--on-surface-variant)" font-family="system-ui">1月</text>
+              <text x="156" y="164" text-anchor="middle" font-size="10" fill="var(--on-surface-variant)" font-family="system-ui">2月</text>
+              <text x="236" y="164" text-anchor="middle" font-size="10" fill="var(--on-surface-variant)" font-family="system-ui">3月</text>
+              <text x="316" y="164" text-anchor="middle" font-size="10" fill="var(--on-surface-variant)" font-family="system-ui">4月</text>
+              <text x="396" y="164" text-anchor="middle" font-size="10" fill="var(--on-surface-variant)" font-family="system-ui">5月</text>
+              <text x="476" y="164" text-anchor="middle" font-size="10" fill="var(--primary)" font-family="system-ui" font-weight="600">6月</text>
+              <!-- Legend -->
+              <rect x="520" y="12" width="8" height="8" rx="1" fill="var(--success)" opacity="0.85"/>
+              <text x="532" y="20" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">收入</text>
+              <rect x="555" y="12" width="8" height="8" rx="1" fill="var(--error)" opacity="0.8"/>
+              <text x="567" y="20" font-size="9" fill="var(--on-surface-variant)" font-family="system-ui">支出</text>
+            </svg>
+          </div>
+          <!-- Stats row -->
+          <div class="card-chart-stats">
+            <div class="card-chart-stat">
+              <div class="num positive">¥8,000</div>
+              <div class="label">本月收入</div>
+            </div>
+            <div class="card-chart-stat">
+              <div class="num negative">¥4,200</div>
+              <div class="label">本月支出</div>
+            </div>
+            <div class="card-chart-stat">
+              <div class="num positive">¥3,800</div>
+              <div class="label">本月结余</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 最近任务 (Medium card - 2 cols) -->
+      <div class="card card-md" data-card="recent">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('recent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <a href="todo.html">
+          <div class="card-icon icon-recent">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <h3>最近任务</h3>
+          <p class="card-desc">快速查看近期需要处理的任务。</p>
+          <div class="card-inner-list">
+            <div class="card-inner-item"><span class="dot high"></span><span class="text">编写 Q2 产品路线图</span></div>
+            <div class="card-inner-item"><span class="dot high"></span><span class="text">优化首页加载性能</span></div>
+            <div class="card-inner-item"><span class="dot medium"></span><span class="text">阅读《DDIA》第 6 章</span></div>
+          </div>
+        </a>
+      </div>
+
+      <!-- 日历 (Small card - 1 col) -->
+      <div class="card card-sm" data-card="calendar">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('calendar')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div onclick="showSnackbar('日历模块即将上线')">
+          <div class="card-icon icon-cal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </div>
+          <h3>日历</h3>
+          <p class="card-desc">管理日程和提醒。</p>
+          <span class="card-badge soon">即将上线</span>
+        </div>
+      </div>
+
+      <!-- 设置 (Small card - 1 col) -->
+      <div class="card card-sm" data-card="settings">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div onclick="document.getElementById('settingsDialog').classList.add('open')">
+          <div class="card-icon icon-settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </div>
+          <h3>设置</h3>
+          <p class="card-desc">管理账号、外观和语言。</p>
+        </div>
+      </div>
+
+      <!-- 帮助 (Small card - 1 col) -->
+      <div class="card card-sm" data-card="help">
+        <div class="card-drag-handle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="18" x2="16" y2="18"/></svg></div>
+        <button class="card-delete-btn" onclick="event.stopPropagation(); confirmDeleteCard('help')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        <div onclick="showSnackbar('帮助文档即将上线')">
+          <div class="card-icon icon-help">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          </div>
+          <h3>帮助</h3>
+          <p class="card-desc">查看功能文档和使用指南。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ADD CARD DIALOG ===== -->
+  <div class="dialog-overlay" id="addCardDialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>添加卡片到工作台</h2>
+        <button class="dialog-close" onclick="closeDialog('addCardDialog')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dialog-body">
+        <div class="add-card-options">
+          <div class="add-card-opt" data-opt="todo" onclick="addCard('todo')">
+            <div class="opt-icon" style="background:var(--primary-container);color:var(--on-primary-container);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <span class="opt-name">TODO</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="finance" onclick="addCard('finance')">
+            <div class="opt-icon" style="background:oklch(92% 0.08 145);color:oklch(22% 0.08 145);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <span class="opt-name">记账</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="calendar" onclick="addCard('calendar')">
+            <div class="opt-icon" style="background:var(--secondary-container);color:var(--on-secondary-container);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <span class="opt-name">日历</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="recent" onclick="addCard('recent')">
+            <div class="opt-icon" style="background:oklch(92% 0.04 240);color:oklch(22% 0.04 240);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+            <span class="opt-name">最近任务</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="monthly" onclick="addCard('monthly')">
+            <div class="opt-icon" style="background:oklch(92% 0.06 75);color:oklch(22% 0.06 75);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+            <span class="opt-name">本月记账</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="settings" onclick="addCard('settings')">
+            <div class="opt-icon" style="background:var(--surface-variant);color:var(--on-surface-variant);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+            <span class="opt-name">设置</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+          <div class="add-card-opt" data-opt="help" onclick="addCard('help')">
+            <div class="opt-icon" style="background:oklch(92% 0.06 320);color:oklch(22% 0.06 320);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <span class="opt-name">帮助</span>
+            <span class="opt-badge added">已添加</span>
+          </div>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-secondary" onclick="closeDialog('addCardDialog')">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DELETE CARD CONFIRM ===== -->
+  <div class="dialog-overlay" id="deleteCardDialog">
+    <div class="dialog" style="max-width:400px;">
+      <div class="dialog-header">
+        <h2>移除卡片</h2>
+        <button class="dialog-close" onclick="closeDialog('deleteCardDialog')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dialog-body">
+        <p class="confirm-text">确定从工作台移除 <strong id="deleteCardName">此卡片</strong> 吗？可以通过添加卡片重新加入。</p>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-secondary" onclick="closeDialog('deleteCardDialog')">取消</button>
+        <button class="btn btn-danger" id="confirmDeleteCardBtn">移除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== NAV MANAGEMENT DIALOG ===== -->
+  <div class="dialog-overlay" id="navManageDialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>导航管理</h2>
+        <button class="dialog-close" onclick="closeDialog('navManageDialog')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dialog-body">
+        <p style="font-size:13px;color:var(--on-surface-variant);margin-bottom:16px;">管理顶部导航栏的模块顺序、显示状态和名称。拖拽或使用按钮调整顺序。</p>
+        <div class="nav-mgmt-list">
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+            <span class="mgmt-name">首页</span>
+            <div class="mgmt-actions"><span class="toggle-switch on"></span></div>
+          </div>
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+            <span class="mgmt-name">任务</span>
+            <div class="mgmt-actions"><span class="toggle-switch on"></span></div>
+          </div>
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>
+            <span class="mgmt-name">记账</span>
+            <div class="mgmt-actions"><span class="toggle-switch" onclick="this.classList.toggle('on')"></span></div>
+          </div>
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <span class="mgmt-name">日历</span>
+            <div class="mgmt-actions"><span class="toggle-switch" onclick="this.classList.toggle('on')"></span></div>
+          </div>
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div>
+            <span class="mgmt-name">设置</span>
+            <div class="mgmt-actions"><span class="toggle-switch on"></span></div>
+          </div>
+          <div class="nav-mgmt-item">
+            <div class="mgmt-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+            <span class="mgmt-name">帮助</span>
+            <div class="mgmt-actions"><span class="toggle-switch on"></span></div>
+          </div>
+        </div>
+        <div style="margin-top:16px; display:flex; gap:8px;">
+          <input class="input" placeholder="添加新导航项" style="flex:1;" />
+          <button class="btn btn-primary" style="padding:9px 16px; border-radius:var(--radius-s); font-size:13px; border:none; background:var(--primary); color:var(--on-primary);">添加</button>
+        </div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-secondary" onclick="closeDialog('navManageDialog')">完成</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SETTINGS DIALOG ===== -->
+  <div class="dialog-overlay" id="settingsDialog">
+    <div class="dialog">
+      <div class="dialog-header">
+        <h2>偏好设置</h2>
+        <button class="dialog-close" onclick="closeDialog('settingsDialog')"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <div class="dialog-body">
+        <div class="field-group"><label class="field-label">默认起始页</label><select class="input"><option>工作台（首页）</option><option>TODO</option></select></div>
+        <div class="field-group"><div class="toggle-row"><label>深色模式</label><span class="toggle-switch" id="settingsThemeToggle"></span></div></div>
+        <div class="field-group"><div class="toggle-row"><label>新任务提醒</label><span class="toggle-switch on"></span></div></div>
+        <div class="field-group"><div class="toggle-row"><label>任务逾期通知</label><span class="toggle-switch on"></span></div></div>
+        <div class="field-group"><div class="toggle-row"><label>紧凑模式</label><span class="toggle-switch"></span></div></div>
+      </div>
+      <div class="dialog-footer">
+        <button class="btn btn-secondary" onclick="closeDialog('settingsDialog')">取消</button>
+        <button class="btn btn-primary" onclick="closeDialog('settingsDialog'); showSnackbar('设置已保存')">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Snackbar ===== -->
+  <div class="snackbar" id="snackbar"><span id="snackbarText"></span></div>
+
+  <script>
+    (function() {
+      'use strict';
+      // ---- Theme ----
+      // Theme and user menu now handled by global-nav.js
+      var _st = document.getElementById('settingsThemeToggle');
+      // Theme and user menu now managed by global-nav.js
+      function _updateSettingsToggle() {
+        var st = document.getElementById('settingsThemeToggle');
+        if (st) st.classList.toggle('on', document.documentElement.getAttribute('data-theme') !== 'light');
+      }
+      _updateSettingsToggle();
+      window.addEventListener('toolweb-theme-changed', _updateSettingsToggle);
+
+      // ---- Mobile Drawer ----
+      const hamburger = document.getElementById('hamburger');
+      const drawer = document.getElementById('mobileDrawer');
+      const drawerOverlay = document.getElementById('mobileDrawerOverlay');
+      if (hamburger) {
+        hamburger.addEventListener('click', function() { drawer.classList.toggle('open'); drawerOverlay.classList.toggle('open'); });
+        drawerOverlay.addEventListener('click', function() { drawer.classList.remove('open'); drawerOverlay.classList.remove('open'); });
+      }
+      window.closeMobileDrawer = function() { drawer.classList.remove('open'); drawerOverlay.classList.remove('open'); };
+
+      // ---- Snackbar ----
+      const snackbar = document.getElementById('snackbar');
+      const snackbarText = document.getElementById('snackbarText');
+      window.showSnackbar = function(text) {
+        snackbarText.textContent = text;
+        snackbar.classList.add('visible');
+        clearTimeout(snackbar._timeout);
+        snackbar._timeout = setTimeout(function() { snackbar.classList.remove('visible'); }, 3000);
+      };
+
+      // ---- Management Mode ----
+      const mgmtToggle = document.getElementById('mgmtToggle');
+      const mgmtToolbar = document.getElementById('mgmtToolbar');
+      const exitMgmtBtn = document.getElementById('exitMgmtBtn');
+      const cards = document.querySelectorAll('.card');
+      let mgmtMode = false;
+
+      function enterMgmtMode() {
+        mgmtMode = true;
+        mgmtToggle.classList.add('active');
+        mgmtToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 退出管理模式';
+        mgmtToolbar.classList.add('open');
+        cards.forEach(function(c) { c.classList.add('mgmt-active'); });
+      }
+
+      function exitMgmtMode() {
+        mgmtMode = false;
+        mgmtToggle.classList.remove('active');
+        mgmtToggle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10M18 20V4M6 20v-4"/></svg> 管理模式';
+        mgmtToolbar.classList.remove('open');
+        cards.forEach(function(c) {
+          c.classList.remove('mgmt-active');
+          c.classList.remove('dragging');
+        });
+      }
+
+      mgmtToggle.addEventListener('click', function() {
+        if (mgmtMode) exitMgmtMode(); else enterMgmtMode();
+      });
+      exitMgmtBtn.addEventListener('click', exitMgmtMode);
+
+      // ---- Drag simulation on card drag handles ----
+      cards.forEach(function(card) {
+        var handle = card.querySelector('.card-drag-handle');
+        if (!handle) return;
+        handle.addEventListener('mousedown', function(e) {
+          if (!mgmtMode) return;
+          e.preventDefault();
+          card.classList.add('dragging');
+        });
+        handle.addEventListener('mouseup', function() {
+          card.classList.remove('dragging');
+        });
+        handle.addEventListener('mouseleave', function() {
+          card.classList.remove('dragging');
+        });
+      });
+
+      // ---- Add Card Dialog ----
+      document.getElementById('addCardBtn').addEventListener('click', function() {
+        openDialog('addCardDialog');
+      });
+      // Track which cards are shown
+      var visibleCards = {};
+      document.querySelectorAll('.card').forEach(function(c) {
+        visibleCards[c.dataset.card] = true;
+      });
+
+      window.addCard = function(id) {
+        var opt = document.querySelector('.add-card-opt[data-opt="' + id + '"]');
+        if (opt) {
+          var status = opt.querySelector('.opt-badge');
+          if (status.textContent === '已添加') {
+            showSnackbar('该卡片已在工作台中');
+            return;
+          }
+          status.textContent = '已添加';
+          status.className = 'opt-badge added';
+        }
+        var card = document.querySelector('.card[data-card="' + id + '"]');
+        if (card) {
+          card.style.display = '';
+          visibleCards[id] = true;
+          if (mgmtMode) card.classList.add('mgmt-active');
+        }
+        closeDialog('addCardDialog');
+        showSnackbar('卡片已添加到工作台');
+      };
+
+      // ---- Delete Card ----
+      var pendingDelete = null;
+      window.confirmDeleteCard = function(id) {
+        pendingDelete = id;
+        var names = { todo:'TODO', finance:'记账', calendar:'日历', recent:'最近任务', monthly:'本月记账', settings:'设置', help:'帮助' };
+        document.getElementById('deleteCardName').textContent = names[id] || '此卡片';
+        openDialog('deleteCardDialog');
+      };
+      document.getElementById('confirmDeleteCardBtn').addEventListener('click', function() {
+        if (pendingDelete) {
+          var card = document.querySelector('.card[data-card="' + pendingDelete + '"]');
+          if (card) { card.style.display = 'none'; visibleCards[pendingDelete] = false; }
+          var opt = document.querySelector('.add-card-opt[data-opt="' + pendingDelete + '"]');
+          if (opt) {
+            opt.querySelector('.opt-badge').textContent = '可添加';
+            opt.querySelector('.opt-badge').className = 'opt-badge add';
+          }
+          closeDialog('deleteCardDialog');
+          showSnackbar('卡片已从工作台移除');
+          pendingDelete = null;
+        }
+      });
+
+      // ---- Dialog helpers ----
+      window.openDialog = function(id) { document.getElementById(id).classList.add('open'); };
+      window.closeDialog = function(id) { document.getElementById(id).classList.remove('open'); };
+      document.querySelectorAll('.dialog-overlay').forEach(function(el) {
+        el.addEventListener('click', function(e) {
+          if (e.target === el) el.classList.remove('open');
+        });
+      });
+
+      // ---- Settings dialog theme sync ----
+      document.getElementById('settingsThemeToggle').addEventListener('click', window.toggleSettingsTheme);
+
+      // ---- Close mobile drawer on link click ----
+      document.querySelectorAll('.mobile-drawer .topnav-link').forEach(function(link) {
+        link.addEventListener('click', function() { closeMobileDrawer(); });
+      });
+    })();
+  </script>
+  <script>window.TOOLWEB_NAV = { activeKey: 'home', userName: '张', lang: '中文' }</script>
+  <script src="components/global-nav.js"></script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+'use client';
+
+// 认证卡片容器, 负责登录/注册页的品牌区, 标题区, 入场动画和表单插槽布局.
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import { keyframes, useTheme, type SxProps, type Theme } from '@mui/material/styles';
+
+const cardEnter = keyframes`
+  0% { opacity: 0; transform: translateY(20px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
+const fadeSlideUp = keyframes`
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+`;
+
+const staggerDelays = [0.02, 0.04, 0.06, 0.08, 0.10, 0.12];
+
+export function staggerSx(index: number) {
+  return {
+    animation: `${fadeSlideUp} 0.4s ease-out both`,
+    animationDelay: `${staggerDelays[index] ?? 0.14}s`,
+  };
+}
+
+export default function AuthCard({
+  title,
+  children,
+  cardSx,
+}: {
+  title: string;
+  children: React.ReactNode;
+  cardSx?: SxProps<Theme>;
+}) {
+  const theme = useTheme();
+  const shadowMode = theme.palette.mode === 'dark' ? '0.30' : '0.12';
+  const shadowAccent = theme.palette.mode === 'dark' ? '0.20' : '0.08';
+
+  return (
+    <Box
+      sx={[
+        {
+          width: '100%',
+          maxWidth: 440,
+          minHeight: { xs: 'auto', sm: 545 },
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start',
+          bgcolor: 'background.paper',
+          borderRadius: '16px',
+          boxShadow: `0 18px 42px -14px rgba(0,0,0,${shadowMode}), 0 8px 18px -12px rgba(0,0,0,${shadowAccent})`,
+          p: { xs: '32px 24px 36px', sm: '52px 40px 44px' },
+          animation: `${cardEnter} 0.5s ease-out`,
+          position: 'relative',
+          zIndex: 1,
+        },
+        ...(Array.isArray(cardSx) ? cardSx : cardSx ? [cardSx] : []),
+      ]}
+    >
+      {/* Brand: ToolWeb */}
+      <Box sx={{ display: 'flex', alignItems: 'center', mb: { xs: '24px', sm: '32px' } }}>
+        <Typography
+          sx={{
+            fontWeight: 700,
+            fontSize: '22px',
+            letterSpacing: '-0.02em',
+            color: 'text.primary',
+          }}
+        >
+          ToolWeb
+        </Typography>
+      </Box>
+
+      {/* Title: "欢迎回来" / "创建账号" */}
+      <Typography
+        sx={{
+          fontWeight: 700,
+          fontSize: { xs: 24, sm: 28 },
+          letterSpacing: '-0.02em',
+          lineHeight: 1.2,
+          mb: 4,
+          color: 'text.primary',
+        }}
+      >
+        {title}
+      </Typography>
+
+      {children}
+    </Box>
+  );
+}

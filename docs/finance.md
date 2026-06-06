@@ -4,6 +4,10 @@
 
 Finance 模块是 Tool Web 中的个人财务管理系统, 与 Todo 模块共享认证和 UI 框架. 支持多账本、多账户、收支记录、分类管理、预算控制、事件聚合.
 
+当前 Next.js 前端 `frontend/src/app/(auth)/finance/page.tsx` 已接入后端 Finance API, 支持读取账本、账户、分类、仪表盘和交易列表, 并支持新建账本、账户、分类和交易.
+
+原型 mock 数据位于 `frontend/src/data/mockFinance.ts`, 仅保留给历史原型和本地参考使用. 该文件使用独立 mock 类型, 不再从 `frontend/src/lib/financeTypes.ts` 导入真实后端 API 类型, 避免旧原型字段影响生产构建类型检查.
+
 ## 核心概念
 
 ### 1. Ledger (账本)
@@ -88,6 +92,19 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 ## 页面导航
 
 访问 `/finance` 进入记账模块.
+
+## UI 组件配置
+
+前端已通过 `frontend/src/components/common/MuiProvider.tsx` 全局接入 MUI Material 和 MUI X Date Pickers. `frontend/src/layouts/index.tsx` 会在加载页、未登录页、开发预览页和已登录应用外层统一挂载该 Provider.
+
+`MuiProvider` 负责:
+
+- 通过 MUI `ThemeProvider` 为全站提供组件主题上下文.
+- 从现有 CSS 主题 token 读取主色、背景色、文本色、边框色、字体和圆角, 映射到 MUI theme token.
+- 通过 MUI X `LocalizationProvider` 为日期选择器提供 dayjs adapter 和语言环境.
+- 为弹窗、浮层和复杂输入控件提供统一的 MUI 运行时配置.
+
+后续迁移记账页面时, 基础按钮、输入框、弹窗等优先使用 `frontend/src/components/ui/` 中已封装到 MUI 的组件; 日期选择器等复杂组件优先使用 MUI X; 表格、选择器等复杂业务组件优先使用 MUI Material 再按业务需要做二次封装.
 
 Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文件嵌入本地 Umi dev server 的真实记账路由, 用于在 Open Design 中预览页面效果; 实际业务代码仍在 `frontend/src/pages/finance/` 与 `frontend/src/components/finance/`.
 
@@ -209,6 +226,8 @@ Base: `/api/v1/finance`
 | Relation | `/relations?from_type=&from_id=` | GET |
 | | `/relations` | POST |
 | | `/relations/{id}` | DELETE |
+
+Stats 接口用于前端仪表盘图表通信: `category_data` 返回分类名, 图标, 金额和颜色; `trend_data` 返回最近 6 个月的收入和支出序列, 字段名与 `frontend/src/lib/financeTypes.ts` 保持一致.
 
 ## 数据模型
 

@@ -317,9 +317,22 @@ class DashboardSummary(BaseModel):
     budgets: list[BudgetOut] = []
 
 
+class CategoryStatsItem(BaseModel):
+    category_name: str
+    category_icon: str
+    total: Decimal
+    color: str
+
+
+class TrendStatsItem(BaseModel):
+    month: str
+    income: Decimal
+    expense: Decimal
+
+
 class StatsResponse(BaseModel):
-    category_data: list[dict] = []
-    trend_data: list[dict] = []
+    category_data: list[CategoryStatsItem] = []
+    trend_data: list[TrendStatsItem] = []
 
 
 class RelationCreate(BaseModel):

@@ -2,7 +2,7 @@
 
 Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, 用户认证, 自定义主题和帮助文档等模块. 项目面向 Web 用户和自动化 Agent 同时提供能力: 前端提供响应式交互界面, 后端暴露 RESTful API.
 
-项目仍处于开发阶段, 当前前端已从 Vite + React Router 迁移到 Umi, 以便后续通过路由配置, 全局布局, 运行时入口和页面级主题上下文来降低维护成本.
+项目仍处于开发阶段, 当前前端已迁移为 Next.js + React + MUI, 通过 Next rewrites 将 `/api/*` 和 `/uploads/*` 代理到 FastAPI 后端.
 
 ## 功能
 
@@ -18,10 +18,10 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 
 | 层 | 技术 |
 |---|---|
-| 前端 | React 19, TypeScript, Umi 4, Axios, Radix UI, dnd-kit, Recharts |
+| 前端 | Next.js 16, React 19, TypeScript, MUI |
 | 后端 | FastAPI, SQLAlchemy ORM, bcrypt, PyJWT |
 | 数据库 | SQLite |
-| 部署 | Docker Compose, Nginx |
+| 部署 | Docker Compose, Next.js, FastAPI |
 | 测试 | pytest, TestClient |
 
 ## 项目结构
@@ -42,25 +42,18 @@ tool_web/
 │   ├── requirements.txt
 │   └── Dockerfile
 ├── frontend/
-│   ├── .umirc.ts                # Umi 配置: 路由, history, API 代理
 │   ├── src/
-│   │   ├── app.tsx              # Umi 运行时入口: Provider, ErrorBoundary, themeBridge
-│   │   ├── layouts/index.tsx    # 全局布局: 鉴权, i18n, 主题, 顶部栏
-│   │   ├── pages/               # 页面级入口, 包含 TodoPage / Home / Finance 子页
+│   │   ├── app/                 # Next App Router 页面
 │   │   ├── components/          # UI, layout, todo, finance, auth, settings
-│   │   ├── context/             # AuthContext, ThemeContext, I18n alias
-│   │   ├── hooks/               # 数据请求 hooks
-│   │   ├── runtime/             # themeBridge
-│   │   ├── styles/              # 全局样式和 design tokens
-│   │   ├── theme.ts             # 基础主题模式
-│   │   ├── themeEngine.ts       # 自定义主题运行时
-│   │   └── i18n.tsx             # JSON 词典加载
+│   │   ├── context/             # AuthContext 登录态
+│   │   ├── lib/                 # API client 与共享类型
+│   │   └── theme.ts             # MUI 主题
 │   ├── public/
-│   ├── nginx.conf
+│   ├── next.config.ts           # /api 与 /uploads 代理
 │   ├── package.json
 │   └── Dockerfile
 ├── docs/
-│   ├── frontend.md              # 前端 Umi 架构说明
+│   ├── frontend.md              # 前端 Next.js 架构说明
 │   ├── api.md
 │   ├── auth.md
 │   ├── finance.md
@@ -83,10 +76,16 @@ cp .env.example .env
 ### Docker Compose
 
 ```bash
-JWT_SECRET=<your-secret> docker compose up -d
+cp .env.example .env
+# 编辑 .env, 至少配置 JWT_SECRET
+./build-and-run.sh
 ```
 
 浏览器访问 `http://localhost:8003`.
+
+生产发布使用 `deploy.sh`. 该脚本会合并本地构建配置和生产镜像配置, 构建并推送 `${DOCKER_USER}/tool-web-frontend:latest` 与 `${DOCKER_USER}/tool-web-backend:latest`, 再同步 `docker-compose.prod.yml` 与 `.env` 到远端并执行 `docker compose -f docker-compose.prod.yml up -d`.
+
+前端 Docker 构建时会把 `API_PROXY_TARGET` 写入 Next.js rewrites. Docker Compose 使用 `DOCKER_API_PROXY_TARGET` 注入该值, 默认值为 `http://backend:8000`. 如果该值错误地使用 `http://localhost:8004`, 前端容器会代理到自身的 localhost 并出现后端服务不可用.
 
 ### 本地开发
 
@@ -95,10 +94,10 @@ JWT_SECRET=<your-secret> docker compose up -d
 ```bash
 cd backend
 uv sync
-uv run uvicorn src.main:app --host 0.0.0.0 --port 8001
+uv run uvicorn src.main:app --host 0.0.0.0 --port 8004
 ```
 
-后端运行在 `http://localhost:8001`, API 文档位于 `http://localhost:8001/docs`.
+后端运行在 `http://localhost:8004`, API 文档位于 `http://localhost:8004/docs`.
 
 启动前端:
 
@@ -108,7 +107,7 @@ npm install
 npm run dev
 ```
 
-前端由 Umi dev server 启动, 默认运行在 `http://localhost:8000`. `.umirc.ts` 会将 `/api` 请求代理到后端 `http://localhost:8001`.
+前端由 Next.js dev server 启动, 默认运行在 `http://localhost:3000`. `next.config.ts` 会将 `/api` 与 `/uploads` 请求代理到后端 `http://localhost:8004`.
 
 ### 构建与检查
 
@@ -123,16 +122,14 @@ uv sync --extra dev
 JWT_SECRET=test uv run python -m pytest tests/ -v
 ```
 
-> 当前迁移要求安装 `umi` 后再运行前端构建. 如果本地 `node_modules` 仍是旧 Vite 依赖, 请先执行 `npm install` 以刷新依赖和 `package-lock.json`.
+> 如果本地 `node_modules` 仍是旧依赖, 请先执行 `npm install` 以刷新依赖和 `package-lock.json`.
 
 ## 前端开发约定
 
-- Umi 路由集中在 `frontend/.umirc.ts`.
-- 全局 Provider 和 themeBridge 初始化放在 `frontend/src/app.tsx`.
-- 鉴权, i18n, 主题模式, 自定义主题加载和顶部栏布局放在 `frontend/src/layouts/index.tsx`.
-- 页面组件放在 `frontend/src/pages`, 通用组件放在 `frontend/src/components`.
-- 路由相关 hook 统一从 `umi` 导入, 不再直接使用 `react-router-dom`.
-- 自定义主题的页面级 key 来自 `frontend/src/utils/pageTheme.ts`, 例如 `todo`, `finance`, `settings`.
+- Next App Router 页面集中在 `frontend/src/app`.
+- 全局 Provider, 主题注册和鉴权壳层放在 `frontend/src/app/layout.tsx`.
+- 页面组件放在 `frontend/src/app`, 通用组件放在 `frontend/src/components`.
+- API 统一通过 `frontend/src/lib/api.ts` 调用, 由 `frontend/next.config.ts` 代理到后端.
 
 ## 常用文档
 

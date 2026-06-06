@@ -1,19 +1,26 @@
 services:
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        API_PROXY_TARGET: ${DOCKER_API_PROXY_TARGET:-http://backend:8000}
+    ports:
+      - "8003:3000"
+    environment:
+      - API_PROXY_TARGET=${DOCKER_API_PROXY_TARGET:-http://backend:8000}
+    depends_on:
+      - backend
+    restart: unless-stopped
+
   backend:
     build: ./backend
+    ports:
+      - "8004:8000"
     volumes:
       - ./backend/data:/app/data
     environment:
       - DATABASE_URL=sqlite:///./data/tool_web.db
       - JWT_SECRET=${JWT_SECRET}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-      - ALLOWED_ORIGINS=http://localhost:8003
-    restart: unless-stopped
-
-  frontend:
-    build: ./frontend
-    ports:
-      - "8003:80"
-    depends_on:
-      - backend
+      - ALLOWED_ORIGINS=http://localhost:8003,http://localhost:3000
     restart: unless-stopped

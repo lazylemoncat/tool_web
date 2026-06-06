@@ -1,97 +1,156 @@
-import React from 'react'
-import './FinanceSidebar.css'
+'use client';
 
-interface NavItem {
-  tab: string
-  label: string
-  icon: React.ReactNode
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import SwipeableDrawer from '@mui/material/SwipeableDrawer';
+import Collapse from '@mui/material/Collapse';
+import type { LedgerOut } from '@/lib/financeTypes';
+
+interface FinanceSidebarProps {
+  activeTab: string;
+  onTabChange: (tab: string) => void;
+  open: boolean;
+  onClose: () => void;
+  ledgers: LedgerOut[];
+  activeLedgerId: number | null;
+  onSelectLedger: (id: number) => void;
+  onNewLedger: () => void;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  {
-    tab: 'dashboard',
-    label: '仪表盘',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="3" width="7" height="7" rx="1.5"/>
-      <rect x="14" y="3" width="7" height="7" rx="1.5"/>
-      <rect x="3" y="14" width="7" height="7" rx="1.5"/>
-      <rect x="14" y="14" width="7" height="7" rx="1.5"/>
-    </svg>,
-  },
-  {
-    tab: 'transactions',
-    label: '交易记录',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-      <polyline points="14 2 14 8 20 8"/>
-      <line x1="16" y1="13" x2="8" y2="13"/>
-      <line x1="16" y1="17" x2="8" y2="17"/>
-    </svg>,
-  },
-  {
-    tab: 'budgets',
-    label: '预算管理',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M21 12a9 9 0 0 1-9 9m9-9a9 9 0 0 0-9-9m9-9H3m9 9a9 9 0 0 1-9-9m9 9c2.21 0 4-4.03 4-9s-1.79-9-4-9m0 18c-2.21 0-4-4.03-4-9s1.79-9 4-9M3 12a9 9 0 0 1 9-9"/>
-    </svg>,
-  },
-  {
-    tab: 'events',
-    label: '事件管理',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-      <line x1="16" y1="2" x2="16" y2="6"/>
-      <line x1="8" y1="2" x2="8" y2="6"/>
-      <line x1="3" y1="10" x2="21" y2="10"/>
-    </svg>,
-  },
-  {
-    tab: 'manage',
-    label: '基础管理',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 7h16"/>
-      <path d="M7 12h10"/>
-      <path d="M10 17h4"/>
-      <circle cx="6" cy="7" r="2"/>
-      <circle cx="18" cy="12" r="2"/>
-      <circle cx="9" cy="17" r="2"/>
-    </svg>,
-  },
-]
+const NAV_ITEMS: { id: string; label: string; icon: string; badge?: number }[] = [
+  { id: 'dashboard', label: '仪表盘', icon: '📊' },
+  { id: 'transactions', label: '交易记录', icon: '💳' },
+  { id: 'books', label: '账本管理', icon: '📒' },
+  { id: 'accounts', label: '账户管理', icon: '🏦' },
+  { id: 'categories', label: '分类管理', icon: '🏷' },
+  { id: 'tags', label: '标签管理', icon: '🔖' },
+  { id: 'budgets', label: '预算管理', icon: '💰' },
+  { id: 'events', label: '事件管理', icon: '📅' },
+];
 
-interface Props {
-  activeTab: string
-  onTabChange: (tab: string) => void
-  onAddTransaction: () => void
-}
+export default function FinanceSidebar({
+  activeTab, onTabChange, open, onClose,
+  ledgers, activeLedgerId, onSelectLedger, onNewLedger,
+}: FinanceSidebarProps) {
+  const [bookDropdownOpen, setBookDropdownOpen] = useState(false);
+  const activeLedger = ledgers.find((l) => l.id === activeLedgerId) || ledgers[0] || null;
 
-const FinanceSidebar: React.FC<Props> = ({ activeTab, onTabChange, onAddTransaction }) => {
-  return (
-    <aside className="finance-sidebar">
-      <div className="finance-sidebar-brand">记账</div>
-      <nav className="finance-sidebar-nav">
-        {NAV_ITEMS.map((item) => (
-          <button
-            key={item.tab}
-            className={`finance-sidebar-item ${activeTab === item.tab ? 'active' : ''}`}
-            onClick={() => onTabChange(item.tab)}
+  const sidebarContent = (
+    <Box
+      sx={{
+        width: 240,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.paper',
+        borderRight: { xs: 'none', md: '1px solid' },
+        borderColor: 'divider',
+      }}
+    >
+      {/* Book Selector */}
+      <Box sx={{ px: 1.5, pt: 1.5, pb: 1 }}>
+        <Typography
+          variant="caption"
+          sx={{ px: 1, mb: 0.5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, color: 'text.secondary', fontSize: '0.625rem' }}
+        >
+          当前账本
+        </Typography>
+        {activeLedger && (
+          <Box
+            onClick={() => setBookDropdownOpen(!bookDropdownOpen)}
+            sx={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              bgcolor: 'action.hover', borderRadius: 2, px: 1.5, py: 1, cursor: 'pointer',
+              transition: 'background 0.15s',
+              '&:hover': { bgcolor: 'action.selected' },
+            }}
           >
-            {item.icon}
-            {item.label}
-          </button>
-        ))}
-      </nav>
-      <div className="finance-sidebar-footer">
-        <button className="finance-sidebar-cta" onClick={onAddTransaction}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 5v14M5 12h14"/>
-          </svg>
-          <span>记一笔</span>
-        </button>
-      </div>
-    </aside>
-  )
-}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Typography sx={{ fontSize: '1rem' }}>{activeLedger.icon || '📒'}</Typography>
+              <Box>
+                <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', lineHeight: 1.2 }}>{activeLedger.name}</Typography>
+                <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary' }}>{activeLedger.currency}</Typography>
+              </Box>
+            </Box>
+            <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', transform: bookDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>▾</Typography>
+          </Box>
+        )}
 
-export { NAV_ITEMS }
-export default FinanceSidebar
+        <Collapse in={bookDropdownOpen}>
+          <Box sx={{ mt: 0.5, border: '1px solid', borderColor: 'divider', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+            {ledgers.map((l) => (
+              <Box
+                key={l.id}
+                onClick={() => { onSelectLedger(l.id); setBookDropdownOpen(false); }}
+                sx={{
+                  display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
+                  fontSize: '0.8125rem', cursor: 'pointer',
+                  color: l.id === activeLedgerId ? 'primary.main' : 'text.primary',
+                  fontWeight: l.id === activeLedgerId ? 600 : 400,
+                  '&:not(:last-child)': { borderBottom: '1px solid', borderColor: 'divider' },
+                  '&:hover': { bgcolor: 'action.hover' },
+                }}
+              >
+                <Typography sx={{ fontSize: '0.875rem' }}>{l.icon || '📒'}</Typography>
+                <Typography sx={{ fontSize: '0.8125rem', flex: 1 }}>{l.name}</Typography>
+                {l.id === activeLedgerId && <Typography sx={{ fontSize: '0.75rem', color: 'primary.main' }}>✓</Typography>}
+              </Box>
+            ))}
+            <Box
+              onClick={() => { onNewLedger(); setBookDropdownOpen(false); }}
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, fontSize: '0.8125rem', color: 'primary.main', fontWeight: 600, borderTop: '1px solid', borderColor: 'divider', cursor: 'pointer' }}
+            >
+              + 新建账本
+            </Box>
+          </Box>
+        </Collapse>
+      </Box>
+
+      {/* Navigation */}
+      <Box sx={{ flex: 1, px: 1, py: 0.5, overflowY: 'auto' }}>
+        <Typography variant="caption" sx={{ px: 1.5, my: 1, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px', fontWeight: 600, color: 'text.secondary', fontSize: '0.625rem' }}>
+          导航
+        </Typography>
+        {NAV_ITEMS.map((item) => {
+          const isActive = activeTab === item.id;
+          return (
+            <Box
+              key={item.id}
+              onClick={() => onTabChange(item.id)}
+              sx={{
+                display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1, mb: 0.25, borderRadius: 2, cursor: 'pointer',
+                fontWeight: isActive ? 600 : 400, color: isActive ? 'primary.main' : 'text.primary',
+                bgcolor: isActive ? 'rgba(108,92,231,0.08)' : 'transparent',
+                transition: 'all 0.15s', fontSize: '0.8125rem',
+                '&:hover': { bgcolor: isActive ? 'rgba(108,92,231,0.08)' : 'action.hover' },
+              }}
+            >
+              <Typography sx={{ fontSize: '1rem' }}>{item.icon}</Typography>
+              <Typography sx={{ flex: 1, fontSize: '0.8125rem' }}>{item.label}</Typography>
+              {item.badge && (
+                <Box sx={{ bgcolor: 'rgba(108,92,231,0.12)', color: 'primary.main', borderRadius: '10px', px: 0.75, py: 0.125, fontSize: '0.625rem', fontWeight: 600, minWidth: 20, textAlign: 'center' }}>
+                  {item.badge}
+                </Box>
+              )}
+            </Box>
+          );
+        })}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      <Box component="aside" sx={{ width: 240, flexShrink: 0, display: { xs: 'none', md: 'block' }, height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
+        {sidebarContent}
+      </Box>
+      <SwipeableDrawer anchor="left" open={open} onClose={onClose} onOpen={() => {}} disableSwipeToOpen
+        slotProps={{ paper: { sx: { width: 260, borderRight: '1px solid', borderColor: 'divider' } } }}
+        sx={{ display: { xs: 'block', md: 'none' } }}
+      >
+        {sidebarContent}
+      </SwipeableDrawer>
+    </>
+  );
+}

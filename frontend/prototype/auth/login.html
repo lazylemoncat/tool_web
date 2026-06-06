@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tool-web — Login</title>
+<link rel="stylesheet" href="../tokens.css">
+<style>
+  /* Auth page layout */
+  .auth-page {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, var(--color-primary-bg) 0%, #EDE9FE 50%, #F3F4F6 100%);
+    padding: var(--space-4);
+  }
+  .auth-card {
+    background: var(--color-surface); width: 100%; max-width: 420px;
+    border-radius: var(--radius-xl); box-shadow: var(--shadow-xl);
+    padding: var(--space-8);
+  }
+  .auth-logo {
+    text-align: center; margin-bottom: var(--space-8);
+    font-family: var(--font-display); font-size: var(--text-2xl); font-weight: var(--font-bold);
+    color: var(--color-primary); letter-spacing: -0.5px;
+  }
+  .auth-logo span { color: var(--color-text); font-weight: var(--font-light); }
+  .auth-title { font-size: var(--text-xl); font-weight: var(--font-semibold); margin-bottom: var(--space-2); }
+  .auth-subtitle { color: var(--color-text-secondary); font-size: var(--text-sm); margin-bottom: var(--space-6); }
+  .auth-tabs { display: flex; gap: var(--space-1); background: var(--color-surface-alt); border-radius: var(--radius-md); padding: 4px; margin-bottom: var(--space-6); }
+  .auth-tab { flex: 1; text-align: center; padding: var(--space-2) var(--space-4); border-radius: var(--radius-sm); font-size: var(--text-sm); font-weight: var(--font-medium); cursor: pointer; transition: all var(--transition-fast); border: none; background: transparent; color: var(--color-text-secondary); }
+  .auth-tab.active { background: var(--color-surface); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+
+  /* Form */
+  .form-group { margin-bottom: var(--space-4); }
+  .form-label { display: block; font-size: var(--text-sm); font-weight: var(--font-medium); margin-bottom: var(--space-1); color: var(--color-text); }
+  .form-input {
+    width: 100%; padding: var(--space-3) var(--space-4); font-size: var(--text-base);
+    border: 1.5px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface); color: var(--color-text);
+    transition: all var(--transition-fast); outline: none; font-family: var(--font-primary);
+  }
+  .form-input::placeholder { color: var(--color-text-muted); }
+  .form-input:hover { border-color: var(--color-text-muted); }
+  .form-input:focus { border-color: var(--color-border-focus); box-shadow: 0 0 0 3px var(--color-primary-bg); }
+  .form-input.input-error { border-color: var(--color-danger); box-shadow: 0 0 0 3px var(--color-danger-bg); }
+  .form-input:disabled { background: var(--color-surface-alt); color: var(--color-text-muted); cursor: not-allowed; }
+  .field-error { display: none; color: var(--color-danger); font-size: var(--text-xs); margin-top: var(--space-1); }
+  .input-wrapper { position: relative; }
+  .input-wrapper .form-input { padding-right: 48px; }
+  .toggle-pw {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; font-size: 1.2rem;
+    padding: var(--space-1); color: var(--color-text-secondary); border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+  }
+  .toggle-pw:hover { color: var(--color-primary); background: var(--color-primary-bg); }
+
+  .form-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-4); }
+  .checkbox-wrapper { display: flex; align-items: center; gap: var(--space-2); font-size: var(--text-sm); color: var(--color-text-secondary); cursor: pointer; }
+  .checkbox-wrapper input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; }
+  .forgot-link { font-size: var(--text-sm); color: var(--color-primary); cursor: pointer; background: none; border: none; }
+  .forgot-link:hover { text-decoration: underline; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+    padding: var(--space-3) var(--space-6); font-size: var(--text-base); font-weight: var(--font-medium);
+    border: none; border-radius: var(--radius-md); cursor: pointer; font-family: var(--font-primary);
+    transition: all var(--transition-fast); width: 100%;
+  }
+  .btn-primary { background: var(--color-primary); color: #fff; }
+  .btn-primary:hover { background: var(--color-primary-dark); box-shadow: var(--shadow-md); }
+  .btn-primary:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
+  .btn-primary:disabled { background: var(--color-text-muted); cursor: not-allowed; box-shadow: none; }
+  .btn-primary:active { transform: scale(0.98); }
+
+  .auth-footer { text-align: center; margin-top: var(--space-6); font-size: var(--text-sm); color: var(--color-text-secondary); }
+  .auth-footer a { color: var(--color-primary); font-weight: var(--font-medium); }
+
+  /* Spinner */
+  .spinner { width: 20px; height: 20px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; animation: spin 0.6s linear infinite; display: inline-block; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Skeleton loading */
+  .skeleton { background: linear-gradient(90deg, #E5E7EB 25%, #F3F4F6 50%, #E5E7EB 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: var(--radius-md); }
+  @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+  .skeleton-input { height: 46px; }
+  .skeleton-btn { height: 46px; }
+  .skeleton-text { height: 16px; width: 60%; margin-bottom: var(--space-2); }
+  .skeleton-text.short { width: 40%; }
+
+  /* Alert */
+  .alert { padding: var(--space-3) var(--space-4); border-radius: var(--radius-md); font-size: var(--text-sm); margin-bottom: var(--space-4); display: flex; align-items: flex-start; gap: var(--space-2); }
+  .alert-error { background: var(--color-danger-bg); color: var(--color-danger); border: 1px solid #FECACA; }
+  .alert-icon { flex-shrink: 0; font-size: 1rem; }
+
+  /* Lockout notice */
+  .lockout-notice { text-align: center; padding: var(--space-8) 0; }
+  .lockout-notice .lock-icon { font-size: 3rem; margin-bottom: var(--space-4); }
+  .lockout-notice h3 { font-size: var(--text-lg); margin-bottom: var(--space-2); }
+  .lockout-notice p { color: var(--color-text-secondary); font-size: var(--text-sm); }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    .auth-card { padding: var(--space-6); }
+    .auth-logo { font-size: var(--text-xl); }
+  }
+</style>
+</head>
+<body>
+
+<div class="auth-page">
+  <div class="auth-card" id="auth-card">
+
+    <!-- Logo -->
+    <div class="auth-logo">tool<span>-web</span></div>
+
+    <!-- Content area with states -->
+    <div id="login-container">
+
+      <!-- ===== LOADING STATE ===== -->
+      <div class="state state-loading active">
+        <div class="skeleton skeleton-text" style="width:40%"></div>
+        <div class="skeleton skeleton-text short" style="margin-bottom:24px"></div>
+        <div class="skeleton skeleton-input" style="margin-bottom:16px"></div>
+        <div class="skeleton skeleton-input" style="margin-bottom:16px"></div>
+        <div class="skeleton skeleton-text short" style="width:30%;margin-bottom:24px"></div>
+        <div class="skeleton skeleton-btn"></div>
+      </div>
+
+      <!-- ===== NORMAL STATE ===== -->
+      <div class="state state-normal">
+        <div class="auth-tabs">
+          <button class="auth-tab active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+          <button class="auth-tab" id="tab-register" onclick="Proto.navigate('register.html')">Sign Up</button>
+        </div>
+        <h2 class="auth-title">Welcome back</h2>
+        <p class="auth-subtitle">Sign in to your tool-web workspace</p>
+
+        <form id="login-form" autocomplete="on" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input class="form-input" type="text" id="username" name="username"
+                   placeholder="Enter your username" autocomplete="username"
+                   onfocus="this.closest('.form-group').querySelector('.field-error').style.display='none'; this.classList.remove('input-error')"
+                   onblur="Proto.validateField(this, {required:true, requiredMsg:'Username is required'})">
+            <span class="field-error"></span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-wrapper">
+              <input class="form-input" type="password" id="password" name="password"
+                     placeholder="Enter your password" autocomplete="current-password"
+                     onfocus="this.closest('.form-group').querySelector('.field-error').style.display='none'; this.classList.remove('input-error')"
+                     onblur="Proto.validateField(this, {required:true, requiredMsg:'Password is required'})">
+              <button type="button" class="toggle-pw" onclick="Proto.togglePassword('password', this)" tabindex="-1">
+                <span class="eye-icon">👁</span>
+              </button>
+            </div>
+            <span class="field-error"></span>
+          </div>
+
+          <div class="form-row">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="remember-me" checked>
+              <span>Remember me</span>
+            </label>
+            <button type="button" class="forgot-link" onclick="Proto.toast('Password reset not available in demo', 'warning')">Forgot password?</button>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="login-btn">
+            <span class="btn-text">Sign In</span>
+            <span class="btn-spinner" style="display:none"><span class="spinner"></span></span>
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          Don't have an account? <a href="register.html">Create one</a>
+        </div>
+      </div>
+
+      <!-- ===== ERROR STATE ===== -->
+      <div class="state state-error">
+        <div class="auth-tabs">
+          <button class="auth-tab active">Sign In</button>
+          <button class="auth-tab" onclick="Proto.navigate('register.html')">Sign Up</button>
+        </div>
+        <h2 class="auth-title">Welcome back</h2>
+
+        <div class="alert alert-error">
+          <span class="alert-icon">⚠</span>
+          <span class="error-message">Invalid username or password. Please try again.</span>
+        </div>
+
+        <form onsubmit="event.preventDefault(); Proto.setState(document.getElementById('login-container'),'normal')">
+          <div class="form-group">
+            <label class="form-label" for="username-err">Username</label>
+            <input class="form-input input-error" type="text" id="username-err" value="admin"
+                   onfocus="this.classList.remove('input-error')">
+            <span class="field-error" style="display:block">Invalid username or password</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="password-err">Password</label>
+            <div class="input-wrapper">
+              <input class="form-input input-error" type="password" id="password-err" value="wrongpass"
+                     onfocus="this.classList.remove('input-error')">
+              <button type="button" class="toggle-pw" onclick="Proto.togglePassword('password-err', this)" tabindex="-1">
+                <span class="eye-icon">👁</span>
+              </button>
+            </div>
+            <span class="field-error" style="display:block">Invalid username or password</span>
+          </div>
+          <div class="form-row">
+            <label class="checkbox-wrapper"><input type="checkbox" checked><span>Remember me</span></label>
+            <button type="button" class="forgot-link">Forgot password?</button>
+          </div>
+          <button type="submit" class="btn btn-primary">Sign In</button>
+        </form>
+        <div class="auth-footer">Don't have an account? <a href="register.html">Create one</a></div>
+      </div>
+
+      <!-- ===== LOCKOUT STATE ===== -->
+      <div class="state state-locked">
+        <div class="lockout-notice">
+          <div class="lock-icon">🔒</div>
+          <h3>Account Locked</h3>
+          <p>Too many failed login attempts.<br>Please try again in <strong>15 minutes</strong>.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<button class="state-debug" style="position:fixed;bottom:16px;right:16px;z-index:9999;
+  background:var(--color-surface);border:1px solid var(--color-border);padding:4px 8px;
+  border-radius:4px;font-size:11px;cursor:pointer;color:var(--color-text-secondary);"
+  onclick="cycleState()">Switch State</button>
+
+<script src="../shared.js"></script>
+<script>
+  let currentStateIdx = 0;
+  const states = ['loading','normal','error','locked'];
+  const container = document.getElementById('login-container');
+
+  function setVisualState(name) {
+    Proto.setState(container, name);
+    currentStateIdx = states.indexOf(name);
+  }
+
+  function cycleState() {
+    currentStateIdx = (currentStateIdx + 1) % states.length;
+    setVisualState(states[currentStateIdx]);
+  }
+
+  function switchTab(tab) {
+    // Visually active tab
+    document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  function handleLogin(e) {
+    e.preventDefault();
+    const usernameValid = Proto.validateField(document.getElementById('username'), {required:true, requiredMsg:'Username is required'});
+    const passwordValid = Proto.validateField(document.getElementById('password'), {required:true, requiredMsg:'Password is required'});
+    if (!usernameValid || !passwordValid) return;
+
+    // Show loading on button
+    const btn = document.getElementById('login-btn');
+    btn.querySelector('.btn-text').style.display = 'none';
+    btn.querySelector('.btn-spinner').style.display = 'inline-block';
+    btn.disabled = true;
+
+    setTimeout(() => {
+      btn.querySelector('.btn-text').style.display = 'inline';
+      btn.querySelector('.btn-spinner').style.display = 'none';
+      btn.disabled = false;
+
+      // For demo: simulate error state
+      const pw = document.getElementById('password').value;
+      if (pw === 'demo') {
+        Proto.toast('Demo: Login successful', 'success');
+        setTimeout(() => Proto.navigate('../home/dashboard.html'), 800);
+      } else {
+        Proto.setState(container, 'error');
+      }
+    }, 1200);
+  }
+
+  // Initial state
+  setVisualState('normal');
+</script>
+</body>
+</html>

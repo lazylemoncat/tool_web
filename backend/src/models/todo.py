@@ -18,7 +18,7 @@ class Folder(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     parent_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True)
     name = Column(String(50), nullable=False)
@@ -27,7 +27,7 @@ class Folder(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="folders")
+    user = relationship("User")
     parent = relationship("Folder", remote_side=[id], back_populates="children")
     children = relationship("Folder", back_populates="parent", cascade="all, delete-orphan")
     todos = relationship("Todo", back_populates="folder", cascade="all, delete-orphan")
@@ -42,7 +42,7 @@ class Todo(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     folder_id = Column(Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True)
     parent_id = Column(Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=True)
@@ -56,7 +56,7 @@ class Todo(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="todos")
+    user = relationship("User")
     folder = relationship("Folder", back_populates="todos")
     parent = relationship("Todo", remote_side=[id], back_populates="children")
     children = relationship("Todo", back_populates="parent", cascade="all, delete-orphan")

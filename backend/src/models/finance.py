@@ -48,14 +48,14 @@ class Ledger(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name = Column(String(50), nullable=False)
     icon = Column(String(10), default="\U0001f4b0")
     currency = Column(String(10), default="CNY")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="ledgers")
+    user = relationship("User")
     accounts = relationship("Account", back_populates="ledger", cascade="all, delete-orphan")
     categories = relationship("FinanceCategory", back_populates="ledger", cascade="all, delete-orphan")
     tags = relationship("FinanceTag", back_populates="ledger", cascade="all, delete-orphan")
@@ -69,7 +69,7 @@ class Account(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(50), nullable=False)
@@ -80,7 +80,7 @@ class Account(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="accounts")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="accounts")
     transactions = relationship("Transaction", back_populates="account")
 
@@ -90,7 +90,7 @@ class FinanceCategory(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     parent_id = Column(Integer, ForeignKey("finance_categories.id", ondelete="CASCADE"), nullable=True)
@@ -98,7 +98,7 @@ class FinanceCategory(Base):
     icon = Column(String(10), default="\U0001f4c2")
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="finance_categories")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="categories")
     parent = relationship("FinanceCategory", remote_side=[id], back_populates="children")
     children = relationship("FinanceCategory", back_populates="parent", cascade="all, delete-orphan")
@@ -112,12 +112,12 @@ class FinanceTag(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(50), nullable=False)
 
-    user = relationship("User", back_populates="finance_tags")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="tags")
     transactions = relationship("Transaction", secondary=transaction_tags, back_populates="tags")
 
@@ -131,7 +131,7 @@ class Transaction(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     account_id = Column(Integer, ForeignKey("accounts.id", ondelete="CASCADE"), nullable=False, index=True)
@@ -148,7 +148,7 @@ class Transaction(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="transactions")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="transactions")
     account = relationship("Account", back_populates="transactions")
     category = relationship("FinanceCategory", back_populates="transactions")
@@ -183,7 +183,7 @@ class Event(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
@@ -194,7 +194,7 @@ class Event(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="events")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="events")
     transactions = relationship("Transaction", back_populates="event")
     relations_as_from = relationship(
@@ -216,7 +216,7 @@ class Budget(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     ledger_id = Column(Integer, ForeignKey("ledgers.id", ondelete="CASCADE"), nullable=False, index=True)
     name = Column(String(100), nullable=False)
@@ -229,7 +229,7 @@ class Budget(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    user = relationship("User", back_populates="budgets")
+    user = relationship("User")
     ledger = relationship("Ledger", back_populates="budgets")
 
 
@@ -238,14 +238,14 @@ class Attachment(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+        Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
     url = Column(String(500), nullable=False)
     mime_type = Column(String(100), nullable=False)
     size = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
-    user = relationship("User", back_populates="attachments")
+    user = relationship("User")
     transactions = relationship("Transaction", secondary=transaction_attachments, back_populates="attachments")
 
 
