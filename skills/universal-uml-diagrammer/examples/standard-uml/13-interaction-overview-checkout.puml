@@ -1,0 +1,26 @@
+@startuml
+title Checkout orchestration - interaction overview diagram
+
+' Scope: Checkout flow overview
+' Evidence:
+' - src/checkout
+' - src/payment
+' Assumptions:
+' - Approximated using activity nodes that reference detailed sequence diagrams.
+
+start
+:Interaction: authenticate customer\nSee sequence/authenticate-customer.puml;
+if (Authenticated?) then (yes)
+  :Interaction: authorize payment\nSee sequence/checkout-payment.puml;
+  if (Payment approved?) then (yes)
+    :Interaction: create order\nSee sequence/create-order.puml;
+    :Interaction: publish order event\nSee sequence/publish-order-event.puml;
+  else (no)
+    :Return payment failure;
+  endif
+else (no)
+  :Return unauthorized;
+endif
+stop
+
+@enduml

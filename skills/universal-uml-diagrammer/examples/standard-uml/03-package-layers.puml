@@ -1,0 +1,21 @@
+@startuml
+title Backend source layers - package diagram
+
+' Scope: Backend package dependency direction
+' Evidence:
+' - src/api
+' - src/application
+' - src/domain
+' - src/infrastructure
+
+package "api" as api
+package "application" as app
+package "domain" as domain
+package "infrastructure" as infra
+
+api --> app
+app --> domain
+app --> infra
+infra --> domain
+
+@enduml

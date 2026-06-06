@@ -1,0 +1,105 @@
+.finance-sidebar {
+  display: none;
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  bottom: 0;
+  width: var(--sidebar-w, 220px);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  flex-direction: column;
+  padding: 20px 14px;
+  z-index: 20;
+  overflow-y: auto;
+}
+
+[data-sidebar="finance"] .finance-sidebar {
+  display: flex;
+}
+[data-sidebar="finance"] .sidebar-panel {
+  display: none;
+}
+
+.finance-sidebar-brand {
+  font-size: var(--fs-lg, 20px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  padding: 8px 12px 20px;
+  color: var(--text-primary);
+}
+
+.finance-sidebar-nav {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.finance-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  transition: background 0.12s, color 0.12s;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.finance-sidebar-item:hover {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.finance-sidebar-item.active {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.finance-sidebar-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.finance-sidebar-footer {
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+
+.finance-sidebar-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 11px 14px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.finance-sidebar-cta:hover {
+  filter: brightness(0.9);
+}
+
+@media (max-width: 768px) {
+  .finance-sidebar {
+    display: none !important;
+  }
+  [data-sidebar="finance"] .sidebar-panel {
+    display: flex;
+  }
+}

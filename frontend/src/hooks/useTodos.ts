@@ -4,6 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import api from '../api/client'
+import { getToken } from '../utils/token'
 import { useToast } from '../components/common/Toast'
 import { useErrorDisplay } from './useErrorDisplay'
 
@@ -60,6 +61,7 @@ export function useTodos(filters: TodoFilters = {}) {
   const { displayError } = useErrorDisplay()
 
   const fetchTodos = useCallback(async () => {
+    if (!getToken()) { setTodos([]); setLoading(false); return }
     const params: Record<string, string | number> = {}
     if (filters.folder_id != null) params.folder_id = filters.folder_id
     if (filters.search) params.search = filters.search
@@ -80,7 +82,7 @@ export function useTodos(filters: TodoFilters = {}) {
     title: string
     note?: string
     priority?: number
-    due_date?: string
+    due_date?: string | null
     tag_ids?: number[]
     recurrence_rules?: string[]
   }) => {

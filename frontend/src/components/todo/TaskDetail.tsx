@@ -5,6 +5,7 @@
 import React from 'react'
 import { Todo } from '../../hooks/useTodos'
 import { useLocale } from '../../i18n'
+import { Button } from '../ui'
 import PriorityTag from '../common/PriorityTag'
 
 interface Props {
@@ -41,7 +42,7 @@ const TaskDetail: React.FC<Props> = ({ todo, onClose, onEdit }) => {
       <div className="modal task-detail-modal" onClick={e => e.stopPropagation()}>
         <div className="detail-header">
           <h2>{t('auth.taskDetail')}</h2>
-          <button className="detail-close" onClick={onClose}>×</button>
+          <button className="detail-close" onClick={onClose} aria-label={t('app.close')}>×</button>
         </div>
 
         <div className="detail-body">
@@ -113,8 +114,8 @@ const TaskDetail: React.FC<Props> = ({ todo, onClose, onEdit }) => {
         </div>
 
         <div className="detail-footer">
-          <button className="btn-submit" onClick={() => onEdit(todo)}>{t('app.edit')}</button>
-          <button className="btn-cancel" onClick={onClose}>{t('app.close')}</button>
+          <Button onClick={() => onEdit(todo)}>{t('app.edit')}</Button>
+          <Button variant="secondary" onClick={onClose}>{t('app.close')}</Button>
         </div>
       </div>
     </div>

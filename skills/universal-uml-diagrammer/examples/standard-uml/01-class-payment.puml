@@ -1,0 +1,47 @@
+@startuml
+title Payment domain - class diagram
+
+' Scope: Payment domain static model
+' Evidence:
+' - src/payment/PaymentService.ts
+' - src/payment/PaymentRepository.ts
+' - src/payment/Payment.ts
+' Assumptions:
+' - PaymentRepository persists Payment because it exposes save/find methods.
+
+package "payment" {
+  interface PaymentGateway {
+    +authorize(request: PaymentRequest): PaymentResult
+  }
+
+  class PaymentService {
+    -repository: PaymentRepository
+    -gateway: PaymentGateway
+    +authorizePayment(orderId: OrderId): Payment
+  }
+
+  class PaymentRepository {
+    +save(payment: Payment): void
+    +findById(id: PaymentId): Payment
+  }
+
+  class Payment {
+    -id: PaymentId
+    -status: PaymentStatus
+    +markAuthorized(): void
+    +markFailed(reason: string): void
+  }
+
+  enum PaymentStatus {
+    CREATED
+    AUTHORIZED
+    FAILED
+  }
+}
+
+PaymentGateway <|.. PaymentService
+PaymentService --> PaymentRepository
+PaymentRepository o-- Payment
+Payment --> PaymentStatus
+
+@enduml

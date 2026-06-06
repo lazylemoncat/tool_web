@@ -35,9 +35,16 @@ Finance 模块是 Tool Web 中的个人财务管理系统, 与 Todo 模块共享
 
 ### 4. Child Transaction (子交易)
 
-父交易下可创建多个子交易, 每个子交易是完整的 Transaction (独立金额、分类、备注、附件).
+父交易下可创建多个子交易, 每个子交易是完整的 Transaction (独立金额、账户、分类、时间、备注、标签、附件、Todo 关联、事件关联).
 
-子交易继承父交易的账户、类型和发生时间. 父交易金额可为 0 (仅用于分组).
+**嵌套限制**: 仅支持 1 层嵌套 (父→子). 子交易不可再创建下级子交易. 后端在 POST/PUT /transactions 时校验 parent_transaction_id 链深度, 违反时返回 400.
+
+**子单管理**: 
+- 父单编辑态通过 SubTxDrawer (右侧 Drawer) 创建/编辑子单, 复用 TransactionForm 全部字段
+- 子单为独立 Transaction 记录, 通过 parent_transaction_id 关联父单
+- 子单 CRUD 为独立 API 调用 (POST/PUT/DELETE /transactions)
+- 父单卡片显示子单数量 chip, 子单卡片显示 ↳ 标识
+- 新建父单时不可添加子单 (需先保存父单)
 
 ### 5. Category (分类)
 
@@ -82,15 +89,19 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 访问 `/finance` 进入记账模块.
 
+Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文件嵌入本地 Umi dev server 的真实记账路由, 用于在 Open Design 中预览页面效果; 实际业务代码仍在 `frontend/src/pages/finance/` 与 `frontend/src/components/finance/`.
+
 ### Dashboard (仪表盘)
 
 四张汇总卡片: 总资产、本月收入、本月支出、预算使用率.
 
 图表区域: 分类占比饼图 + 月度支出趋势柱状图, 支持按周/月/年切换周期.
 
-管理区域: 账户管理 (添加/删除/自定义类型) + 分类树管理 (新建/重命名/删除/子分类) + 标签管理 (新建/删除).
-
 下方展示最近 10 笔交易, 点击可查看详情.
+
+仪表盘只负责展示资产、收支、预算使用率、图表和最近交易. 分类管理与标签管理不放在仪表盘内, 统一移动到基础管理页.
+
+仪表盘支持管理模式: 可显示/隐藏仪表组件, 调整组件顺序, 并修改图表周期参数. 金额汇总统一先转换为数字再格式化, 避免字符串余额拼接成异常金额.
 
 ### Transactions (交易列表)
 
@@ -100,6 +111,7 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 - 按日期范围查询
 - 关键词搜索
 - 无限滚动加载 (每页 50 条, 滚动到底自动加载更多)
+- 支持与任务清单一致的拖拽排序, 顺序写入 `Transaction.sort_order`
 - 点击交易行弹出详情 Modal (完整字段、标签、拆单、附件、关联待办)
 - 详情中可直接编辑或删除交易
 - 点击 "记一笔" 打开记账表单
@@ -108,11 +120,22 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 预算列表, 每条显示: 名称、进度条、花费/预算数值. 支持新建/编辑 (Modal) 和删除.
 
+预算列表支持拖拽排序. 当前预算数据表没有排序字段, 前端按账本将预算顺序保存在本地, 避免引入数据库迁移扩大本次改动范围.
+
 预算字段: 名称、金额、币种、RRULE 重复规则、筛选条件 (分类/标签/事件)、结转、提醒阈值.
+
+预算编辑表单中的结转等布尔选项统一使用 `form-inline-control` 布局类, 让复选框/开关与说明文本保持同一行并垂直居中. 后续新增类似表单项时不要直接复用普通 `.form-group label` 包裹 checkbox, 避免继承输入框宽度和块级 label 样式导致错位. 新建/编辑交易、预算、事件时, 必填项需要在 label 旁显示 `*`, 点击确认后用红色边框和错误文案标出缺失字段, 不应直接关闭弹窗.
 
 ### Events (事件)
 
 事件列表, 显示: 名称、颜色标签、关联交易数量、总金额. 支持新建/编辑 (Modal, 含色块选择器) 和删除.
+
+### Manage (基础管理)
+
+基础管理页承接分类树管理与标签管理:
+
+- 分类管理: 新建、重命名、删除、创建子分类、调整父分类.
+- 标签管理: 新建、删除交易标签.
 
 事件字段: 名称、描述、开始/结束时间、颜色.
 
@@ -231,8 +254,8 @@ backend/src/
 └── routers/finance.py       # API 路由 (36+ endpoints)
 
 frontend/src/
-├── hooks/useFinance.ts      # React 数据 hooks
-├── pages/FinancePage.tsx    # 主页面容器
+├── pages/finance/FinanceLayout.tsx # Finance 主页面容器和 Outlet context
+├── hooks/finance/                # React 数据 hooks
 └── components/finance/
     ├── FinanceDashboard.tsx  # 仪表盘组件
     ├── FinanceCharts.tsx     # 图表 (饼图 + 趋势)
@@ -257,3 +280,7 @@ frontend/src/
 6. 点击 "记一笔" 开始记账 (支持附件上传和待办关联)
 7. Dashboard 查看汇总与图表, Transactions 筛选与无限滚动浏览
 8. 点击交易行查看详情, 支持编辑/删除
+
+# Current Frontend Note
+
+Finance is now routed by Umi through `frontend/.umirc.ts`. The shared finance container remains `frontend/src/pages/finance/FinanceLayout.tsx`, with child pages under `frontend/src/pages/finance/`. Route hooks should be imported from `umi`, not `react-router-dom`.

@@ -1,0 +1,24 @@
+@startuml
+title Checkout collaboration - communication diagram
+
+' Scope: Checkout collaboration topology
+' Evidence:
+' - src/checkout/CheckoutController.ts
+' - src/checkout/CheckoutService.ts
+' Assumptions:
+' - Approximated with numbered object links.
+
+object "customer: Customer" as Customer
+object "controller: CheckoutController" as Controller
+object "service: CheckoutService" as Service
+object "gateway: PaymentGateway" as Gateway
+object "repository: OrderRepository" as Repo
+
+Customer --> Controller : 1. POST /checkout
+Controller --> Service : 2. checkout(request)
+Service --> Gateway : 3. authorize(payment)
+Service --> Repo : 4. save(order)
+Service --> Controller : 5. result
+Controller --> Customer : 6. response
+
+@enduml

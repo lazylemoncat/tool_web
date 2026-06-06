@@ -14,6 +14,7 @@ from sqlalchemy.pool import StaticPool
 
 from src.database import get_db
 from src.models.todo import Base
+import src.models.finance  # noqa: F401  register finance tables with Base.metadata
 
 test_engine = create_engine(
     "sqlite://",

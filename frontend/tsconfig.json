@@ -14,7 +14,13 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@@/*": ["src/.umi/*"],
+      "umi": ["node_modules/umi"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", ".umirc.ts"]
 }

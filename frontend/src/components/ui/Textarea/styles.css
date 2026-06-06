@@ -1,0 +1,8 @@
+.ui-textarea {
+  height: auto;
+  min-height: 80px;
+  padding: var(--space-3);
+  line-height: var(--line-height-normal);
+  resize: vertical;
+  font-family: inherit;
+}

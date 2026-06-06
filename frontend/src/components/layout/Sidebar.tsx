@@ -18,10 +18,9 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'umi'
 import type { Folder } from '../../hooks/useFolders'
 import { useLocale } from '../../i18n'
-import { saveTheme, type Theme } from '../../theme'
 import CustomButtons from '../common/CustomButtons'
 
 interface Props {
@@ -148,19 +147,19 @@ const FolderItemContent: React.FC<{
             {confirmDelete ? (
               <>
                 <span style={{ fontSize: '0.7rem', color: 'var(--priority-high)', marginLeft: 4 }}>
-                  确定删除文件夹 '{folder.name}'? 该文件夹包含 {folder.todo_count} 个任务{childrenCount > 0 ? `和 ${childrenCount} 个子文件夹` : ''}, 删除后不可恢复.
+                  {t('sidebar.deleteFolderDescription', { name: folder.name, count: folder.todo_count, children: childrenCount > 0 ? `, ${childrenCount} subfolder(s)` : '' })}
                 </span>
                 <button
                   style={{ fontSize: '0.7rem', padding: '2px 5px', color: 'var(--priority-high)' }}
                   onClick={(e) => { e.stopPropagation(); onDeleteFolder(folder.id); setConfirmDelete(false) }}
                 >
-                  确认
+                  {t('app.confirm')}
                 </button>
                 <button
                   style={{ fontSize: '0.7rem', padding: '2px 5px', color: 'var(--text-muted)' }}
                   onClick={(e) => { e.stopPropagation(); setConfirmDelete(false) }}
                 >
-                  取消
+                  {t('app.cancel')}
                 </button>
               </>
             ) : (
@@ -175,7 +174,7 @@ const FolderItemContent: React.FC<{
                 <button
                   className="sidebar-edit-btn"
                   onClick={(e) => { e.stopPropagation(); setEditingFolderId(folder.id); setEditName(folder.name) }}
-                  title="重命名文件夹"
+                  title={t('sidebar.renameFolder')}
                 >
                   ✎
                 </button>
@@ -370,21 +369,13 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
         </button>
       )}
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" aria-label={t('app.allFolders')}>
         <div
           className={`sidebar-item ${activeFolderId === null ? 'active' : ''}`}
           onClick={() => onSelectFolder(null)}
         >
           <span className="dot" style={{ background: '#b8b0a4' }} />
           {t('app.allFolders')}
-        </div>
-
-        <div
-          className="sidebar-item"
-          onClick={() => navigate('/finance')}
-        >
-          <span className="dot" style={{ background: '#c4943a' }} />
-          {t('sidebar.finance')}
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -465,18 +456,6 @@ const Sidebar: React.FC<Props> = ({ folders, activeFolderId, onSelectFolder, onC
       )}
 
       <div className="sidebar-theme-toggle">
-        <div className="sidebar-theme-btns">
-          {(['light', 'dark', 'system'] as Theme[]).map((th) => (
-            <button
-              key={th}
-              className={`sidebar-theme-btn`}
-              onClick={() => saveTheme(th)}
-              title={th}
-            >
-              {th === 'light' ? '☀' : th === 'dark' ? '☾' : '◐'}
-            </button>
-          ))}
-        </div>
         <CustomButtons position="sidebar" />
         <div className="sidebar-bottom-btns">
           <button className="sidebar-help-btn" onClick={() => navigate('/help')} title={t('app.help')}>

@@ -1,0 +1,23 @@
+@startuml
+title Ordering bounded context - domain model diagram
+
+' Scope: Ordering DDD model
+' Evidence:
+' - src/order/domain/Order.ts
+' - src/order/domain/OrderLine.ts
+' - src/order/domain/OrderPlaced.ts
+
+package "Ordering" <<bounded-context>> {
+  class Order <<aggregate-root>>
+  class OrderLine <<entity>>
+  class Money <<value-object>>
+  class OrderRepository <<repository>>
+  class OrderPlaced <<domain-event>>
+}
+
+Order *-- OrderLine
+Order *-- Money
+OrderRepository --> Order
+Order --> OrderPlaced : raises
+
+@enduml

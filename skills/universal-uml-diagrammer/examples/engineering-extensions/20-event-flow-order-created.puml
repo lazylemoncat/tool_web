@@ -1,0 +1,21 @@
+@startuml
+title Order created event flow - event flow diagram
+
+' Scope: OrderCreated event propagation
+' Evidence:
+' - src/order/OrderService.ts
+' - src/billing/BillingWorker.ts
+' - src/email/EmailWorker.ts
+
+component "OrderService" <<producer>> as OrderService
+queue "order.created" <<topic>> as OrderCreated
+component "BillingWorker" <<consumer>> as BillingWorker
+component "EmailWorker" <<consumer>> as EmailWorker
+database "Billing DB" <<database>> as BillingDB
+
+OrderService --> OrderCreated : publishes OrderCreated
+OrderCreated --> BillingWorker : consumes
+OrderCreated --> EmailWorker : consumes
+BillingWorker --> BillingDB : creates invoice
+
+@enduml

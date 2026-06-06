@@ -1,0 +1,27 @@
+@startuml
+title Ordering system - use case diagram
+
+' Scope: Ordering user goals
+' Evidence:
+' - docs/product/ordering.md
+' - src/routes/orders.ts
+
+left to right direction
+
+actor "Customer" as Customer
+actor "Admin" as Admin
+
+rectangle "Ordering System" {
+  usecase "Place order" as PlaceOrder
+  usecase "Pay for order" as PayOrder
+  usecase "Cancel order" as CancelOrder
+  usecase "Refund order" as RefundOrder
+}
+
+Customer --> PlaceOrder
+Customer --> PayOrder
+Customer --> CancelOrder
+Admin --> RefundOrder
+PlaceOrder .> PayOrder : <<include>>
+
+@enduml

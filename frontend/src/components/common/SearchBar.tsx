@@ -3,6 +3,7 @@
 */
 
 import React, { useState, useEffect } from 'react'
+import { useLocale } from '../../i18n'
 
 interface Props {
   value: string
@@ -10,7 +11,8 @@ interface Props {
   placeholder?: string
 }
 
-const SearchBar: React.FC<Props> = ({ value, onChange, placeholder = '搜索任务...' }) => {
+const SearchBar: React.FC<Props> = ({ value, onChange, placeholder }) => {
+  const { t } = useLocale()
   const [local, setLocal] = useState(value)
 
   useEffect(() => {
@@ -23,15 +25,16 @@ const SearchBar: React.FC<Props> = ({ value, onChange, placeholder = '搜索任�
   }, [value])
 
   return (
-    <div className="search-bar">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div className="search-bar" role="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
         <circle cx="11" cy="11" r="8" />
         <path d="M21 21l-4.35-4.35" />
       </svg>
       <input
         value={local}
         onChange={(e) => setLocal(e.target.value)}
-        placeholder={placeholder}
+        placeholder={placeholder || t('todo.searchPlaceholder')}
+        aria-label={t('todo.searchPlaceholder')}
       />
     </div>
   )

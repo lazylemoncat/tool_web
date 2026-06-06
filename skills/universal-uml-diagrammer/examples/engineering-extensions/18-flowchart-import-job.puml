@@ -1,0 +1,23 @@
+@startuml
+title Product import job - flowchart
+
+' Scope: Product import script
+' Evidence:
+' - scripts/import-products.ts
+
+start
+:Read CSV file;
+if (File exists?) then (yes)
+  :Parse rows;
+  if (Rows valid?) then (yes)
+    :Upsert products;
+    :Write summary;
+  else (no)
+    :Write validation errors;
+  endif
+else (no)
+  :Report missing file;
+endif
+stop
+
+@enduml

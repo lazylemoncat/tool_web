@@ -4,10 +4,11 @@ import {
   getButtonsByPosition,
   executeButtonAction,
   type ThemeButton,
+  type ButtonPosition,
 } from '../../themeEngine'
 
 interface Props {
-  position: 'toolbar' | 'sidebar' | 'todoItem'
+  position: ButtonPosition
 }
 
 const CustomButtons: React.FC<Props> = ({ position }) => {

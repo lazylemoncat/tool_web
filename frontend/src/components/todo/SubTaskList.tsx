@@ -29,6 +29,7 @@ interface Props {
   onEdit: (todo: Todo) => void
   onReorder?: (items: { id: number; sort_order: number }[]) => void
   onDetail?: (todo: Todo) => void
+  onOpenSubtasks?: (todo: Todo) => void
 }
 
 interface SortableItemProps {
@@ -38,9 +39,10 @@ interface SortableItemProps {
   onAddSub: (parentId: number) => void
   onEdit: (todo: Todo) => void
   onDetail?: (todo: Todo) => void
+  onOpenSubtasks?: (todo: Todo) => void
 }
 
-const SortableItem: React.FC<SortableItemProps> = ({ todo, onToggle, onDelete, onAddSub, onEdit, onDetail }) => {
+const SortableItem: React.FC<SortableItemProps> = ({ todo, onToggle, onDelete, onAddSub, onEdit, onDetail, onOpenSubtasks }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: todo.id,
   })
@@ -62,12 +64,13 @@ const SortableItem: React.FC<SortableItemProps> = ({ todo, onToggle, onDelete, o
         onAddSub={onAddSub}
         onEdit={onEdit}
         onDetail={onDetail}
+        onOpenSubtasks={onOpenSubtasks}
       />
     </div>
   )
 }
 
-const SubTaskList: React.FC<Props> = React.memo(({ subtasks, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail }) => {
+const SubTaskList: React.FC<Props> = React.memo(({ subtasks, onToggle, onDelete, onAddSub, onEdit, onReorder, onDetail, onOpenSubtasks }) => {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
@@ -102,6 +105,7 @@ const SubTaskList: React.FC<Props> = React.memo(({ subtasks, onToggle, onDelete,
             onAddSub={onAddSub}
             onEdit={onEdit}
             onDetail={onDetail}
+            onOpenSubtasks={onOpenSubtasks}
           />
         ))}
       </div>
@@ -121,6 +125,7 @@ const SubTaskList: React.FC<Props> = React.memo(({ subtasks, onToggle, onDelete,
               onAddSub={onAddSub}
               onEdit={onEdit}
               onDetail={onDetail}
+              onOpenSubtasks={onOpenSubtasks}
             />
           ))}
         </div>
