@@ -3,19 +3,15 @@ Pydantic schemas: 请求/响应数据验证.
 """
 
 from datetime import date, datetime
-from typing import Generic, Optional, TypeVar
-
-from enum import Enum
+from enum import StrEnum
 
 from dateutil.rrule import rrulestr
 from pydantic import BaseModel, Field, field_validator
 
 from .tag import TagOut
 
-T = TypeVar("T")
-
-
 # ─── Reorder (shared) ─────────────────────────────────
+
 
 class ReorderItem(BaseModel):
     id: int
@@ -28,7 +24,8 @@ class ReorderBatch(BaseModel):
 
 # ─── Pagination ────────────────────────────────────────
 
-class PaginatedResponse(BaseModel, Generic[T]):
+
+class PaginatedResponse[T](BaseModel):
     items: list[T]
     total: int
     skip: int
@@ -37,23 +34,24 @@ class PaginatedResponse(BaseModel, Generic[T]):
 
 # ─── Folder ──────────────────────────────────────────
 
+
 class FolderCreate(BaseModel):
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     name: str = Field(min_length=1, max_length=50)
     color: str = "#6366f1"
     sort_order: int = 0
 
 
 class FolderUpdate(BaseModel):
-    parent_id: Optional[int] = None
-    name: Optional[str] = Field(None, min_length=1, max_length=50)
-    color: Optional[str] = None
-    sort_order: Optional[int] = None
+    parent_id: int | None = None
+    name: str | None = Field(None, min_length=1, max_length=50)
+    color: str | None = None
+    sort_order: int | None = None
 
 
 class FolderOut(BaseModel):
     id: int
-    parent_id: Optional[int] = None
+    parent_id: int | None = None
     name: str
     color: str
     sort_order: int
@@ -67,13 +65,14 @@ class FolderOut(BaseModel):
 
 # ─── Todo ────────────────────────────────────────────
 
+
 class TodoCreate(BaseModel):
-    folder_id: Optional[int] = None
-    parent_id: Optional[int] = None
+    folder_id: int | None = None
+    parent_id: int | None = None
     title: str = Field(min_length=1, max_length=500)
-    note: Optional[str] = Field(None, max_length=10000)
+    note: str | None = Field(None, max_length=10000)
     priority: int = Field(default=2, ge=1, le=3)
-    due_date: Optional[date] = None
+    due_date: date | None = None
     sort_order: int = 0
     tag_ids: list[int] = []
     recurrence_rules: list[str] = []
@@ -95,16 +94,16 @@ class TodoCreate(BaseModel):
 
 
 class TodoUpdate(BaseModel):
-    folder_id: Optional[int] = None
-    parent_id: Optional[int] = None
-    title: Optional[str] = Field(None, min_length=1, max_length=500)
-    note: Optional[str] = None
-    priority: Optional[int] = Field(None, ge=1, le=3)
-    due_date: Optional[date] = None
-    is_completed: Optional[bool] = None
-    sort_order: Optional[int] = None
-    tag_ids: Optional[list[int]] = None
-    recurrence_rules: Optional[list[str]] = None
+    folder_id: int | None = None
+    parent_id: int | None = None
+    title: str | None = Field(None, min_length=1, max_length=500)
+    note: str | None = None
+    priority: int | None = Field(None, ge=1, le=3)
+    due_date: date | None = None
+    is_completed: bool | None = None
+    sort_order: int | None = None
+    tag_ids: list[int] | None = None
+    recurrence_rules: list[str] | None = None
 
     @field_validator("due_date", mode="before")
     @classmethod
@@ -113,7 +112,7 @@ class TodoUpdate(BaseModel):
 
     @field_validator("recurrence_rules")
     @classmethod
-    def validate_rrules(cls, v: Optional[list[str]]) -> Optional[list[str]]:
+    def validate_rrules(cls, v: list[str] | None) -> list[str] | None:
         if v is None:
             return v
         for r in v:
@@ -137,14 +136,14 @@ class RecurrenceRuleOut(BaseModel):
 
 class TodoOut(BaseModel):
     id: int
-    folder_id: Optional[int] = None
-    parent_id: Optional[int] = None
+    folder_id: int | None = None
+    parent_id: int | None = None
     title: str
-    note: Optional[str] = None
+    note: str | None = None
     priority: int
-    due_date: Optional[date] = None
+    due_date: date | None = None
     is_completed: bool
-    completed_at: Optional[datetime] = None
+    completed_at: datetime | None = None
     sort_order: int
     created_at: datetime
     updated_at: datetime
@@ -157,6 +156,7 @@ class TodoOut(BaseModel):
 
 # ─── Paginated Todo response ─────────────────────────
 
+
 class TodoListResponse(BaseModel):
     items: list[TodoOut]
     total: int
@@ -166,7 +166,8 @@ class TodoListResponse(BaseModel):
 
 # ─── Bulk operations ─────────────────────────────────
 
-class BulkAction(str, Enum):
+
+class BulkAction(StrEnum):
     complete = "complete"
     delete = "delete"
     move = "move"
@@ -175,4 +176,4 @@ class BulkAction(str, Enum):
 class BulkTodoRequest(BaseModel):
     ids: list[int] = Field(min_length=1)
     action: BulkAction
-    folder_id: Optional[int] = None  # only for "move" action
+    folder_id: int | None = None  # only for "move" action

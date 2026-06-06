@@ -303,3 +303,7 @@ frontend/src/
 # Current Frontend Note
 
 Finance is now routed by Umi through `frontend/.umirc.ts`. The shared finance container remains `frontend/src/pages/finance/FinanceLayout.tsx`, with child pages under `frontend/src/pages/finance/`. Route hooks should be imported from `umi`, not `react-router-dom`.
+
+## Backend Type Checking
+
+Finance ORM models in `backend/src/models/finance.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Numeric money fields are typed as `Decimal`, and stats responses should be built with `CategoryStatsItem` / `TrendStatsItem` schema objects rather than untyped dictionaries.

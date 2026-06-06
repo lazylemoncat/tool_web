@@ -149,3 +149,46 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 - 更完整的主题编辑器和主题市场
 - Agent 友好的 API 操作接口
 - PWA 离线能力
+
+## GitHub Actions
+
+项目包含两个 Docker 部署 workflow:
+
+- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
+- `.github/workflows/dev-test-deploy.yml`: 当代码 push 到 `dev` 分支时触发. 先执行同样的 `ruff` 和 `mypy` 后端质量检查. 检查通过后,构建并推送 `:dev` 测试镜像,在测试服务器写入独立的 `docker-compose.test.yml`,使用独立 Compose project 和测试数据目录运行测试环境. 默认测试端口为前端 `18003`,后端 `18004`,可通过 GitHub Variables 调整.
+
+Ruff 配置位于 `backend/pyproject.toml`,当前启用规则前缀为 `E`, `W`, `N`, `I`, `F`, `UP`.
+
+必须配置的 GitHub Secrets:
+
+- `DOCKERHUB_USERNAME`: Docker Hub 用户名.
+- `DOCKERHUB_TOKEN`: Docker Hub 访问令牌.
+- `RELEASE_SSH_HOST`: 发布服务器 SSH host.
+- `RELEASE_SSH_PRIVATE_KEY`: 发布服务器 SSH 私钥.
+- `RELEASE_JWT_SECRET`: 发布环境 JWT secret.
+- `TEST_SSH_HOST`: 测试服务器 SSH host.
+- `TEST_SSH_PRIVATE_KEY`: 测试服务器 SSH 私钥.
+- `TEST_JWT_SECRET`: 测试环境 JWT secret.
+
+可选 GitHub Secrets:
+
+- `RELEASE_SSH_USER`: 发布服务器 SSH 用户,默认 `root`.
+- `RELEASE_ADMIN_PASSWORD`: 发布环境管理员种子密码,为空则由后端按现有逻辑处理.
+- `TEST_SSH_USER`: 测试服务器 SSH 用户,默认 `root`.
+- `TEST_ADMIN_PASSWORD`: 测试环境管理员种子密码,为空则由后端按现有逻辑处理.
+
+常用 GitHub Variables:
+
+- `RELEASE_REMOTE_PATH`: 发布环境远程目录,默认 `/opt/tool_web`.
+- `RELEASE_SSH_PORT`: 发布服务器 SSH 端口,默认 `22`.
+- `RELEASE_ALLOWED_ORIGINS`: 发布环境 CORS origins,默认 `http://localhost:8003,http://localhost:3000`.
+- `RELEASE_DOCKER_API_PROXY_TARGET`: 发布环境前端代理目标,默认 `http://backend:8000`.
+- `RELEASE_RESET_AUTH_SCHEMA`: 发布后是否重置认证 schema,默认 `0`.
+- `TEST_REMOTE_PATH`: 测试环境远程目录,默认 `/opt/tool_web_test`.
+- `TEST_SSH_PORT`: 测试服务器 SSH 端口,默认 `22`.
+- `TEST_FRONTEND_PORT`: 测试环境前端宿主机端口,默认 `18003`.
+- `TEST_BACKEND_PORT`: 测试环境后端宿主机端口,默认 `18004`.
+- `TEST_ALLOWED_ORIGINS`: 测试环境 CORS origins,默认 `http://localhost:${TEST_FRONTEND_PORT}`.
+- `TEST_DOCKER_API_PROXY_TARGET`: 测试环境前端代理目标,默认 `http://backend:8000`.
+- `TEST_COMPOSE_PROJECT`: 测试环境 Docker Compose project 名,默认 `tool-web-test`.
+- `TEST_RESET_AUTH_SCHEMA`: 测试环境部署后是否重置认证 schema,默认 `0`.

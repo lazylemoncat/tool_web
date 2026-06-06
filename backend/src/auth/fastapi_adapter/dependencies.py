@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from ...database import get_db
 from ..adapters.stores import AuthStore
 from ..core.csrf import CsrfService
-from ..core.errors import CsrfInvalidError, InvalidTokenError
+from ..core.errors import InvalidTokenError
 from ..core.models import CurrentUser
 from ..core.service import AuthService
 from ..core.settings import AuthSettings, get_auth_settings
@@ -25,7 +25,9 @@ def _get_access_token(
     credentials: HTTPAuthorizationCredentials | None,
     settings: AuthSettings,
 ) -> str | None:
-    token = request.cookies.get(settings.access_cookie_name) or request.cookies.get("token")
+    token = request.cookies.get(
+        settings.access_cookie_name
+    ) or request.cookies.get("token")
     if not token and credentials:
         token = credentials.credentials
     return token
@@ -33,7 +35,9 @@ def _get_access_token(
 
 def require_user(
     request: Request,
-    credentials: HTTPAuthorizationCredentials | None = Depends(security_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(
+        security_scheme
+    ),
     auth: AuthService = Depends(get_auth_service),
 ) -> CurrentUser:
     token = _get_access_token(request, credentials, auth.settings)
@@ -42,8 +46,12 @@ def require_user(
     return auth.get_current_user(token)
 
 
-def optional_session_id(request: Request, auth: AuthService = Depends(get_auth_service)) -> str | None:
-    token = request.cookies.get(auth.settings.access_cookie_name) or request.cookies.get("token")
+def optional_session_id(
+    request: Request, auth: AuthService = Depends(get_auth_service)
+) -> str | None:
+    token = request.cookies.get(
+        auth.settings.access_cookie_name
+    ) or request.cookies.get("token")
     if not token:
         return None
     try:
@@ -53,7 +61,9 @@ def optional_session_id(request: Request, auth: AuthService = Depends(get_auth_s
     return str(payload.get("sid") or "") or None
 
 
-def verify_csrf(request: Request, auth: AuthService = Depends(get_auth_service)) -> None:
+def verify_csrf(
+    request: Request, auth: AuthService = Depends(get_auth_service)
+) -> None:
     if request.method in {"GET", "HEAD", "OPTIONS"}:
         return
     cookie_token = request.cookies.get(auth.settings.csrf_cookie_name)
@@ -61,7 +71,9 @@ def verify_csrf(request: Request, auth: AuthService = Depends(get_auth_service))
     CsrfService().verify(cookie_token, header_token)
 
 
-def require_admin(current_user: CurrentUser = Depends(require_user)) -> CurrentUser:
+def require_admin(
+    current_user: CurrentUser = Depends(require_user),
+) -> CurrentUser:
     if not current_user.is_admin:
         from ...utils.errors import ForbiddenError
 

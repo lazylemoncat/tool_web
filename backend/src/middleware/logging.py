@@ -51,7 +51,7 @@ _security_logger: logging.Logger | None = None
 
 
 def get_security_logger() -> logging.Logger:
-    """Returns a logger for security events (login, password change, account deletion)."""
+    """Returns a logger for security events."""
     global _security_logger
     if _security_logger is not None:
         return _security_logger

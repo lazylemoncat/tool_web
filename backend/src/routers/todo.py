@@ -3,8 +3,8 @@
 支持层级子任务、搜索过滤、完成切换、排序.
 """
 
-from datetime import datetime, timezone
-from datetime import date as dt_date
+from datetime import UTC, datetime
+
 from dateutil.rrule import rrulestr
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -13,14 +13,21 @@ from sqlalchemy.orm import Session, selectinload
 
 from ..database import get_db
 from ..middleware.auth import get_current_user
-from ..models.todo import Todo, RecurrenceRule, Folder
 from ..models.tag import Tag
+from ..models.todo import Folder, RecurrenceRule, Todo
 from ..models.user import User
-from ..schemas.todo import (
-    TodoCreate, TodoUpdate, TodoOut, TodoReorder, ReorderBatch,
-    RecurrenceRuleOut, TodoListResponse, BulkTodoRequest, BulkAction,
-)
 from ..schemas.tag import TagOut
+from ..schemas.todo import (
+    BulkAction,
+    BulkTodoRequest,
+    RecurrenceRuleOut,
+    ReorderBatch,
+    TodoCreate,
+    TodoListResponse,
+    TodoOut,
+    TodoReorder,
+    TodoUpdate,
+)
 from ..utils.errors import BadRequestError
 
 router = APIRouter(prefix="/api/v1/todos", tags=["todos"])
@@ -40,7 +47,12 @@ def _build_todo_out(t: Todo) -> TodoOut:
         sort_order=t.sort_order,
         created_at=t.created_at,
         updated_at=t.updated_at,
-        children=[_build_todo_out(c) for c in sorted(t.children or [], key=lambda x: (x.sort_order, x.id))],
+        children=[
+            _build_todo_out(c)
+            for c in sorted(
+                t.children or [], key=lambda x: (x.sort_order, x.id)
+            )
+        ],
         tags=[TagOut(id=tag.id, name=tag.name) for tag in (t.tags or [])],
         recurrence_rules=[
             RecurrenceRuleOut(id=r.id, rrule_string=r.rrule_string)
@@ -62,7 +74,7 @@ def list_todos(
     current_user: User = Depends(get_current_user),
 ):
     q = db.query(Todo).filter(
-        Todo.parent_id == None, Todo.user_id == current_user.id
+        Todo.parent_id.is_(None), Todo.user_id == current_user.id
     )
 
     if folder_id is not None:
@@ -70,9 +82,9 @@ def list_todos(
     if priority is not None:
         q = q.filter(Todo.priority == priority)
     if status == "completed":
-        q = q.filter(Todo.is_completed == True)
+        q = q.filter(Todo.is_completed.is_(True))
     elif status == "active":
-        q = q.filter(Todo.is_completed == False)
+        q = q.filter(Todo.is_completed.is_(False))
     if search:
         pattern = f"%{search}%"
         q = q.filter(or_(Todo.title.ilike(pattern), Todo.note.ilike(pattern)))
@@ -87,24 +99,36 @@ def list_todos(
             selectinload(Todo.recurrence_rules),
         )
         .order_by(Todo.sort_order, Todo.id)
-        .offset(skip).limit(limit).all()
+        .offset(skip)
+        .limit(limit)
+        .all()
     )
     items = [_build_todo_out(t) for t in todos]
     return TodoListResponse(items=items, total=total, skip=skip, limit=limit)
 
 
 @router.post("", response_model=TodoOut, status_code=201)
-def create_todo(body: TodoCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_todo(
+    body: TodoCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     if body.folder_id is not None:
-        folder = db.query(Folder).filter(
-            Folder.id == body.folder_id, Folder.user_id == current_user.id
-        ).first()
+        folder = (
+            db.query(Folder)
+            .filter(
+                Folder.id == body.folder_id, Folder.user_id == current_user.id
+            )
+            .first()
+        )
         if not folder:
             raise BadRequestError("Folder not found")
     if body.parent_id is not None:
-        parent = db.query(Todo).filter(
-            Todo.id == body.parent_id, Todo.user_id == current_user.id
-        ).first()
+        parent = (
+            db.query(Todo)
+            .filter(Todo.id == body.parent_id, Todo.user_id == current_user.id)
+            .first()
+        )
         if not parent:
             raise BadRequestError("Parent todo not found")
 
@@ -113,7 +137,11 @@ def create_todo(body: TodoCreate, db: Session = Depends(get_db), current_user: U
     rrule_strings = data.pop("recurrence_rules", [])
     todo = Todo(**data, user_id=current_user.id)
     if tag_ids:
-        tags = db.query(Tag).filter(Tag.id.in_(tag_ids), Tag.user_id == current_user.id).all()
+        tags = (
+            db.query(Tag)
+            .filter(Tag.id.in_(tag_ids), Tag.user_id == current_user.id)
+            .all()
+        )
         todo.tags = tags
     for rrule_str in rrule_strings:
         todo.recurrence_rules.append(RecurrenceRule(rrule_string=rrule_str))
@@ -124,23 +152,36 @@ def create_todo(body: TodoCreate, db: Session = Depends(get_db), current_user: U
 
 
 @router.put("/{todo_id}", response_model=TodoOut)
-def update_todo(todo_id: int, body: TodoUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    todo = db.query(Todo).filter(
-        Todo.id == todo_id, Todo.user_id == current_user.id
-    ).first()
+def update_todo(
+    todo_id: int,
+    body: TodoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    todo = (
+        db.query(Todo)
+        .filter(Todo.id == todo_id, Todo.user_id == current_user.id)
+        .first()
+    )
     if not todo:
         raise HTTPException(404, "任务不存在")
 
     if body.folder_id is not None:
-        folder = db.query(Folder).filter(
-            Folder.id == body.folder_id, Folder.user_id == current_user.id
-        ).first()
+        folder = (
+            db.query(Folder)
+            .filter(
+                Folder.id == body.folder_id, Folder.user_id == current_user.id
+            )
+            .first()
+        )
         if not folder:
             raise BadRequestError("Folder not found")
     if body.parent_id is not None:
-        parent = db.query(Todo).filter(
-            Todo.id == body.parent_id, Todo.user_id == current_user.id
-        ).first()
+        parent = (
+            db.query(Todo)
+            .filter(Todo.id == body.parent_id, Todo.user_id == current_user.id)
+            .first()
+        )
         if not parent:
             raise BadRequestError("Parent todo not found")
 
@@ -150,22 +191,34 @@ def update_todo(todo_id: int, body: TodoUpdate, db: Session = Depends(get_db), c
     for key, val in data.items():
         setattr(todo, key, val)
     if tag_ids is not None:
-        tags = db.query(Tag).filter(Tag.id.in_(tag_ids), Tag.user_id == current_user.id).all()
+        tags = (
+            db.query(Tag)
+            .filter(Tag.id.in_(tag_ids), Tag.user_id == current_user.id)
+            .all()
+        )
         todo.tags = tags
     if rrule_strings is not None:
         todo.recurrence_rules.clear()
         for rrule_str in rrule_strings:
-            todo.recurrence_rules.append(RecurrenceRule(rrule_string=rrule_str))
+            todo.recurrence_rules.append(
+                RecurrenceRule(rrule_string=rrule_str)
+            )
     db.commit()
     db.refresh(todo)
     return _build_todo_out(todo)
 
 
 @router.delete("/{todo_id}", status_code=204)
-def delete_todo(todo_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    todo = db.query(Todo).filter(
-        Todo.id == todo_id, Todo.user_id == current_user.id
-    ).first()
+def delete_todo(
+    todo_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    todo = (
+        db.query(Todo)
+        .filter(Todo.id == todo_id, Todo.user_id == current_user.id)
+        .first()
+    )
     if not todo:
         raise HTTPException(404, "任务不存在")
 
@@ -174,10 +227,15 @@ def delete_todo(todo_id: int, db: Session = Depends(get_db), current_user: User 
     db.flush()
 
     # Renumber remaining siblings
-    siblings = db.query(Todo).filter(
-        Todo.user_id == current_user.id,
-        Todo.parent_id == parent_id,
-    ).order_by(Todo.sort_order, Todo.id).all()
+    siblings = (
+        db.query(Todo)
+        .filter(
+            Todo.user_id == current_user.id,
+            Todo.parent_id == parent_id,
+        )
+        .order_by(Todo.sort_order, Todo.id)
+        .all()
+    )
     for i, sib in enumerate(siblings):
         sib.sort_order = i
     db.commit()
@@ -194,9 +252,11 @@ def toggle_todo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    todo = db.query(Todo).filter(
-        Todo.id == todo_id, Todo.user_id == current_user.id
-    ).first()
+    todo = (
+        db.query(Todo)
+        .filter(Todo.id == todo_id, Todo.user_id == current_user.id)
+        .first()
+    )
     if not todo:
         raise HTTPException(404, "任务不存在")
 
@@ -206,17 +266,25 @@ def toggle_todo(
 
     # Complete children if requested
     if todo.is_completed and body.complete_children:
+
         def _complete_children(t: Todo):
             for child in t.children:
                 child.is_completed = True
-                child.completed_at = datetime.now(timezone.utc)
+                child.completed_at = datetime.now(UTC)
                 _complete_children(child)
+
         _complete_children(todo)
 
-    # Recurring task: generate next instance when marking complete (active -> completed)
+    # Recurring task: generate next instance when marking complete.
     new_todo = None
-    if todo.is_completed and not was_already_completed and todo.recurrence_rules:
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    if (
+        todo.is_completed
+        and not was_already_completed
+        and todo.recurrence_rules
+    ):
+        today = datetime.utcnow().replace(
+            hour=0, minute=0, second=0, microsecond=0
+        )
         next_dates = []
         for rule in todo.recurrence_rules:
             try:
@@ -241,7 +309,9 @@ def toggle_todo(
             )
             # Detach from completed parent if parent is completed
             if todo.parent_id:
-                parent_todo = db.query(Todo).filter(Todo.id == todo.parent_id).first()
+                parent_todo = (
+                    db.query(Todo).filter(Todo.id == todo.parent_id).first()
+                )
                 if parent_todo and parent_todo.is_completed:
                     new_todo.parent_id = None
             db.add(new_todo)
@@ -270,9 +340,11 @@ def reorder_todo(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    todo = db.query(Todo).filter(
-        Todo.id == todo_id, Todo.user_id == current_user.id
-    ).first()
+    todo = (
+        db.query(Todo)
+        .filter(Todo.id == todo_id, Todo.user_id == current_user.id)
+        .first()
+    )
     if not todo:
         raise HTTPException(status_code=404, detail="任务不存在")
 
@@ -280,11 +352,16 @@ def reorder_todo(
     db.flush()
 
     # Renumber siblings
-    siblings = db.query(Todo).filter(
-        Todo.user_id == current_user.id,
-        Todo.parent_id == todo.parent_id,
-        Todo.id != todo_id,
-    ).order_by(Todo.sort_order, Todo.id).all()
+    siblings = (
+        db.query(Todo)
+        .filter(
+            Todo.user_id == current_user.id,
+            Todo.parent_id == todo.parent_id,
+            Todo.id != todo_id,
+        )
+        .order_by(Todo.sort_order, Todo.id)
+        .all()
+    )
     for i, sib in enumerate(siblings):
         sib.sort_order = i if i < body.target_index else i + 1
     db.commit()
@@ -298,14 +375,18 @@ def batch_reorder(
     current_user: User = Depends(get_current_user),
 ):
     ids = [item.id for item in body.items]
-    ref_todos = db.query(Todo).filter(
-        Todo.id.in_(ids), Todo.user_id == current_user.id
-    ).all()
+    ref_todos = (
+        db.query(Todo)
+        .filter(Todo.id.in_(ids), Todo.user_id == current_user.id)
+        .all()
+    )
 
     # Validate all items share the same parent_id
     parent_ids = {t.parent_id for t in ref_todos}
     if len(parent_ids) > 1:
-        raise BadRequestError("Cannot reorder todos from different parent groups")
+        raise BadRequestError(
+            "Cannot reorder todos from different parent groups"
+        )
 
     order_map = {item.id: item.sort_order for item in body.items}
     for t in ref_todos:
@@ -320,24 +401,31 @@ def bulk_action(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    todos = db.query(Todo).filter(
-        Todo.id.in_(body.ids), Todo.user_id == current_user.id
-    ).all()
+    todos = (
+        db.query(Todo)
+        .filter(Todo.id.in_(body.ids), Todo.user_id == current_user.id)
+        .all()
+    )
     if len(todos) != len(body.ids):
         raise BadRequestError("Some todos not found")
 
     if body.action == BulkAction.complete:
         for t in todos:
             t.is_completed = True
-            t.completed_at = datetime.now(timezone.utc)
+            t.completed_at = datetime.now(UTC)
     elif body.action == BulkAction.delete:
         for t in todos:
             db.delete(t)
     elif body.action == BulkAction.move:
         if body.folder_id is not None:
-            folder = db.query(Folder).filter(
-                Folder.id == body.folder_id, Folder.user_id == current_user.id
-            ).first()
+            folder = (
+                db.query(Folder)
+                .filter(
+                    Folder.id == body.folder_id,
+                    Folder.user_id == current_user.id,
+                )
+                .first()
+            )
             if not folder:
                 raise BadRequestError("Folder not found")
         for t in todos:

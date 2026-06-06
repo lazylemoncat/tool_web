@@ -2,10 +2,17 @@
 标签模型: 多对多关联 Todo.
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint, Table
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .todo import Base
+
+if TYPE_CHECKING:
+    from .todo import Todo
 
 todo_tags = Table(
     "todo_tags",
@@ -19,10 +26,10 @@ class Tag(Base):
     __tablename__ = "tags"
     __table_args__ = (UniqueConstraint("user_id", "name"),)
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("auth_users.id", ondelete="CASCADE"), nullable=False, index=True
     )
-    name = Column(String(50), nullable=False)
+    name: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    todos = relationship("Todo", secondary=todo_tags, back_populates="tags")
+    todos: Mapped[list["Todo"]] = relationship("Todo", secondary=todo_tags, back_populates="tags")

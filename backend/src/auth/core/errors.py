@@ -48,7 +48,8 @@ class AccountLockedError(AuthError):
 
     def __init__(self, remaining_minutes: int):
         super().__init__(
-            f"Account locked due to too many failed attempts, please try again in {remaining_minutes} minutes"
+            "Account locked due to too many failed attempts, "
+            f"please try again in {remaining_minutes} minutes"
         )
 
 

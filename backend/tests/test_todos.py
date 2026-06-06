@@ -1,8 +1,12 @@
 def test_create_todo(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={
-        "title": "My Task",
-        "priority": 1,
-    }, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos",
+        json={
+            "title": "My Task",
+            "priority": 1,
+        },
+        headers=auth_headers,
+    )
     assert resp.status_code == 201
     body = resp.json()
     assert body["title"] == "My Task"
@@ -11,8 +15,12 @@ def test_create_todo(client, auth_headers):
 
 
 def test_list_todos(client, auth_headers):
-    client.post("/api/v1/todos", json={"title": "Task 1"}, headers=auth_headers)
-    client.post("/api/v1/todos", json={"title": "Task 2"}, headers=auth_headers)
+    client.post(
+        "/api/v1/todos", json={"title": "Task 1"}, headers=auth_headers
+    )
+    client.post(
+        "/api/v1/todos", json={"title": "Task 2"}, headers=auth_headers
+    )
     resp = client.get("/api/v1/todos", headers=auth_headers)
     assert resp.status_code == 200
     todos = resp.json()["items"]
@@ -20,7 +28,9 @@ def test_list_todos(client, auth_headers):
 
 
 def test_list_todos_filter_by_status(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={"title": "Active Task"}, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos", json={"title": "Active Task"}, headers=auth_headers
+    )
     todo_id = resp.json()["id"]
     client.patch(f"/api/v1/todos/{todo_id}/toggle", headers=auth_headers)
 
@@ -31,54 +41,84 @@ def test_list_todos_filter_by_status(client, auth_headers):
 
 
 def test_list_todos_filter_by_priority(client, auth_headers):
-    client.post("/api/v1/todos", json={"title": "High", "priority": 1}, headers=auth_headers)
-    client.post("/api/v1/todos", json={"title": "Low", "priority": 3}, headers=auth_headers)
+    client.post(
+        "/api/v1/todos",
+        json={"title": "High", "priority": 1},
+        headers=auth_headers,
+    )
+    client.post(
+        "/api/v1/todos",
+        json={"title": "Low", "priority": 3},
+        headers=auth_headers,
+    )
     resp = client.get("/api/v1/todos?priority=1", headers=auth_headers)
     assert len(resp.json()["items"]) == 1
 
 
 def test_list_todos_pagination(client, auth_headers):
     for i in range(5):
-        client.post("/api/v1/todos", json={"title": f"Task {i}"}, headers=auth_headers)
+        client.post(
+            "/api/v1/todos", json={"title": f"Task {i}"}, headers=auth_headers
+        )
     resp = client.get("/api/v1/todos?skip=0&limit=2", headers=auth_headers)
     assert len(resp.json()["items"]) == 2
 
 
 def test_update_todo(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={"title": "Old Title"}, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos", json={"title": "Old Title"}, headers=auth_headers
+    )
     todo_id = resp.json()["id"]
-    resp = client.put(f"/api/v1/todos/{todo_id}", json={"title": "New Title"}, headers=auth_headers)
+    resp = client.put(
+        f"/api/v1/todos/{todo_id}",
+        json={"title": "New Title"},
+        headers=auth_headers,
+    )
     assert resp.status_code == 200
     assert resp.json()["title"] == "New Title"
 
 
 def test_delete_todo(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={"title": "Delete Me"}, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos", json={"title": "Delete Me"}, headers=auth_headers
+    )
     todo_id = resp.json()["id"]
     resp = client.delete(f"/api/v1/todos/{todo_id}", headers=auth_headers)
     assert resp.status_code == 204
 
 
 def test_toggle_todo(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={"title": "Toggle Me"}, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos", json={"title": "Toggle Me"}, headers=auth_headers
+    )
     todo_id = resp.json()["id"]
-    resp = client.patch(f"/api/v1/todos/{todo_id}/toggle", headers=auth_headers)
+    resp = client.patch(
+        f"/api/v1/todos/{todo_id}/toggle", headers=auth_headers
+    )
     assert resp.status_code == 200
     assert resp.json()["is_completed"] is True
 
 
 def test_todo_not_found(client, auth_headers):
-    resp = client.put("/api/v1/todos/9999", json={"title": "Nope"}, headers=auth_headers)
+    resp = client.put(
+        "/api/v1/todos/9999", json={"title": "Nope"}, headers=auth_headers
+    )
     assert resp.status_code == 404
 
 
 def test_create_subtask(client, auth_headers):
-    resp = client.post("/api/v1/todos", json={"title": "Parent"}, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos", json={"title": "Parent"}, headers=auth_headers
+    )
     parent_id = resp.json()["id"]
-    resp = client.post("/api/v1/todos", json={
-        "title": "Child",
-        "parent_id": parent_id,
-    }, headers=auth_headers)
+    resp = client.post(
+        "/api/v1/todos",
+        json={
+            "title": "Child",
+            "parent_id": parent_id,
+        },
+        headers=auth_headers,
+    )
     assert resp.status_code == 201
     resp = client.get("/api/v1/todos", headers=auth_headers)
     parent = resp.json()["items"][0]

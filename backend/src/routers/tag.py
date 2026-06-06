@@ -6,30 +6,37 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models.tag import Tag
-from ..schemas.tag import TagCreate, TagOut
 from ..middleware.auth import get_current_user
+from ..models.tag import Tag
 from ..models.user import User
+from ..schemas.tag import TagCreate, TagOut
 
 router = APIRouter(prefix="/api/v1/tags", tags=["tags"])
 
 
 @router.get("", response_model=list[TagOut])
 def list_tags(
-    search: str | None = Query(None, description="Search tags by name for autocomplete"),
-    folder_id: int | None = Query(None, description="Filter tags to those used by tasks in a folder"),
+    search: str | None = Query(
+        None, description="Search tags by name for autocomplete"
+    ),
+    folder_id: int | None = Query(
+        None, description="Filter tags to those used by tasks in a folder"
+    ),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    from ..models.todo import Todo
     from ..models.tag import todo_tags
+    from ..models.todo import Todo
 
     q = db.query(Tag).filter(Tag.user_id == current_user.id)
 
     if folder_id is not None:
-        q = q.join(todo_tags, Tag.id == todo_tags.c.tag_id).join(
-            Todo, Todo.id == todo_tags.c.todo_id
-        ).filter(Todo.folder_id == folder_id).distinct()
+        q = (
+            q.join(todo_tags, Tag.id == todo_tags.c.tag_id)
+            .join(Todo, Todo.id == todo_tags.c.todo_id)
+            .filter(Todo.folder_id == folder_id)
+            .distinct()
+        )
 
     if search:
         q = q.filter(Tag.name.ilike(f"%{search}%"))

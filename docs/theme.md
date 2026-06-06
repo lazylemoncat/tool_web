@@ -65,3 +65,7 @@ Tool Web 主题系统由两个独立子系统组成:
 # Current Frontend Note
 
 The theme runtime is initialized from the Umi runtime entry `frontend/src/app.tsx`. Page-level custom-theme switching is synchronized by `frontend/src/layouts/index.tsx` through `themeEngine.switchPage()`, using route-to-page keys from `frontend/src/utils/pageTheme.ts`.
+
+## Backend Type Checking
+
+The `UserTheme` ORM model in `backend/src/models/theme.py` uses SQLAlchemy 2 `Mapped` and `mapped_column` annotations. `config_json` remains a stored text payload; schema validation still belongs to the frontend theme schema.

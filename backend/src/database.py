@@ -11,10 +11,6 @@ from sqlalchemy.orm import sessionmaker
 
 from .auth.adapters.stores import AuthStore
 from .auth.core.password import PasswordHasher
-from .models.todo import Base
-from .models.user import User  # noqa: F401  register auth tables with Base.metadata
-from .models.theme import UserTheme  # noqa: F401
-from .models.tag import Tag  # noqa: F401
 from .models.finance import (  # noqa: F401
     Account,
     Attachment,
@@ -26,6 +22,12 @@ from .models.finance import (  # noqa: F401
     ResourceRelation,
     SplitItem,
     Transaction,
+)
+from .models.tag import Tag  # noqa: F401
+from .models.theme import UserTheme  # noqa: F401
+from .models.todo import Base
+from .models.user import (
+    User,  # noqa: F401  register auth tables with Base.metadata
 )
 
 logger = logging.getLogger("tool_web.database")
@@ -59,7 +61,10 @@ def _seed_admin():
             if not admin_password:
                 admin_password = secrets.token_urlsafe(16)
                 logger.warning(
-                    "ADMIN_PASSWORD not set. Generated random admin password: %s",
+                    (
+                        "ADMIN_PASSWORD not set. "
+                        "Generated random admin password: %s"
+                    ),
                     admin_password,
                 )
             store.create_user(
@@ -69,7 +74,9 @@ def _seed_admin():
             )
             db.commit()
             logger.info("Admin user created")
-        elif admin_password and not hasher.verify(admin_password, admin.password_hash):
+        elif admin_password and not hasher.verify(
+            admin_password, admin.password_hash
+        ):
             admin.password_hash = hasher.hash(admin_password)
             db.commit()
             logger.info("Admin password synced from ADMIN_PASSWORD")

@@ -1,6 +1,4 @@
-"""
-统一异常类与 FastAPI 异常处理器. 所有 API 错误使用统一格式: {code, message, data}.
-"""
+"""Unified exception classes and FastAPI handlers."""
 
 from fastapi import Request
 from fastapi.responses import JSONResponse

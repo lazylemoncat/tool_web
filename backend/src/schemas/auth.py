@@ -2,9 +2,14 @@
 认证相关 Pydantic 模型.
 """
 
-from pydantic import BaseModel, Field, field_validator
-from typing import Any
 import re
+from typing import Any
+
+from pydantic import BaseModel, Field, field_validator
+
+PASSWORD_POLICY_MESSAGE = (
+    "Password must be at least 8 characters with at least 1 letter and 1 digit"
+)
 
 
 class RegisterRequest(BaseModel):
@@ -15,9 +20,7 @@ class RegisterRequest(BaseModel):
     @classmethod
     def password_strength(cls, v: str) -> str:
         if not re.search(r"[a-zA-Z]", v) or not re.search(r"\d", v):
-            raise ValueError(
-                "Password must be at least 8 characters with at least 1 letter and 1 digit"
-            )
+            raise ValueError(PASSWORD_POLICY_MESSAGE)
         return v
 
 
@@ -45,9 +48,7 @@ class ChangePasswordRequest(BaseModel):
     @classmethod
     def password_strength(cls, v: str) -> str:
         if not re.search(r"[a-zA-Z]", v) or not re.search(r"\d", v):
-            raise ValueError(
-                "Password must be at least 8 characters with at least 1 letter and 1 digit"
-            )
+            raise ValueError(PASSWORD_POLICY_MESSAGE)
         return v
 
 

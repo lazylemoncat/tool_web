@@ -41,7 +41,11 @@ async def rate_limit_middleware(request: Request, call_next):
         if len(_attempts[key]) >= RATE_LIMIT_REQUESTS:
             return JSONResponse(
                 status_code=429,
-                content={"code": 429, "message": "Too many requests, please try again later", "data": None},
+                content={
+                    "code": 429,
+                    "message": "Too many requests, please try again later",
+                    "data": None,
+                },
             )
 
         _attempts[key].append(now)

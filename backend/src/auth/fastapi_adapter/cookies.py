@@ -6,7 +6,9 @@ from ..core.models import AuthResult
 from ..core.settings import AuthSettings
 
 
-def set_auth_cookies(response: Response, result: AuthResult, settings: AuthSettings) -> None:
+def set_auth_cookies(
+    response: Response, result: AuthResult, settings: AuthSettings
+) -> None:
     response.set_cookie(
         key=settings.access_cookie_name,
         value=result.access_token,

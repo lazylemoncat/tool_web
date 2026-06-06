@@ -1,0 +1,138 @@
+# Purpose: build, publish, and run the production Docker deployment from release branches.
+name: Release Build And Run
+
+on:
+  push:
+    branches:
+      - "release_*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-build-run-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  quality_check:
+    name: Backend quality checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Sync backend dependencies
+        working-directory: backend
+        run: uv sync --frozen --extra dev
+
+      - name: Run ruff
+        working-directory: backend
+        run: uv run --with ruff ruff check src tests
+
+      - name: Run mypy
+        working-directory: backend
+        run: uv run --with mypy mypy --ignore-missing-imports src tests
+
+  deploy:
+    name: Build and run release
+    runs-on: ubuntu-latest
+    needs: quality_check
+    env:
+      DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      ADMIN_PASSWORD: ${{ secrets.RELEASE_ADMIN_PASSWORD }}
+      ALLOWED_ORIGINS: ${{ vars.RELEASE_ALLOWED_ORIGINS || 'http://localhost:8003,http://localhost:3000' }}
+      DOCKER_API_PROXY_TARGET: ${{ vars.RELEASE_DOCKER_API_PROXY_TARGET || 'http://backend:8000' }}
+      JWT_SECRET: ${{ secrets.RELEASE_JWT_SECRET }}
+      RELEASE_ADMIN_PASSWORD: ${{ secrets.RELEASE_ADMIN_PASSWORD }}
+      RELEASE_ALLOWED_ORIGINS: ${{ vars.RELEASE_ALLOWED_ORIGINS || 'http://localhost:8003,http://localhost:3000' }}
+      RELEASE_JWT_SECRET: ${{ secrets.RELEASE_JWT_SECRET }}
+      RELEASE_REMOTE_PATH: ${{ vars.RELEASE_REMOTE_PATH || '/opt/tool_web' }}
+      RELEASE_RESET_AUTH_SCHEMA: ${{ vars.RELEASE_RESET_AUTH_SCHEMA || '0' }}
+      RELEASE_SSH_HOST: ${{ secrets.RELEASE_SSH_HOST }}
+      RELEASE_SSH_PRIVATE_KEY: ${{ secrets.RELEASE_SSH_PRIVATE_KEY }}
+      RELEASE_SSH_PORT: ${{ vars.RELEASE_SSH_PORT || '22' }}
+      RELEASE_SSH_USER: ${{ secrets.RELEASE_SSH_USER || 'root' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in DOCKER_USER DOCKERHUB_TOKEN RELEASE_JWT_SECRET RELEASE_REMOTE_PATH RELEASE_SSH_HOST RELEASE_SSH_PRIVATE_KEY RELEASE_SSH_PORT RELEASE_SSH_USER; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required configuration: ${name}"
+              missing=1
+            fi
+          done
+          exit "${missing}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build production images
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f docker-compose.yml -f docker-compose.prod.yml build frontend backend
+
+      - name: Push production images
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push "${DOCKER_USER}/tool-web-frontend:latest"
+          docker push "${DOCKER_USER}/tool-web-backend:latest"
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${RELEASE_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${RELEASE_SSH_PORT}" -H "${RELEASE_SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Prepare release environment file
+        shell: bash
+        run: |
+          set -euo pipefail
+          {
+            printf 'JWT_SECRET=%s\n' "${RELEASE_JWT_SECRET}"
+            printf 'ADMIN_PASSWORD=%s\n' "${RELEASE_ADMIN_PASSWORD}"
+            printf 'ALLOWED_ORIGINS=%s\n' "${RELEASE_ALLOWED_ORIGINS}"
+            printf 'DOCKER_API_PROXY_TARGET=%s\n' "${DOCKER_API_PROXY_TARGET}"
+            printf 'DOCKER_USER=%s\n' "${DOCKER_USER}"
+          } > .env.release
+
+      - name: Deploy release containers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "${RELEASE_SSH_PORT}" "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}" "mkdir -p '${RELEASE_REMOTE_PATH}'"
+          scp -P "${RELEASE_SSH_PORT}" docker-compose.prod.yml .env.release "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}:${RELEASE_REMOTE_PATH}/"
+          ssh -p "${RELEASE_SSH_PORT}" "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}" "
+            set -e
+            cd '${RELEASE_REMOTE_PATH}'
+            mv .env.release .env
+            docker compose -f docker-compose.prod.yml pull
+            docker compose -f docker-compose.prod.yml up -d
+            if [ '${RELEASE_RESET_AUTH_SCHEMA}' = '1' ]; then
+              docker compose -f docker-compose.prod.yml exec -T backend /app/.venv/bin/python -c 'from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print(\"Auth schema reset complete.\")'
+            fi
+          "

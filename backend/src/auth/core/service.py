@@ -1,7 +1,6 @@
-"""AuthService orchestrates authentication workflows without FastAPI dependencies."""
+"""AuthService orchestrates auth workflows."""
 
 import math
-import secrets
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import Any
@@ -16,8 +15,8 @@ from .errors import (
     InvalidTokenError,
     MfaInvalidError,
     SessionRevokedError,
-    UserNotFoundError,
     UsernameExistsError,
+    UserNotFoundError,
 )
 from .mfa import (
     build_otpauth_uri,
@@ -78,8 +77,12 @@ class AuthService:
             username=username,
             password_hash=self.password_hasher.hash(password),
         )
-        self.store.audit("register_success", user_id=user.id, ip=ip, user_agent=user_agent)
-        result = self._issue_auth(user=user, remember_me=remember_me, ip=ip, user_agent=user_agent)
+        self.store.audit(
+            "register_success", user_id=user.id, ip=ip, user_agent=user_agent
+        )
+        result = self._issue_auth(
+            user=user, remember_me=remember_me, ip=ip, user_agent=user_agent
+        )
         self.store.db.commit()
         return result
 
@@ -95,13 +98,32 @@ class AuthService:
         user = self.store.get_user_by_username(username)
         if user:
             self._raise_if_locked(user)
-        if not user or not user.is_active or not self.password_hasher.verify(password, user.password_hash):
+        if (
+            not user
+            or not user.is_active
+            or not self.password_hasher.verify(password, user.password_hash)
+        ):
             if user:
                 user.failed_login_attempts += 1
-                if user.failed_login_attempts >= self.settings.max_login_failures:
-                    user.locked_until = utcnow() + timedelta(seconds=self.settings.account_lock_seconds)
-                    self.store.audit("account_locked", user_id=user.id, ip=ip, user_agent=user_agent)
-                self.store.audit("login_failure", user_id=user.id, ip=ip, user_agent=user_agent)
+                if (
+                    user.failed_login_attempts
+                    >= self.settings.max_login_failures
+                ):
+                    user.locked_until = utcnow() + timedelta(
+                        seconds=self.settings.account_lock_seconds
+                    )
+                    self.store.audit(
+                        "account_locked",
+                        user_id=user.id,
+                        ip=ip,
+                        user_agent=user_agent,
+                    )
+                self.store.audit(
+                    "login_failure",
+                    user_id=user.id,
+                    ip=ip,
+                    user_agent=user_agent,
+                )
                 self.store.db.commit()
             raise InvalidCredentialsError()
 
@@ -112,13 +134,21 @@ class AuthService:
         if enabled_methods:
             challenge = self.store.create_mfa_challenge(
                 user_id=user.id,
-                methods=sorted({m.method_type for m in enabled_methods} | {"recovery_code"}),
+                methods=sorted(
+                    {m.method_type for m in enabled_methods}
+                    | {"recovery_code"}
+                ),
                 ttl_seconds=self.settings.mfa_challenge_ttl_seconds,
                 max_attempts=self.settings.mfa_max_attempts_per_challenge,
                 ip=ip,
                 user_agent=user_agent,
             )
-            self.store.audit("mfa_challenge_created", user_id=user.id, ip=ip, user_agent=user_agent)
+            self.store.audit(
+                "mfa_challenge_created",
+                user_id=user.id,
+                ip=ip,
+                user_agent=user_agent,
+            )
             self.store.db.commit()
             return LoginOutput(
                 status="mfa_required",
@@ -129,8 +159,12 @@ class AuthService:
                 ),
             )
 
-        self.store.audit("login_success", user_id=user.id, ip=ip, user_agent=user_agent)
-        result = self._issue_auth(user=user, remember_me=remember_me, ip=ip, user_agent=user_agent)
+        self.store.audit(
+            "login_success", user_id=user.id, ip=ip, user_agent=user_agent
+        )
+        result = self._issue_auth(
+            user=user, remember_me=remember_me, ip=ip, user_agent=user_agent
+        )
         self.store.db.commit()
         return LoginOutput(status="authenticated", auth=result)
 
@@ -165,21 +199,39 @@ class AuthService:
                 user_id=user.id, code=code, ip=ip, user_agent=user_agent
             )
             if ok:
-                self.store.audit("mfa_recovery_code_used", user_id=user.id, ip=ip, user_agent=user_agent)
+                self.store.audit(
+                    "mfa_recovery_code_used",
+                    user_id=user.id,
+                    ip=ip,
+                    user_agent=user_agent,
+                )
 
         if not ok:
-            self.store.audit("mfa_verify_failure", user_id=user.id, ip=ip, user_agent=user_agent)
+            self.store.audit(
+                "mfa_verify_failure",
+                user_id=user.id,
+                ip=ip,
+                user_agent=user_agent,
+            )
             self.store.db.commit()
             raise MfaInvalidError()
 
         challenge.verified_at = utcnow()
-        self.store.audit("mfa_verify_success", user_id=user.id, ip=ip, user_agent=user_agent)
-        self.store.audit("login_success", user_id=user.id, ip=ip, user_agent=user_agent)
-        result = self._issue_auth(user=user, remember_me=remember_me, ip=ip, user_agent=user_agent)
+        self.store.audit(
+            "mfa_verify_success", user_id=user.id, ip=ip, user_agent=user_agent
+        )
+        self.store.audit(
+            "login_success", user_id=user.id, ip=ip, user_agent=user_agent
+        )
+        result = self._issue_auth(
+            user=user, remember_me=remember_me, ip=ip, user_agent=user_agent
+        )
         self.store.db.commit()
         return result
 
-    def refresh(self, *, refresh_token: str, ip: str | None, user_agent: str | None) -> AuthResult:
+    def refresh(
+        self, *, refresh_token: str, ip: str | None, user_agent: str | None
+    ) -> AuthResult:
         refresh = self.store.get_refresh_by_plaintext(refresh_token)
         if not refresh:
             raise InvalidTokenError()
@@ -217,7 +269,13 @@ class AuthService:
             session_id=session.id,
         )
         csrf = self.csrf_service.create_token()
-        self.store.audit("token_refresh_success", user_id=user.id, session_id=session.id, ip=ip, user_agent=user_agent)
+        self.store.audit(
+            "token_refresh_success",
+            user_id=user.id,
+            session_id=session.id,
+            ip=ip,
+            user_agent=user_agent,
+        )
         self.store.db.commit()
         return AuthResult(
             access_token=access,
@@ -248,11 +306,15 @@ class AuthService:
             "preferences": self.store.get_preferences(user.id),
         }
 
-    def update_preferences(self, *, user: CurrentUser, preferences: dict[str, Any]) -> None:
+    def update_preferences(
+        self, *, user: CurrentUser, preferences: dict[str, Any]
+    ) -> None:
         self.store.update_preferences(user.id, preferences)
         self.store.db.commit()
 
-    def logout(self, *, session_id: str | None, ip: str | None, user_agent: str | None) -> None:
+    def logout(
+        self, *, session_id: str | None, ip: str | None, user_agent: str | None
+    ) -> None:
         if session_id:
             session = self.store.get_session(session_id)
             self.store.revoke_session(session_id, "logout")
@@ -276,20 +338,41 @@ class AuthService:
         user_agent: str | None,
     ) -> None:
         db_user = self.store.get_user_by_id(user.id)
-        if not db_user or not self.password_hasher.verify(old_password, db_user.password_hash):
+        if not db_user or not self.password_hasher.verify(
+            old_password, db_user.password_hash
+        ):
             raise CurrentPasswordInvalidError()
         validate_password(new_password, self.password_policy())
         db_user.password_hash = self.password_hasher.hash(new_password)
         db_user.password_changed_at = utcnow()
-        self.store.revoke_user_sessions(user.id, "password_changed", except_session_id=current_session_id)
-        self.store.audit("password_changed", user_id=user.id, session_id=current_session_id, ip=ip, user_agent=user_agent)
+        self.store.revoke_user_sessions(
+            user.id, "password_changed", except_session_id=current_session_id
+        )
+        self.store.audit(
+            "password_changed",
+            user_id=user.id,
+            session_id=current_session_id,
+            ip=ip,
+            user_agent=user_agent,
+        )
         self.store.db.commit()
 
-    def delete_account(self, *, user: CurrentUser, password: str, ip: str | None, user_agent: str | None) -> None:
+    def delete_account(
+        self,
+        *,
+        user: CurrentUser,
+        password: str,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> None:
         db_user = self.store.get_user_by_id(user.id)
-        if not db_user or not self.password_hasher.verify(password, db_user.password_hash):
+        if not db_user or not self.password_hasher.verify(
+            password, db_user.password_hash
+        ):
             raise DeletePasswordInvalidError()
-        self.store.audit("account_deleted", user_id=user.id, ip=ip, user_agent=user_agent)
+        self.store.audit(
+            "account_deleted", user_id=user.id, ip=ip, user_agent=user_agent
+        )
         self.store.db.delete(db_user)
         self.store.db.commit()
 
@@ -299,10 +382,18 @@ class AuthService:
                 "id": s.id,
                 "user_agent": s.user_agent,
                 "ip_address": s.ip_address,
-                "created_at": s.created_at.isoformat() if s.created_at else None,
-                "last_seen_at": s.last_seen_at.isoformat() if s.last_seen_at else None,
-                "expires_at": s.expires_at.isoformat() if s.expires_at else None,
-                "revoked_at": s.revoked_at.isoformat() if s.revoked_at else None,
+                "created_at": s.created_at.isoformat()
+                if s.created_at
+                else None,
+                "last_seen_at": s.last_seen_at.isoformat()
+                if s.last_seen_at
+                else None,
+                "expires_at": s.expires_at.isoformat()
+                if s.expires_at
+                else None,
+                "revoked_at": s.revoked_at.isoformat()
+                if s.revoked_at
+                else None,
             }
             for s in self.store.list_sessions(user.id)
         ]
@@ -311,12 +402,16 @@ class AuthService:
         session = self.store.get_session(session_id)
         if session and session.user_id == user.id:
             self.store.revoke_session(session_id, "user_revoked")
-            self.store.audit("session_revoked", user_id=user.id, session_id=session_id)
+            self.store.audit(
+                "session_revoked", user_id=user.id, session_id=session_id
+            )
             self.store.db.commit()
 
     def start_totp_setup(self, *, user: CurrentUser) -> dict[str, str]:
         secret = generate_totp_secret()
-        method = self.store.create_totp_method(user_id=user.id, secret_ciphertext=secret)
+        method = self.store.create_totp_method(
+            user_id=user.id, secret_ciphertext=secret
+        )
         self.store.audit("mfa_totp_setup_started", user_id=user.id)
         self.store.db.commit()
         return {
@@ -328,9 +423,15 @@ class AuthService:
             ),
         }
 
-    def confirm_totp_setup(self, *, user: CurrentUser, method_id: str, code: str) -> dict[str, list[str]]:
+    def confirm_totp_setup(
+        self, *, user: CurrentUser, method_id: str, code: str
+    ) -> dict[str, list[str]]:
         method = self.store.get_mfa_method(method_id, user.id)
-        if not method or method.method_type != "totp" or not method.secret_ciphertext:
+        if (
+            not method
+            or method.method_type != "totp"
+            or not method.secret_ciphertext
+        ):
             raise MfaInvalidError()
         ok, step = verify_totp(
             secret=method.secret_ciphertext,
@@ -344,7 +445,9 @@ class AuthService:
         method.is_enabled = True
         method.confirmed_at = utcnow()
         method.last_used_at = utcnow()
-        self.store.mark_totp_step_used(user_id=user.id, method_id=method.id, time_step=step)
+        self.store.mark_totp_step_used(
+            user_id=user.id, method_id=method.id, time_step=step
+        )
         codes = [
             generate_recovery_code(self.settings.mfa_recovery_code_length)
             for _ in range(self.settings.mfa_recovery_code_count)
@@ -362,14 +465,25 @@ class AuthService:
                 {
                     "id": method.id,
                     "type": method.method_type,
-                    "confirmed_at": method.confirmed_at.isoformat() if method.confirmed_at else None,
-                    "last_used_at": method.last_used_at.isoformat() if method.last_used_at else None,
+                    "confirmed_at": method.confirmed_at.isoformat()
+                    if method.confirmed_at
+                    else None,
+                    "last_used_at": method.last_used_at.isoformat()
+                    if method.last_used_at
+                    else None,
                 }
                 for method in methods
             ],
         }
 
-    def _issue_auth(self, *, user, remember_me: bool, ip: str | None, user_agent: str | None) -> AuthResult:
+    def _issue_auth(
+        self,
+        *,
+        user,
+        remember_me: bool,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> AuthResult:
         session_ttl = (
             self.settings.remember_session_ttl_seconds
             if remember_me
@@ -381,7 +495,10 @@ class AuthService:
             else self.settings.refresh_token_ttl_seconds
         )
         session = self.store.create_session(
-            user_id=user.id, ttl_seconds=session_ttl, ip=ip, user_agent=user_agent
+            user_id=user.id,
+            ttl_seconds=session_ttl,
+            ip=ip,
+            user_agent=user_agent,
         )
         refresh_token, _ = self.store.create_refresh_token(
             session_id=session.id, ttl_seconds=refresh_ttl
@@ -402,13 +519,17 @@ class AuthService:
     def _raise_if_locked(self, user) -> None:
         locked_until = ensure_aware_utc(user.locked_until)
         if locked_until and locked_until > utcnow():
-            remaining = math.ceil((locked_until - utcnow()).total_seconds() / 60)
+            remaining = math.ceil(
+                (locked_until - utcnow()).total_seconds() / 60
+            )
             raise AccountLockedError(remaining)
         if locked_until and locked_until <= utcnow():
             user.locked_until = None
             user.failed_login_attempts = 0
 
-    def _verify_totp_for_user(self, user_id: int, code: str, challenge_id: str | None) -> bool:
+    def _verify_totp_for_user(
+        self, user_id: int, code: str, challenge_id: str | None
+    ) -> bool:
         for method in self.store.enabled_mfa_methods(user_id):
             if method.method_type != "totp" or not method.secret_ciphertext:
                 continue
@@ -419,8 +540,12 @@ class AuthService:
                 interval_seconds=self.settings.mfa_totp_interval_seconds,
                 valid_window=self.settings.mfa_totp_valid_window,
             )
-            if ok and step is not None and not self.store.is_totp_step_used(
-                user_id=user_id, method_id=method.id, time_step=step
+            if (
+                ok
+                and step is not None
+                and not self.store.is_totp_step_used(
+                    user_id=user_id, method_id=method.id, time_step=step
+                )
             ):
                 method.last_used_at = utcnow()
                 self.store.mark_totp_step_used(

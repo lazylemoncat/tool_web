@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models.theme import UserTheme
-from ..schemas.theme import ThemeCreate, ThemeUpdate, ThemeOut, ThemeFullOut
 from ..middleware.auth import get_current_user
+from ..models.theme import UserTheme
 from ..models.user import User
+from ..schemas.theme import ThemeCreate, ThemeFullOut, ThemeOut, ThemeUpdate
 
 router = APIRouter(prefix="/api/v1/themes", tags=["themes"])
 
@@ -27,7 +27,9 @@ def list_themes(
     )
 
 
-@router.post("", response_model=ThemeFullOut, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "", response_model=ThemeFullOut, status_code=status.HTTP_201_CREATED
+)
 def create_theme(
     body: ThemeCreate,
     db: Session = Depends(get_db),

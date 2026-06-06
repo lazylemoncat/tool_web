@@ -15,7 +15,9 @@ class TokenService:
     def __init__(self, settings: AuthSettings):
         self.settings = settings
 
-    def create_access_token(self, *, user_id: int, username: str, session_id: str) -> str:
+    def create_access_token(
+        self, *, user_id: int, username: str, session_id: str
+    ) -> str:
         now = utcnow()
         payload = {
             "sub": str(user_id),
@@ -26,7 +28,8 @@ class TokenService:
             "aud": self.settings.jwt_audience,
             "iat": now,
             "nbf": now,
-            "exp": now + timedelta(seconds=self.settings.access_token_ttl_seconds),
+            "exp": now
+            + timedelta(seconds=self.settings.access_token_ttl_seconds),
             "jti": secrets.token_urlsafe(16),
         }
         return jwt.encode(
@@ -43,7 +46,19 @@ class TokenService:
                 algorithms=[self.settings.jwt_algorithm],
                 issuer=self.settings.jwt_issuer,
                 audience=self.settings.jwt_audience,
-                options={"require": ["sub", "sid", "typ", "iat", "nbf", "exp", "iss", "aud", "jti"]},
+                options={
+                    "require": [
+                        "sub",
+                        "sid",
+                        "typ",
+                        "iat",
+                        "nbf",
+                        "exp",
+                        "iss",
+                        "aud",
+                        "jti",
+                    ]
+                },
             )
         except Exception as exc:
             raise InvalidTokenError() from exc

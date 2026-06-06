@@ -73,28 +73,60 @@ class AuthSettings:
             jwt_algorithm=os.getenv("JWT_ALGORITHM", "HS256"),
             jwt_issuer=os.getenv("JWT_ISSUER", "tool-web"),
             jwt_audience=os.getenv("JWT_AUDIENCE", "tool-web-api"),
-            access_token_ttl_seconds=_int_env("AUTH_ACCESS_TTL_SECONDS", 15 * 60),
-            session_ttl_seconds=_int_env("AUTH_SESSION_TTL_SECONDS", 24 * 60 * 60),
-            remember_session_ttl_seconds=_int_env("AUTH_REMEMBER_SESSION_TTL_SECONDS", 30 * 24 * 60 * 60),
-            refresh_token_ttl_seconds=_int_env("AUTH_REFRESH_TTL_SECONDS", 24 * 60 * 60),
-            remember_refresh_token_ttl_seconds=_int_env("AUTH_REMEMBER_REFRESH_TTL_SECONDS", 30 * 24 * 60 * 60),
-            access_cookie_name=os.getenv("AUTH_ACCESS_COOKIE_NAME", "access_token"),
-            refresh_cookie_name=os.getenv("AUTH_REFRESH_COOKIE_NAME", "refresh_token"),
+            access_token_ttl_seconds=_int_env(
+                "AUTH_ACCESS_TTL_SECONDS", 15 * 60
+            ),
+            session_ttl_seconds=_int_env(
+                "AUTH_SESSION_TTL_SECONDS", 24 * 60 * 60
+            ),
+            remember_session_ttl_seconds=_int_env(
+                "AUTH_REMEMBER_SESSION_TTL_SECONDS", 30 * 24 * 60 * 60
+            ),
+            refresh_token_ttl_seconds=_int_env(
+                "AUTH_REFRESH_TTL_SECONDS", 24 * 60 * 60
+            ),
+            remember_refresh_token_ttl_seconds=_int_env(
+                "AUTH_REMEMBER_REFRESH_TTL_SECONDS", 30 * 24 * 60 * 60
+            ),
+            access_cookie_name=os.getenv(
+                "AUTH_ACCESS_COOKIE_NAME", "access_token"
+            ),
+            refresh_cookie_name=os.getenv(
+                "AUTH_REFRESH_COOKIE_NAME", "refresh_token"
+            ),
             csrf_cookie_name=os.getenv("AUTH_CSRF_COOKIE_NAME", "csrf_token"),
-            csrf_header_name=os.getenv("AUTH_CSRF_HEADER_NAME", "X-CSRF-Token"),
+            csrf_header_name=os.getenv(
+                "AUTH_CSRF_HEADER_NAME", "X-CSRF-Token"
+            ),
             cookie_path=os.getenv("AUTH_COOKIE_PATH", "/api"),
-            refresh_cookie_path=os.getenv("AUTH_REFRESH_COOKIE_PATH", "/api/v1/auth/refresh"),
-            cookie_secure=_bool_env("AUTH_COOKIE_SECURE", cookie_secure_default),
+            refresh_cookie_path=os.getenv(
+                "AUTH_REFRESH_COOKIE_PATH", "/api/v1/auth/refresh"
+            ),
+            cookie_secure=_bool_env(
+                "AUTH_COOKIE_SECURE", cookie_secure_default
+            ),
             cookie_samesite=os.getenv("AUTH_COOKIE_SAMESITE", "strict"),  # type: ignore[arg-type]
             cookie_domain=os.getenv("AUTH_COOKIE_DOMAIN") or None,
             max_login_failures=_int_env("AUTH_MAX_LOGIN_FAILURES", 5),
-            account_lock_seconds=_int_env("AUTH_ACCOUNT_LOCK_SECONDS", 15 * 60),
-            rate_limit_window_seconds=_int_env("AUTH_RATE_LIMIT_WINDOW_SECONDS", 60),
-            rate_limit_max_requests=_int_env("AUTH_RATE_LIMIT_MAX_REQUESTS", 30),
+            account_lock_seconds=_int_env(
+                "AUTH_ACCOUNT_LOCK_SECONDS", 15 * 60
+            ),
+            rate_limit_window_seconds=_int_env(
+                "AUTH_RATE_LIMIT_WINDOW_SECONDS", 60
+            ),
+            rate_limit_max_requests=_int_env(
+                "AUTH_RATE_LIMIT_MAX_REQUESTS", 30
+            ),
             password_min_length=_int_env("AUTH_PASSWORD_MIN_LENGTH", 8),
-            password_require_letter=_bool_env("AUTH_PASSWORD_REQUIRE_LETTER", True),
-            password_require_digit=_bool_env("AUTH_PASSWORD_REQUIRE_DIGIT", True),
-            mfa_secret_encryption_key=os.getenv("MFA_SECRET_ENCRYPTION_KEY", ""),
+            password_require_letter=_bool_env(
+                "AUTH_PASSWORD_REQUIRE_LETTER", True
+            ),
+            password_require_digit=_bool_env(
+                "AUTH_PASSWORD_REQUIRE_DIGIT", True
+            ),
+            mfa_secret_encryption_key=os.getenv(
+                "MFA_SECRET_ENCRYPTION_KEY", ""
+            ),
         )
         settings.validate()
         return settings
@@ -104,8 +136,13 @@ class AuthSettings:
             raise ValueError("JWT_SECRET must be at least 32 characters")
         if self.environment == "production" and not self.cookie_secure:
             raise ValueError("AUTH_COOKIE_SECURE must be true in production")
-        if self.environment == "production" and not self.mfa_secret_encryption_key:
-            raise ValueError("MFA_SECRET_ENCRYPTION_KEY is required in production")
+        if (
+            self.environment == "production"
+            and not self.mfa_secret_encryption_key
+        ):
+            raise ValueError(
+                "MFA_SECRET_ENCRYPTION_KEY is required in production"
+            )
 
 
 _settings: AuthSettings | None = None

@@ -582,3 +582,7 @@ services:
 Authentication state is owned by `frontend/src/context/AuthContext.tsx`, while the route guard and authenticated shell are mounted from `frontend/src/app/layout.tsx`. Older references in historical sections to Umi, Vite, `frontend/src/App.tsx`, or `frontend/src/main.tsx` mean pre-Next migration entries.
 
 The current Next.js login page is `frontend/src/app/login/page.tsx`. It calls `frontend/src/lib/api.ts` directly, does not auto-refresh on `/api/v1/auth/login` 401 responses, and supports the `mfa_required` response by collecting a TOTP code or recovery code before calling `/api/v1/auth/mfa/verify`.
+
+## Backend Type Checking
+
+Auth ORM models in `backend/src/auth/adapters/sqlalchemy_models.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. User preferences are stored through `UserPreference` and should be accessed through `AuthStore.get_preferences()` / `AuthStore.update_preferences()` instead of a `User.preferences` attribute.

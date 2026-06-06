@@ -1,33 +1,31 @@
-"""
-认证路由: /api/v1/auth/register, /api/v1/auth/login, /me, /preferences, /password, /account.
-"""
+"""Authentication routes."""
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.orm import Session
 
+from ..auth.adapters.stores import AuthStore
 from ..database import get_db
 from ..middleware.auth import get_current_user
 from ..middleware.logging import get_security_logger
 from ..models.user import User
 from ..schemas.auth import (
-    RegisterRequest,
-    LoginRequest,
     AuthResponse,
-    UpdatePreferencesRequest,
     ChangePasswordRequest,
     DeleteAccountRequest,
+    LoginRequest,
+    RegisterRequest,
+    UpdatePreferencesRequest,
 )
 from ..utils.errors import BadRequestError, ConflictError, UnauthorizedError
 from ..utils.security import (
-    hash_password,
-    verify_password,
-    create_token,
-    decode_token,
     JWT_EXPIRE_HOURS,
     JWT_EXPIRE_HOURS_REMEMBER,
+    create_token,
+    hash_password,
+    verify_password,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -37,17 +35,21 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
 
-def _auth_response(user: User, remember_me: bool = False) -> AuthResponse:
+def _auth_response(user: User, db: Session, remember_me: bool = False) -> AuthResponse:
     token = create_token(user.id, user.username, remember_me=remember_me)
     return AuthResponse(
         token=token,
         username=user.username,
-        preferences=user.preferences or {},
+        preferences=AuthStore(db).get_preferences(user.id),
     )
 
 
-def _set_token_cookie(response: Response, token: str, remember_me: bool = False):
-    max_age = (JWT_EXPIRE_HOURS_REMEMBER if remember_me else JWT_EXPIRE_HOURS) * 3600
+def _set_token_cookie(
+    response: Response, token: str, remember_me: bool = False
+):
+    max_age = (
+        JWT_EXPIRE_HOURS_REMEMBER if remember_me else JWT_EXPIRE_HOURS
+    ) * 3600
     response.set_cookie(
         key="token",
         value=token,
@@ -75,7 +77,12 @@ def _get_client_ip(request: Request) -> str:
 
 
 @router.post("/register", response_model=AuthResponse, status_code=201)
-def register(body: RegisterRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def register(
+    body: RegisterRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     existing = db.query(User).filter(User.username == body.username).first()
     if existing:
         raise ConflictError("Username already exists")
@@ -93,22 +100,30 @@ def register(body: RegisterRequest, request: Request, response: Response, db: Se
         user.username,
         _get_client_ip(request),
     )
-    auth_resp = _auth_response(user)
+    auth_resp = _auth_response(user, db)
     _set_token_cookie(response, auth_resp.token)
     return auth_resp
 
 
 @router.post("/login", response_model=AuthResponse)
-def login(body: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)):
+def login(
+    body: LoginRequest,
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.username == body.username).first()
 
     # Check account lockout
     if user and user.locked_until:
-        now_utc = datetime.now(timezone.utc)
+        now_utc = datetime.now(UTC)
         if user.locked_until > now_utc:
-            remaining = math.ceil((user.locked_until - now_utc).total_seconds() / 60)
+            remaining = math.ceil(
+                (user.locked_until - now_utc).total_seconds() / 60
+            )
             raise BadRequestError(
-                f"Account locked due to too many failed attempts, please try again in {remaining} minutes"
+                "Account locked due to too many failed attempts, "
+                f"please try again in {remaining} minutes"
             )
         else:
             # Lockout period expired, reset
@@ -119,7 +134,9 @@ def login(body: LoginRequest, request: Request, response: Response, db: Session 
         if user:
             user.failed_login_attempts += 1
             if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
-                user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)
+                user.locked_until = datetime.now(UTC) + timedelta(
+                    minutes=LOCKOUT_MINUTES
+                )
                 sec_log.warning(
                     "event=account_locked username=%s ip=%s attempts=%d",
                     user.username,
@@ -144,14 +161,17 @@ def login(body: LoginRequest, request: Request, response: Response, db: Session 
         user.username,
         _get_client_ip(request),
     )
-    auth_resp = _auth_response(user, remember_me=body.remember_me)
+    auth_resp = _auth_response(user, db, remember_me=body.remember_me)
     _set_token_cookie(response, auth_resp.token, remember_me=body.remember_me)
     return auth_resp
 
 
 @router.get("/me", response_model=AuthResponse)
-def me(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return _auth_response(current_user)
+def me(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return _auth_response(current_user, db)
 
 
 @router.put("/preferences", status_code=204)
@@ -160,7 +180,7 @@ def update_preferences(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    current_user.preferences = body.preferences
+    AuthStore(db).update_preferences(current_user.id, body.preferences)
     db.commit()
 
 
@@ -173,7 +193,10 @@ def change_password(
 ):
     if not verify_password(body.old_password, current_user.password_hash):
         sec_log.warning(
-            "event=password_change_failure username=%s ip=%s reason=wrong_old_password",
+            (
+                "event=password_change_failure username=%s ip=%s "
+                "reason=wrong_old_password"
+            ),
             current_user.username,
             _get_client_ip(request),
         )
@@ -189,7 +212,9 @@ def change_password(
 
 
 @router.post("/refresh", response_model=AuthResponse)
-def refresh_token(request: Request, response: Response, db: Session = Depends(get_db)):
+def refresh_token(
+    request: Request, response: Response, db: Session = Depends(get_db)
+):
     token = request.cookies.get("token")
     if not token:
         raise UnauthorizedError("Invalid or expired token")
@@ -206,9 +231,13 @@ def refresh_token(request: Request, response: Response, db: Session = Depends(ge
     if not user:
         raise UnauthorizedError("User not found")
 
-    sec_log.info("event=token_refresh username=%s ip=%s", user.username, _get_client_ip(request))
+    sec_log.info(
+        "event=token_refresh username=%s ip=%s",
+        user.username,
+        _get_client_ip(request),
+    )
 
-    auth_resp = _auth_response(user)
+    auth_resp = _auth_response(user, db)
     _set_token_cookie(response, auth_resp.token)
     return auth_resp
 

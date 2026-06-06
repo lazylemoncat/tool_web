@@ -1,6 +1,6 @@
 """FastAPI router for auth APIs."""
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, Request, Response
 
 from ..core.models import AuthResult, CurrentUser
 from ..core.service import AuthService
@@ -30,7 +30,9 @@ def _client_ip(request: Request) -> str:
 
 
 def _user_response(user: CurrentUser) -> AuthUserResponse:
-    return AuthUserResponse(id=user.id, username=user.username, is_admin=user.is_admin)
+    return AuthUserResponse(
+        id=user.id, username=user.username, is_admin=user.is_admin
+    )
 
 
 def _auth_response(result: AuthResult) -> AuthResponse:
@@ -260,4 +262,6 @@ def confirm_totp(
     current_user: CurrentUser = Depends(require_user),
     auth: AuthService = Depends(get_auth_service),
 ):
-    return auth.confirm_totp_setup(user=current_user, method_id=body.method_id, code=body.code)
+    return auth.confirm_totp_setup(
+        user=current_user, method_id=body.method_id, code=body.code
+    )

@@ -3,25 +3,27 @@ FastAPI 入口: CORS 配置, 路由注册, 日志中间件, 数据库初始化.
 """
 
 import os
-
 from contextlib import asynccontextmanager
-from dotenv import load_dotenv, find_dotenv
+from typing import cast
 
-load_dotenv(find_dotenv())
+from dotenv import find_dotenv, load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.types import ExceptionHandler
 
 from .auth.core.errors import AuthError
 from .auth.fastapi_adapter.exceptions import auth_error_handler
 from .auth.fastapi_adapter.router import router as auth_router
 from .database import init_db
 from .middleware.logging import log_requests
-from .routers import folder, todo, theme, tag, finance
+from .routers import finance, folder, tag, theme, todo
 from .utils.errors import AppError, app_error_handler
 from .utils.rate_limit import rate_limit_middleware
+
+load_dotenv(find_dotenv())
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:8003"
@@ -53,10 +55,12 @@ app.middleware("http")(log_requests)
 app.middleware("http")(rate_limit_middleware)
 
 
-async def validation_error_handler(request: Request, exc: RequestValidationError):
+async def validation_error_handler(
+    request: Request, exc: RequestValidationError
+):
     messages = []
     for err in exc.errors():
-        loc = " -> ".join(str(l) for l in err["loc"])
+        loc = " -> ".join(str(location) for location in err["loc"])
         messages.append(f"{loc}: {err['msg']}")
     return JSONResponse(
         status_code=422,
@@ -71,10 +75,10 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-app.add_exception_handler(RequestValidationError, validation_error_handler)
-app.add_exception_handler(HTTPException, http_exception_handler)
-app.add_exception_handler(AppError, app_error_handler)
-app.add_exception_handler(AuthError, auth_error_handler)
+app.add_exception_handler(RequestValidationError, cast(ExceptionHandler, validation_error_handler))
+app.add_exception_handler(HTTPException, cast(ExceptionHandler, http_exception_handler))
+app.add_exception_handler(AppError, cast(ExceptionHandler, app_error_handler))
+app.add_exception_handler(AuthError, cast(ExceptionHandler, auth_error_handler))
 
 app.include_router(auth_router)
 app.include_router(folder.router)

@@ -1,0 +1,170 @@
+# Purpose: build, publish, and run the test Docker deployment from the dev branch.
+name: Dev Test Build And Run
+
+on:
+  push:
+    branches:
+      - dev
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dev-test-build-run
+  cancel-in-progress: true
+
+jobs:
+  quality_check:
+    name: Backend quality checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Sync backend dependencies
+        working-directory: backend
+        run: uv sync --frozen --extra dev
+
+      - name: Run ruff
+        working-directory: backend
+        run: uv run --with ruff ruff check src tests
+
+      - name: Run mypy
+        working-directory: backend
+        run: uv run --with mypy mypy --ignore-missing-imports src tests
+
+  deploy:
+    name: Build and run test environment
+    runs-on: ubuntu-latest
+    needs: quality_check
+    env:
+      DOCKER_USER: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      TEST_ADMIN_PASSWORD: ${{ secrets.TEST_ADMIN_PASSWORD }}
+      TEST_ALLOWED_ORIGINS: ${{ vars.TEST_ALLOWED_ORIGINS }}
+      TEST_BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/tool-web-backend:dev
+      TEST_BACKEND_PORT: ${{ vars.TEST_BACKEND_PORT || '18004' }}
+      TEST_COMPOSE_PROJECT: ${{ vars.TEST_COMPOSE_PROJECT || 'tool-web-test' }}
+      TEST_DOCKER_API_PROXY_TARGET: ${{ vars.TEST_DOCKER_API_PROXY_TARGET || 'http://backend:8000' }}
+      TEST_FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/tool-web-frontend:dev
+      TEST_FRONTEND_PORT: ${{ vars.TEST_FRONTEND_PORT || '18003' }}
+      TEST_JWT_SECRET: ${{ secrets.TEST_JWT_SECRET }}
+      TEST_REMOTE_PATH: ${{ vars.TEST_REMOTE_PATH || '/opt/tool_web_test' }}
+      TEST_RESET_AUTH_SCHEMA: ${{ vars.TEST_RESET_AUTH_SCHEMA || '0' }}
+      TEST_SSH_HOST: ${{ secrets.TEST_SSH_HOST }}
+      TEST_SSH_PRIVATE_KEY: ${{ secrets.TEST_SSH_PRIVATE_KEY }}
+      TEST_SSH_PORT: ${{ vars.TEST_SSH_PORT || '22' }}
+      TEST_SSH_USER: ${{ secrets.TEST_SSH_USER || 'root' }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=0
+          for name in DOCKER_USER DOCKERHUB_TOKEN TEST_BACKEND_IMAGE TEST_BACKEND_PORT TEST_COMPOSE_PROJECT TEST_FRONTEND_IMAGE TEST_FRONTEND_PORT TEST_JWT_SECRET TEST_REMOTE_PATH TEST_SSH_HOST TEST_SSH_PRIVATE_KEY TEST_SSH_PORT TEST_SSH_USER; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required configuration: ${name}"
+              missing=1
+            fi
+          done
+          exit "${missing}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build test images
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build --build-arg API_PROXY_TARGET="${TEST_DOCKER_API_PROXY_TARGET}" -t "${TEST_FRONTEND_IMAGE}" frontend
+          docker build -t "${TEST_BACKEND_IMAGE}" backend
+
+      - name: Push test images
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker push "${TEST_FRONTEND_IMAGE}"
+          docker push "${TEST_BACKEND_IMAGE}"
+
+      - name: Configure SSH
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${TEST_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p "${TEST_SSH_PORT}" -H "${TEST_SSH_HOST}" >> ~/.ssh/known_hosts
+
+      - name: Prepare test Compose files
+        shell: bash
+        run: |
+          set -euo pipefail
+          allowed_origins="${TEST_ALLOWED_ORIGINS:-http://localhost:${TEST_FRONTEND_PORT}}"
+          {
+            printf 'DOCKER_USER=%s\n' "${DOCKER_USER}"
+            printf 'TEST_FRONTEND_IMAGE=%s\n' "${TEST_FRONTEND_IMAGE}"
+            printf 'TEST_BACKEND_IMAGE=%s\n' "${TEST_BACKEND_IMAGE}"
+            printf 'TEST_FRONTEND_PORT=%s\n' "${TEST_FRONTEND_PORT}"
+            printf 'TEST_BACKEND_PORT=%s\n' "${TEST_BACKEND_PORT}"
+            printf 'TEST_DOCKER_API_PROXY_TARGET=%s\n' "${TEST_DOCKER_API_PROXY_TARGET}"
+            printf 'JWT_SECRET=%s\n' "${TEST_JWT_SECRET}"
+            printf 'ADMIN_PASSWORD=%s\n' "${TEST_ADMIN_PASSWORD}"
+            printf 'ALLOWED_ORIGINS=%s\n' "${allowed_origins}"
+          } > .env.test
+          cat > docker-compose.test.yml <<'COMPOSE'
+          services:
+            frontend:
+              image: ${TEST_FRONTEND_IMAGE}
+              ports:
+                - "${TEST_FRONTEND_PORT}:3000"
+              environment:
+                - API_PROXY_TARGET=${TEST_DOCKER_API_PROXY_TARGET}
+              depends_on:
+                - backend
+              restart: unless-stopped
+
+            backend:
+              image: ${TEST_BACKEND_IMAGE}
+              ports:
+                - "${TEST_BACKEND_PORT}:8000"
+              volumes:
+                - ./backend/test-data:/app/data
+              environment:
+                - DATABASE_URL=sqlite:///./data/tool_web_test.db
+                - JWT_SECRET=${JWT_SECRET}
+                - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
+                - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+              restart: unless-stopped
+          COMPOSE
+
+      - name: Deploy test containers
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh -p "${TEST_SSH_PORT}" "${TEST_SSH_USER}@${TEST_SSH_HOST}" "mkdir -p '${TEST_REMOTE_PATH}/backend/test-data'"
+          scp -P "${TEST_SSH_PORT}" docker-compose.test.yml .env.test "${TEST_SSH_USER}@${TEST_SSH_HOST}:${TEST_REMOTE_PATH}/"
+          ssh -p "${TEST_SSH_PORT}" "${TEST_SSH_USER}@${TEST_SSH_HOST}" "
+            set -e
+            cd '${TEST_REMOTE_PATH}'
+            docker compose --env-file .env.test -p '${TEST_COMPOSE_PROJECT}' -f docker-compose.test.yml pull
+            docker compose --env-file .env.test -p '${TEST_COMPOSE_PROJECT}' -f docker-compose.test.yml up -d
+            if [ '${TEST_RESET_AUTH_SCHEMA}' = '1' ]; then
+              docker compose --env-file .env.test -p '${TEST_COMPOSE_PROJECT}' -f docker-compose.test.yml exec -T backend /app/.venv/bin/python -c 'from src.database import engine, _seed_admin; from src.models.todo import Base; import src.models.user, src.models.theme, src.models.tag, src.models.finance; Base.metadata.drop_all(bind=engine); Base.metadata.create_all(bind=engine); _seed_admin(); print(\"Auth schema reset complete.\")'
+            fi
+          "
