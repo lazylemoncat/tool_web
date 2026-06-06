@@ -13,6 +13,7 @@ from .models.todo import Base
 from .models.user import User
 from .models.theme import UserTheme  # noqa: F401  register with Base.metadata
 from .models.tag import Tag  # noqa: F401  register with Base.metadata
+from .models.finance import Ledger, Account, FinanceCategory, FinanceTag, Transaction, SplitItem, Event, Budget, Attachment, ResourceRelation  # noqa: F401
 from .utils.security import hash_password
 
 logger = logging.getLogger("tool_web.database")
@@ -35,7 +36,7 @@ def _migrate_schema():
         return
 
     existing_tables = set(inspector.get_table_names())
-    new_tables = {"user_themes", "tags", "todo_tags", "recurrence_rules"}
+    new_tables = {"user_themes", "tags", "todo_tags", "recurrence_rules", "ledgers", "accounts", "finance_categories", "finance_tags", "transaction_tags", "transactions", "split_items", "events", "budgets", "attachments", "transaction_attachments", "resource_relations"}
     if not new_tables.issubset(existing_tables):
         Base.metadata.create_all(bind=engine)
 
@@ -125,6 +126,37 @@ def _migrate_schema():
                 logger.info(f"Migrating schema: creating index {idx_name}")
                 conn.execute(text(idx_sql))
                 conn.commit()
+
+
+    if "accounts" in inspector.get_table_names():
+        accounts_cols = {c["name"] for c in inspector.get_columns("accounts")}
+        if "type" in accounts_cols:
+            info = inspector.get_columns("accounts")
+            for c in info:
+                if c["name"] == "type" and "VARCHAR" not in str(c.get("type", "")).upper():
+                    logger.info("Migrating schema: rebuilding accounts table to remove enum constraint on type column")
+                    with engine.connect() as conn:
+                        conn.execute(text("""
+                            CREATE TABLE IF NOT EXISTS _accounts_new (
+                                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                                ledger_id INTEGER NOT NULL REFERENCES ledgers(id) ON DELETE CASCADE,
+                                name VARCHAR(50) NOT NULL,
+                                type VARCHAR(50) NOT NULL DEFAULT 'cash',
+                                currency VARCHAR(10) DEFAULT 'CNY',
+                                initial_balance NUMERIC(12, 2) DEFAULT 0,
+                                archived BOOLEAN DEFAULT 0,
+                                created_at DATETIME,
+                                updated_at DATETIME
+                            )
+                        """))
+                        conn.execute(text("INSERT INTO _accounts_new SELECT id, user_id, ledger_id, name, type, currency, initial_balance, archived, created_at, updated_at FROM accounts"))
+                        conn.execute(text("DROP TABLE accounts"))
+                        conn.execute(text("ALTER TABLE _accounts_new RENAME TO accounts"))
+                        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_accounts_user_id ON accounts(user_id)"))
+                        conn.execute(text("CREATE INDEX IF NOT EXISTS ix_accounts_ledger_id ON accounts(ledger_id)"))
+                        conn.commit()
+                    break
 
 
 def _seed_admin():
