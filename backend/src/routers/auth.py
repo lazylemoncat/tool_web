@@ -35,7 +35,9 @@ MAX_LOGIN_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
 
 
-def _auth_response(user: User, db: Session, remember_me: bool = False) -> AuthResponse:
+def _auth_response(
+    user: User, db: Session, remember_me: bool = False
+) -> AuthResponse:
     token = create_token(user.id, user.username, remember_me=remember_me)
     return AuthResponse(
         token=token,

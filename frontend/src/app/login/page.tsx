@@ -117,7 +117,7 @@ export default function LoginPage() {
         setMfaCode('');
         return;
       }
-      window.location.href = '/todo';
+      window.location.href = '/';
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : '登录失败，请重试',
@@ -138,7 +138,7 @@ export default function LoginPage() {
     setSubmitting(true);
     try {
       await verifyMfa(mfaChallenge.challengeId, mfaMethod, mfaCode.trim());
-      window.location.href = '/todo';
+      window.location.href = '/';
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : 'MFA 验证失败，请重试',

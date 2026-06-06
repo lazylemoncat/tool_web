@@ -34,9 +34,9 @@ from ..schemas.finance import (
     BudgetCreate,
     BudgetOut,
     BudgetUpdate,
-    CategoryStatsItem,
     CategoryCreate,
     CategoryOut,
+    CategoryStatsItem,
     CategoryUpdate,
     DashboardSummary,
     EventCreate,
@@ -53,11 +53,11 @@ from ..schemas.finance import (
     ReorderBatch,
     SplitItemOut,
     StatsResponse,
-    TrendStatsItem,
     TransactionCreate,
     TransactionListResponse,
     TransactionOut,
     TransactionUpdate,
+    TrendStatsItem,
 )
 
 router = APIRouter(prefix="/api/v1/finance", tags=["finance"])
@@ -1007,11 +1007,19 @@ def event_summary(
     amounts = [tx.amount or Decimal("0") for tx in txs]
     event_out.total_amount = sum(amounts, Decimal("0"))
     total_expense = sum(
-        (a for tx, a in zip(txs, amounts) if tx.type == TransactionType.expense),
+        (
+            a
+            for tx, a in zip(txs, amounts)
+            if tx.type == TransactionType.expense
+        ),
         Decimal("0"),
     )
     total_income = sum(
-        (a for tx, a in zip(txs, amounts) if tx.type == TransactionType.income),
+        (
+            a
+            for tx, a in zip(txs, amounts)
+            if tx.type == TransactionType.income
+        ),
         Decimal("0"),
     )
 

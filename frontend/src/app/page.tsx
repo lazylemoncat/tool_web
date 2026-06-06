@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import WorkspaceHome from '@/components/workspace/WorkspaceHome';
 
 export default function Home() {
-  redirect('/todo');
+  return <WorkspaceHome />;
 }

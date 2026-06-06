@@ -107,9 +107,36 @@ jobs:
         run: |
           set -euo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${TEST_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          key_file="${HOME}/.ssh/tool_web_test_key"
+          if [[ "${TEST_SSH_PRIVATE_KEY}" == *\\n* ]]; then
+            printf '%b\n' "${TEST_SSH_PRIVATE_KEY}" > "${key_file}"
+          else
+            printf '%s\n' "${TEST_SSH_PRIVATE_KEY}" > "${key_file}"
+          fi
+          if ! grep -q "PRIVATE KEY" "${key_file}"; then
+            echo "::error::TEST_SSH_PRIVATE_KEY must contain a private key, including BEGIN and END lines."
+            exit 1
+          fi
+          chmod 600 "${key_file}"
+          ssh-keygen -y -f "${key_file}" > "${key_file}.pub"
+          ssh-keygen -lf "${key_file}.pub"
           ssh-keyscan -p "${TEST_SSH_PORT}" -H "${TEST_SSH_HOST}" >> ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host tool-web-test
+            HostName ${TEST_SSH_HOST}
+            User ${TEST_SSH_USER}
+            Port ${TEST_SSH_PORT}
+            IdentityFile ${key_file}
+            IdentitiesOnly yes
+            BatchMode yes
+            PreferredAuthentications publickey
+            PasswordAuthentication no
+            NumberOfPasswordPrompts 0
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+          chmod 600 ~/.ssh/config
+          ssh -vvv -F ~/.ssh/config -o ConnectTimeout=10 tool-web-test "true"
 
       - name: Prepare test Compose files
         shell: bash
@@ -157,9 +184,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p "${TEST_SSH_PORT}" "${TEST_SSH_USER}@${TEST_SSH_HOST}" "mkdir -p '${TEST_REMOTE_PATH}/backend/test-data'"
-          scp -P "${TEST_SSH_PORT}" docker-compose.test.yml .env.test "${TEST_SSH_USER}@${TEST_SSH_HOST}:${TEST_REMOTE_PATH}/"
-          ssh -p "${TEST_SSH_PORT}" "${TEST_SSH_USER}@${TEST_SSH_HOST}" "
+
+          SSH_OPTS="-F ${HOME}/.ssh/config -o BatchMode=yes -o ConnectTimeout=10"
+
+          ssh ${SSH_OPTS} tool-web-test "mkdir -p '${TEST_REMOTE_PATH}/backend/test-data'"
+
+          scp -F "${HOME}/.ssh/config" docker-compose.test.yml .env.test "tool-web-test:${TEST_REMOTE_PATH}/"
+
+          ssh ${SSH_OPTS} tool-web-test "
             set -e
             cd '${TEST_REMOTE_PATH}'
             docker compose --env-file .env.test -p '${TEST_COMPOSE_PROJECT}' -f docker-compose.test.yml pull

@@ -104,9 +104,36 @@ jobs:
         run: |
           set -euo pipefail
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${RELEASE_SSH_PRIVATE_KEY}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
+          key_file="${HOME}/.ssh/tool_web_release_key"
+          if [[ "${RELEASE_SSH_PRIVATE_KEY}" == *\\n* ]]; then
+            printf '%b\n' "${RELEASE_SSH_PRIVATE_KEY}" > "${key_file}"
+          else
+            printf '%s\n' "${RELEASE_SSH_PRIVATE_KEY}" > "${key_file}"
+          fi
+          if ! grep -q "PRIVATE KEY" "${key_file}"; then
+            echo "::error::RELEASE_SSH_PRIVATE_KEY must contain a private key, including BEGIN and END lines."
+            exit 1
+          fi
+          chmod 600 "${key_file}"
+          ssh-keygen -y -f "${key_file}" > "${key_file}.pub"
+          ssh-keygen -lf "${key_file}.pub"
           ssh-keyscan -p "${RELEASE_SSH_PORT}" -H "${RELEASE_SSH_HOST}" >> ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<EOF
+          Host tool-web-release
+            HostName ${RELEASE_SSH_HOST}
+            User ${RELEASE_SSH_USER}
+            Port ${RELEASE_SSH_PORT}
+            IdentityFile ${key_file}
+            IdentitiesOnly yes
+            BatchMode yes
+            PreferredAuthentications publickey
+            PasswordAuthentication no
+            NumberOfPasswordPrompts 0
+            StrictHostKeyChecking yes
+            UserKnownHostsFile ~/.ssh/known_hosts
+          EOF
+          chmod 600 ~/.ssh/config
+          ssh -o ConnectTimeout=10 tool-web-release "true"
 
       - name: Prepare release environment file
         shell: bash
@@ -124,9 +151,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          ssh -p "${RELEASE_SSH_PORT}" "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}" "mkdir -p '${RELEASE_REMOTE_PATH}'"
-          scp -P "${RELEASE_SSH_PORT}" docker-compose.prod.yml .env.release "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}:${RELEASE_REMOTE_PATH}/"
-          ssh -p "${RELEASE_SSH_PORT}" "${RELEASE_SSH_USER}@${RELEASE_SSH_HOST}" "
+          ssh tool-web-release "mkdir -p '${RELEASE_REMOTE_PATH}'"
+          scp docker-compose.prod.yml .env.release "tool-web-release:${RELEASE_REMOTE_PATH}/"
+          ssh tool-web-release "
             set -e
             cd '${RELEASE_REMOTE_PATH}'
             mv .env.release .env

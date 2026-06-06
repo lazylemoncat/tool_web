@@ -43,6 +43,10 @@ Optional secrets:
 - `TEST_SSH_USER`, default `root`
 - `TEST_ADMIN_PASSWORD`, empty by default
 
+## SSH Authentication
+
+The deployment workflows write `*_SSH_PRIVATE_KEY` to a dedicated key file and force public-key authentication with `IdentitiesOnly yes`. `*_SSH_USER` defaults to `root`; when `Permission denied (publickey)` appears, compare the printed `ssh-keygen -lf` fingerprint with the public key in `/root/.ssh/authorized_keys` or the configured user's `~/.ssh/authorized_keys`.
+
 ## Optional Variables
 
 Release variables:

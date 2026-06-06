@@ -75,10 +75,17 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     )
 
 
-app.add_exception_handler(RequestValidationError, cast(ExceptionHandler, validation_error_handler))
-app.add_exception_handler(HTTPException, cast(ExceptionHandler, http_exception_handler))
+app.add_exception_handler(
+    RequestValidationError,
+    cast(ExceptionHandler, validation_error_handler),
+)
+app.add_exception_handler(
+    HTTPException, cast(ExceptionHandler, http_exception_handler)
+)
 app.add_exception_handler(AppError, cast(ExceptionHandler, app_error_handler))
-app.add_exception_handler(AuthError, cast(ExceptionHandler, auth_error_handler))
+app.add_exception_handler(
+    AuthError, cast(ExceptionHandler, auth_error_handler)
+)
 
 app.include_router(auth_router)
 app.include_router(folder.router)
