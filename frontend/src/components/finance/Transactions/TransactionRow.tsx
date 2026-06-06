@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Collapse from '@mui/material/Collapse';
+import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { TransactionOut } from '@/lib/financeTypes';
 import SubTransaction from './SubTransaction';
 
@@ -33,7 +34,11 @@ export default function TransactionRow({ transaction }: TransactionRowProps) {
         sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 2, px: 2.25, cursor: hasSubs ? 'pointer' : 'default', transition: 'background 0.1s', '&:hover': { bgcolor: '#FAFAFC' }, ...(hasSubs && expanded && { bgcolor: '#FAFAFC' }) }}
       >
         <Box sx={{ width: 38, height: 38, borderRadius: 2.5, bgcolor: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.0625rem', flexShrink: 0 }}>
-          {transaction.category?.icon || '💸'}
+          {transaction.category ? (
+            <MarkerIcon type={transaction.category.icon_type} value={transaction.category.icon_value} size={20} />
+          ) : (
+            <MarkerIcon type="emoji" value="💸" size={20} />
+          )}
         </Box>
 
         <Box sx={{ flex: 1, minWidth: 0 }}>

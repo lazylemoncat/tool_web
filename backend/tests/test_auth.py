@@ -1,3 +1,7 @@
+from src.auth.adapters.sqlalchemy_models import AuthMfaMethod, User
+from src.auth.adapters.stores import AuthStore
+
+
 def test_register(client):
     resp = client.post(
         "/api/v1/auth/register",
@@ -28,6 +32,74 @@ def test_register_duplicate(client):
         },
     )
     assert resp.status_code == 409
+
+
+def test_username_availability(client):
+    available = client.get(
+        "/api/v1/auth/username-availability",
+        params={"username": "newname"},
+    )
+    assert available.status_code == 200
+    assert available.json() == {"username": "newname", "available": True}
+
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "usedname",
+            "password": "password123",
+        },
+    )
+    taken = client.get(
+        "/api/v1/auth/username-availability",
+        params={"username": "usedname"},
+    )
+    assert taken.status_code == 200
+    assert taken.json() == {"username": "usedname", "available": False}
+
+
+def test_reset_password_with_recovery_code(client, db_session):
+    client.post(
+        "/api/v1/auth/register",
+        json={
+            "username": "resetuser",
+            "password": "password123",
+        },
+    )
+    user = db_session.query(User).filter(User.username == "resetuser").first()
+    assert user is not None
+    db_session.add(
+        AuthMfaMethod(
+            id="test-reset-mfa",
+            user_id=user.id,
+            method_type="totp",
+            is_enabled=True,
+        )
+    )
+    AuthStore(db_session).create_recovery_codes(
+        user_id=user.id,
+        codes=["RESET-CODE-1"],
+    )
+    db_session.commit()
+
+    reset_resp = client.post(
+        "/api/v1/auth/password/reset",
+        json={
+            "username": "resetuser",
+            "method": "recovery_code",
+            "code": "RESET-CODE-1",
+            "new_password": "newpass123",
+        },
+    )
+    assert reset_resp.status_code == 204
+
+    login_resp = client.post(
+        "/api/v1/auth/login",
+        json={
+            "username": "resetuser",
+            "password": "newpass123",
+        },
+    )
+    assert login_resp.status_code == 200
 
 
 def test_login_success(client):

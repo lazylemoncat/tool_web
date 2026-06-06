@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { TransactionOut } from '@/lib/financeTypes';
 
 interface TransactionDetailDrawerProps {
@@ -31,7 +32,11 @@ export default function TransactionDetailDrawer({ open, onClose, transaction, on
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: isIncome ? '#D1FAE5' : '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
-              {transaction.category?.icon || '💸'}
+              {transaction.category ? (
+                <MarkerIcon type={transaction.category.icon_type} value={transaction.category.icon_value} size={22} />
+              ) : (
+                <MarkerIcon type="emoji" value="💸" size={22} />
+              )}
             </Box>
             <Box>
               <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: 'text.primary', mb: 0.25 }}>{transaction.category?.name || '未分类'}</Typography>

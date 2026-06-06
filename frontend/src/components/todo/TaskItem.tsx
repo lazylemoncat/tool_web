@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { DragEventHandler } from 'react';
 import Box from '@mui/material/Box';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
@@ -22,6 +23,11 @@ interface TaskItemProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onCreateSubTask?: () => void;
+  dragOverPosition?: 'before' | 'after' | null;
+  onDragStart?: DragEventHandler<HTMLElement>;
+  onDragOver?: DragEventHandler<HTMLElement>;
+  onDrop?: DragEventHandler<HTMLElement>;
+  onDragEnd?: DragEventHandler<HTMLElement>;
 }
 
 function RoundCheckbox({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -40,6 +46,7 @@ export default function TaskItem({
   task, isSelected, isExpanded, multiSelectMode,
   onToggleComplete, onToggleSelect, onExpand, onClick,
   onEdit, onDelete, onCreateSubTask,
+  dragOverPosition = null, onDragStart, onDragOver, onDrop, onDragEnd,
 }: TaskItemProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
   const isOverdue = task.due_date ? dayjs(task.due_date).isBefore(dayjs(), 'day') && !task.is_completed : false;
@@ -48,13 +55,25 @@ export default function TaskItem({
 
   return (
     <>
-      <Box onClick={() => (multiSelectMode ? onToggleSelect() : onClick())}
+      <Box
+        onClick={() => (multiSelectMode ? onToggleSelect() : onClick())}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
         sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5, p: 1.75, bgcolor: 'background.paper', borderRadius: 3, border: '1.5px solid transparent', transition: 'all 0.15s', cursor: 'pointer',
           position: 'relative', opacity: task.is_completed ? 0.6 : 1,
           ...(isSelected && { borderColor: 'primary.main', bgcolor: 'oklch(90% 0.08 285)' }),
+          ...(dragOverPosition === 'before' ? { borderTopColor: 'primary.main' } : {}),
+          ...(dragOverPosition === 'after' ? { borderBottomColor: 'primary.main' } : {}),
           '&:hover': { borderColor: isSelected ? 'primary.main' : 'oklch(88% 0.01 275)', boxShadow: '0 1px 3px oklch(0% 0 0 / 0.08)' },
       }}>
-        <Box component="span" sx={{ width: 20, height: 20, flexShrink: 0, color: 'oklch(82% 0.01 275)', display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.25, cursor: 'grab', '&:active': { cursor: 'grabbing' } }}>
+        <Box
+          component="span"
+          draggable={Boolean(onDragStart)}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onClick={(e) => e.stopPropagation()}
+          sx={{ width: 20, height: 20, flexShrink: 0, color: 'oklch(82% 0.01 275)', display: 'flex', alignItems: 'center', justifyContent: 'center', mt: 0.25, cursor: onDragStart ? 'grab' : 'default', '&:active': { cursor: onDragStart ? 'grabbing' : 'default' } }}
+        >
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="18" x2="16" y2="18" />
           </svg>

@@ -143,7 +143,11 @@ def _build_transaction_out(tx, db=None):
         )
         todo_ids = [r.to_id for r in rels]
         if todo_ids:
-            todos = db.query(Todo).filter(Todo.id.in_(todo_ids)).all()
+            todos = (
+                db.query(Todo)
+                .filter(Todo.id.in_(todo_ids), Todo.user_id == tx.user_id)
+                .all()
+            )
             d.linked_todos = [
                 {"id": t.id, "title": t.title, "is_completed": t.is_completed}
                 for t in todos
@@ -151,6 +155,50 @@ def _build_transaction_out(tx, db=None):
     if tx.children:
         d.children = [_build_transaction_out(c, db) for c in tx.children]
     return d
+
+
+def _resource_belongs_to_user(
+    resource_type: str,
+    resource_id: int,
+    user_id: int,
+    db: Session,
+) -> bool:
+    models = {
+        "ledger": Ledger,
+        "account": Account,
+        "category": FinanceCategory,
+        "finance_tag": FinanceTag,
+        "tag": FinanceTag,
+        "transaction": Transaction,
+        "event": Event,
+        "budget": Budget,
+        "attachment": Attachment,
+        "todo": Todo,
+    }
+    model = models.get(resource_type)
+    if model is None:
+        raise HTTPException(400, f"unsupported resource type: {resource_type}")
+    return (
+        db.query(model)
+        .filter(
+            getattr(model, "id") == resource_id,
+            getattr(model, "user_id") == user_id,
+        )
+        .first()
+        is not None
+    )
+
+
+def _ensure_relation_resource_access(
+    resource_type: str,
+    resource_id: int,
+    current_user: User,
+    db: Session,
+) -> None:
+    if not _resource_belongs_to_user(
+        resource_type, resource_id, current_user.id, db
+    ):
+        raise HTTPException(404, "resource not found")
 
 
 # --- Ledger ---
@@ -689,6 +737,7 @@ def create_transaction(
 
     if body.linked_todo_ids:
         for todo_id in body.linked_todo_ids:
+            _ensure_relation_resource_access("todo", todo_id, current_user, db)
             rel = ResourceRelation(
                 from_type="transaction",
                 from_id=tx.id,
@@ -825,6 +874,7 @@ def update_transaction(
             ResourceRelation.to_type == "todo",
         ).delete()
         for todo_id in body.linked_todo_ids:
+            _ensure_relation_resource_access("todo", todo_id, current_user, db)
             rel = ResourceRelation(
                 from_type="transaction",
                 from_id=tx.id,
@@ -1183,6 +1233,10 @@ def list_relations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if not _resource_belongs_to_user(
+        from_type, from_id, current_user.id, db
+    ):
+        return []
     return (
         db.query(ResourceRelation)
         .filter(
@@ -1199,6 +1253,12 @@ def create_relation(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _ensure_relation_resource_access(
+        body.from_type, body.from_id, current_user, db
+    )
+    _ensure_relation_resource_access(
+        body.to_type, body.to_id, current_user, db
+    )
     rel = ResourceRelation(**body.model_dump())
     db.add(rel)
     db.commit()
@@ -1217,7 +1277,9 @@ def delete_relation(
         .filter(ResourceRelation.id == relation_id)
         .first()
     )
-    if not rel:
+    if not rel or not _resource_belongs_to_user(
+        rel.from_type, rel.from_id, current_user.id, db
+    ):
         raise HTTPException(404, "relation not found")
     db.delete(rel)
     db.commit()
@@ -1349,17 +1411,21 @@ def get_stats(
     )
 
     cat_totals: dict[str, Decimal] = {}
+    cat_icon_types: dict[str, str] = {}
     cat_icons: dict[str, str] = {}
     for tx in txs:
         cat_name = tx.category.name if tx.category else "未分类"
-        cat_icon = tx.category.icon if tx.category else "\U0001f4c2"
+        cat_icon_type = tx.category.icon_type if tx.category else "emoji"
+        cat_icon = tx.category.icon_value if tx.category else "\U0001f4c2"
         cat_totals[cat_name] = cat_totals.get(cat_name, Decimal("0")) + (
             tx.amount or Decimal("0")
         )
+        cat_icon_types[cat_name] = cat_icon_type
         cat_icons[cat_name] = cat_icon
     category_data: list[CategoryStatsItem] = [
         CategoryStatsItem(
             category_name=name,
+            category_icon_type=cat_icon_types[name],
             category_icon=cat_icons[name],
             total=total,
             color=CATEGORY_STATS_COLORS[index % len(CATEGORY_STATS_COLORS)],

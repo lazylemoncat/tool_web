@@ -33,7 +33,8 @@ def _create_ledger_account_category(client, auth_headers):
         json={
             "ledger_id": ledger_id,
             "name": "餐饮",
-            "icon": "🍜",
+            "icon_type": "emoji",
+            "icon_value": "🍜",
         },
         headers=auth_headers,
     )
@@ -93,6 +94,7 @@ def test_stats_response_matches_frontend_chart_contract(client, auth_headers):
     assert data["category_data"] == [
         {
             "category_name": "餐饮",
+            "category_icon_type": "emoji",
             "category_icon": "🍜",
             "total": "100.00",
             "color": "#EF4444",

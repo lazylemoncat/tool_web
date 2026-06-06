@@ -9,25 +9,28 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
+import ToggleButton from '@mui/material/ToggleButton';
+import MarkerPicker, { MARKER_COLORS, type MarkerValue } from '@/components/shared/MarkerPicker';
 
 interface FolderDialogProps {
   open: boolean;
   onClose: () => void;
-  onSave: (name: string, color: string) => void;
+  onSave: (name: string, marker: MarkerValue, mode: 'todo' | 'kanban') => void;
 }
-
-const COLORS = ['#6282E3', '#E3628C', '#62E3A0', '#E3B462', '#B462E3', '#62D4E3'];
 
 export default function FolderDialog({ open, onClose, onSave }: FolderDialogProps) {
   const [name, setName] = useState('');
-  const [color, setColor] = useState(COLORS[0]);
+  const [marker, setMarker] = useState<MarkerValue>({ type: 'color', value: MARKER_COLORS[0] });
+  const [mode, setMode] = useState<'todo' | 'kanban'>('todo');
   const [error, setError] = useState('');
 
   const handleSave = () => {
     if (!name.trim()) { setError('请输入文件夹名称'); return; }
-    onSave(name.trim(), color);
+    onSave(name.trim(), marker, mode);
     setName('');
-    setColor(COLORS[0]);
+    setMarker({ type: 'color', value: MARKER_COLORS[0] });
+    setMode('todo');
     setError('');
   };
 
@@ -48,7 +51,7 @@ export default function FolderDialog({ open, onClose, onSave }: FolderDialogProp
       <DialogContent sx={{ pt: 2.5 }}>
         <Box sx={{ mb: 2.25 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>文件夹名称</Typography>
-          <TextField fullWidth placeholder="输入文件夹名称" value={name} onChange={(e) => { setName(e.target.value); setError(''); }} error={!!error} size="small" />
+          <TextField fullWidth placeholder="输入文件夹名称" value={name} onChange={(e) => { setName(e.target.value); setError(''); }} onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); }} error={!!error} size="small" />
           {/* Fixed-height error slot — prevents dialog re-center on error toggle */}
           <Box sx={{ height: '1.25em', mt: 0.5, display: 'flex', alignItems: 'center' }}>
             {error && (
@@ -57,17 +60,31 @@ export default function FolderDialog({ open, onClose, onSave }: FolderDialogProp
           </Box>
         </Box>
         <Box>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>颜色标识</Typography>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {COLORS.map((c) => (
-              <Box key={c} onClick={() => setColor(c)} sx={{ width: 28, height: 28, borderRadius: '50%', bgcolor: c, cursor: 'pointer', border: '2px solid', borderColor: color === c ? 'text.primary' : 'transparent', transition: 'all 0.15s', '&:hover': { transform: 'scale(1.15)' } }} />
-            ))}
-          </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>文件夹标识</Typography>
+          <MarkerPicker marker={marker} onChange={setMarker} label={null} />
+        </Box>
+        <Box sx={{ mt: 2.5 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>工作模式</Typography>
+          <ToggleButtonGroup
+            value={mode}
+            exclusive
+            onChange={(_, v) => v && setMode(v)}
+            fullWidth
+            size="small"
+            sx={{ '& .MuiToggleButton-root': { borderRadius: 2, py: 1, fontSize: '0.8125rem' } }}
+          >
+            <ToggleButton value="todo">
+              <Box sx={{ mr: 0.75 }}>📋</Box> Todo 列表
+            </ToggleButton>
+            <ToggleButton value="kanban">
+              <Box sx={{ mr: 0.75 }}>📊</Box> Kanban 看板
+            </ToggleButton>
+          </ToggleButtonGroup>
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button variant="text" onClick={onClose} sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.875rem' }}>取消</Button>
-        <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 4, px: 3 }}>创建</Button>
+        <Button variant="contained" onClick={handleSave} sx={{ borderRadius: 4, px: 3 }}>{mode === 'kanban' ? '创建 Kanban 文件夹' : '创建'}</Button>
       </DialogActions>
     </Dialog>
   );

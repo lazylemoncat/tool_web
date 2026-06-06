@@ -5,9 +5,9 @@ Event, Budget, Attachment, ResourceRelation.
 
 from __future__ import annotations
 
-import enum
 from datetime import datetime
 from decimal import Decimal
+from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
@@ -35,13 +35,13 @@ if TYPE_CHECKING:
     from .user import User
 
 
-class TransactionType(enum.StrEnum):
+class TransactionType(StrEnum):
     expense = "expense"
     income = "income"
     transfer = "transfer"
 
 
-class AccountType(enum.StrEnum):
+class AccountType(StrEnum):
     cash = "cash"
     debit_card = "debit_card"
     credit_card = "credit_card"
@@ -203,8 +203,11 @@ class FinanceCategory(Base):
         nullable=True,
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
-    icon: Mapped[str] = mapped_column(
-        String(10), default="\U0001f4c2", nullable=True
+    icon_type: Mapped[str] = mapped_column(
+        String(10), default="emoji", nullable=True
+    )
+    icon_value: Mapped[str] = mapped_column(
+        String(20), default="\U0001f4c2", nullable=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True

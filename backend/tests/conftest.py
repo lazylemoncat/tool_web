@@ -13,6 +13,8 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import src.models.finance  # noqa: F401  register finance tables with Base.metadata
+import src.models.kanban  # noqa: F401  register kanban tables
+import src.models.kanban_task  # noqa: F401  register kanban_task table
 import src.models.tag  # noqa: F401  register tag tables with Base.metadata
 import src.models.theme  # noqa: F401  register theme tables with Base.metadata
 import src.models.user  # noqa: F401  register auth tables with Base.metadata
@@ -48,6 +50,16 @@ def setup_db():
 
 
 @pytest.fixture
+def db_session():
+    """Provide a database session for model-level tests."""
+    session = TestingSessionLocal()
+    try:
+        yield session
+    finally:
+        session.close()
+
+
+@pytest.fixture
 def client():
     import src.database
     from src.main import app
@@ -78,3 +90,39 @@ def auth_headers(client):
     )
     token = resp.json()["token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def auth_headers_for(client):
+    """Create an authenticated user and clear cookies before returning."""
+    counter = 0
+
+    def _create(username_prefix: str = "testuser"):
+        nonlocal counter
+        counter += 1
+        username = f"{username_prefix}_{counter}"
+        password = "testpass1"
+
+        client.cookies.clear()
+        register_resp = client.post(
+            "/api/v1/auth/register",
+            json={
+                "username": username,
+                "password": password,
+            },
+        )
+        assert register_resp.status_code == 201
+
+        login_resp = client.post(
+            "/api/v1/auth/login",
+            json={
+                "username": username,
+                "password": password,
+            },
+        )
+        assert login_resp.status_code == 200
+        token = login_resp.json()["token"]
+        client.cookies.clear()
+        return {"Authorization": f"Bearer {token}"}
+
+    return _create

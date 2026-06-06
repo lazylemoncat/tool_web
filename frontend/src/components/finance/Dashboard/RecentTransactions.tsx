@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { TransactionOut } from '@/lib/financeTypes';
 
 interface RecentTransactionsProps {
@@ -25,7 +26,11 @@ export default function RecentTransactions({ transactions }: RecentTransactionsP
             return (
               <Box key={tx.id} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, py: 1.25, borderBottom: i < recent.length - 1 ? '1px solid' : 'none', borderColor: '#F3F4F6' }}>
                 <Box sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: isIncome ? '#D1FAE5' : '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9375rem', flexShrink: 0 }}>
-                  {tx.category?.icon || (isIncome ? '💰' : '💸')}
+                  {tx.category ? (
+                    <MarkerIcon type={tx.category.icon_type} value={tx.category.icon_value} size={18} />
+                  ) : (
+                    <MarkerIcon type="emoji" value={isIncome ? '💰' : '💸'} size={18} />
+                  )}
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'text.primary' }}>{tx.category?.name || '未分类'}</Typography>

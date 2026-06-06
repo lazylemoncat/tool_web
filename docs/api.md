@@ -2,6 +2,11 @@
 
 Base URL: `/api/v1`
 
+## Recent Todo API Notes
+
+- `GET /api/v1/todos` accepts `due_from` and `due_to` as `YYYY-MM-DD` date query parameters. They filter `Todo.due_date` inclusively and are used by the Todo sidebar `today` and `upcoming` views.
+- `POST /api/v1/folders/reorder` accepts `{ "items": [{ "id": 1, "sort_order": 0 }] }`. All folder ids in one request must belong to the same `parent_id`; otherwise the backend returns `400`.
+
 前端通过 Next.js 代理访问 API: 浏览器请求 `/api/v1/*`, Next 根据 `API_PROXY_TARGET` 转发到 FastAPI. 本地默认后端地址为 `http://localhost:8004`, Docker Compose 内部地址为 `http://backend:8000`.
 
 ## 统一响应格式
@@ -18,6 +23,33 @@ Base URL: `/api/v1`
 
 `GET /api/health`
 
+## 认证
+
+### 检查用户名是否可用
+`GET /api/v1/auth/username-availability?username=rex`
+
+响应:
+```json
+{ "username": "rex", "available": true }
+```
+
+该接口无需登录, 注册页在用户名达到 3 个字符后调用, 用于实时提示用户名是否已被使用. 最终注册仍以 `POST /api/v1/auth/register` 的 409 响应作为并发兜底.
+
+### 使用 2FA 重置密码
+`POST /api/v1/auth/password/reset`
+
+请求:
+```json
+{
+  "username": "rex",
+  "method": "totp",
+  "code": "123456",
+  "new_password": "newpass123"
+}
+```
+
+`method` 支持 `"totp"` 和 `"recovery_code"`. 用户必须已启用 MFA; 验证通过后后端更新密码并撤销该用户已有会话. 邮箱重置尚未接入, 因为当前用户模型没有邮箱字段和邮件发送服务.
+
 ## 文件夹
 
 ### 获取所有文件夹
@@ -26,8 +58,9 @@ Base URL: `/api/v1`
 ### 创建文件夹
 `POST /api/v1/folders`
 ```json
-{ "name": "工作", "color": "#4a7c59" }
+{ "name": "工作", "color": "#4a7c59", "mode": "todo" }
 ```
+`mode` 支持 `"todo"` 和 `"kanban"`. 创建 `"kanban"` 文件夹时后端会同步创建默认 Sprint 和看板列, 响应与列表接口都会返回该 `mode`.
 
 ### 更新文件夹
 `PUT /api/v1/folders/{id}`
@@ -51,12 +84,16 @@ Query 参数:
 | priority | int | 按优先级筛选 (1/2/3) |
 | status | string | active / completed |
 | tag_id | int | 按标签筛选 |
+| sprint_id | int | 按 Kanban Sprint 筛选 |
+| column_id | int | 按 Kanban 列筛选 |
 
 ### 创建任务
 `POST /api/v1/todos`
 ```json
 {
   "folder_id": 1,
+  "sprint_id": 1,
+  "column_id": 1,
   "parent_id": null,
   "title": "买猫粮",
   "note": "皇家猫粮",
@@ -79,6 +116,53 @@ Query 参数:
 ```json
 { "target_index": 0 }
 ```
+
+## Kanban 任务
+
+Kanban 模式使用独立的 `kanban_tasks` 表和 `/api/v1/kanban/tasks` 接口, 不再通过 `/api/v1/todos` 移动或删除卡片.
+
+### 获取 Kanban 任务
+`GET /api/v1/kanban/tasks?folder_id=1&sprint_id=1`
+
+Query 参数:
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| folder_id | int | 必填, Kanban 文件夹 ID |
+| sprint_id | int | 可选, 按 Sprint 筛选 |
+| column_id | int | 可选, 按看板列筛选 |
+
+### 创建 Kanban 任务
+`POST /api/v1/kanban/tasks`
+```json
+{
+  "folder_id": 1,
+  "sprint_id": 1,
+  "column_id": 1,
+  "title": "实现登录流程",
+  "priority": "P1",
+  "task_type": "feature",
+  "custom_fields": {
+    "effort": "3",
+    "module": "api"
+  }
+}
+```
+后端会按文件夹 `kanban_config.kanban_template.fields` 校验系统字段和 `custom_fields`, 并校验 `folder_id`, `sprint_id`, `column_id` 归属一致.
+
+### 移动 Kanban 任务
+`PUT /api/v1/kanban/tasks/{id}/move`
+```json
+{ "target_column_id": 2, "target_sprint_id": 1 }
+```
+移动时会检查目标列容量限制, 目标列必须属于当前任务所在文件夹.
+
+### 更新和删除 Kanban 任务
+- `PUT /api/v1/kanban/tasks/{id}`
+- `DELETE /api/v1/kanban/tasks/{id}`
+
+## Kanban 列
+
+`GET /api/v1/kanban-columns?sprint_id=1` 返回列配置和 `task_count`. `task_count` 统计 `kanban_tasks` 表中对应列的卡片数.
 
 ## 标签
 

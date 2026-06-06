@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -15,8 +15,24 @@ import Popover from '@mui/material/Popover';
 import TextField from '@mui/material/TextField';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import Tooltip from '@mui/material/Tooltip';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
 import { useTheme } from '@mui/material/styles';
+import ViewKanbanRoundedIcon from '@mui/icons-material/ViewKanbanRounded';
+import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import type { FolderOut } from '@/lib/types';
+import MarkerPicker, {
+  MARKER_COLORS,
+  MarkerIcon,
+  type MarkerValue,
+} from '@/components/shared/MarkerPicker';
 
 interface SidebarView {
   id: string;
@@ -36,7 +52,8 @@ interface TodoSidebarProps {
   folders: FolderOut[];
   onDeleteFolder: (folderId: number) => void;
   onRenameFolder: (folderId: number, newName: string) => void;
-  onNewSubFolder: (parentId: number, name: string) => void;
+  onNewSubFolder: (parentId: number, name: string, marker: MarkerValue) => void;
+  onReorderFolders: (parentId: number | null, orderedIds: number[]) => void;
 }
 
 type PopoverPosition = {
@@ -53,6 +70,62 @@ const VIEWS: SidebarView[] = [
   { id: 'completed', label: '已完成', icon: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg> },
 ];
 
+const VIEW_STORAGE_KEY = 'tool_web.todo.sidebar_views';
+const DEFAULT_VIEW_IDS = VIEWS.map((view) => view.id);
+
+type FolderDropPosition = 'before' | 'after';
+
+function normalizeViewIds(ids: unknown): string[] {
+  if (!Array.isArray(ids)) return DEFAULT_VIEW_IDS;
+  const allowed = new Set(DEFAULT_VIEW_IDS);
+  const normalized = ids.filter((id): id is string => typeof id === 'string' && allowed.has(id));
+  return normalized.length > 0 ? normalized : DEFAULT_VIEW_IDS;
+}
+
+function loadViewIds(): string[] {
+  if (typeof window === 'undefined') return DEFAULT_VIEW_IDS;
+  try {
+    return normalizeViewIds(JSON.parse(window.localStorage.getItem(VIEW_STORAGE_KEY) ?? 'null'));
+  } catch {
+    return DEFAULT_VIEW_IDS;
+  }
+}
+
+function moveId(ids: string[], id: string, direction: -1 | 1): string[] {
+  const index = ids.indexOf(id);
+  const targetIndex = index + direction;
+  if (index < 0 || targetIndex < 0 || targetIndex >= ids.length) return ids;
+  const next = [...ids];
+  [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+  return next;
+}
+
+function findFolder(folders: FolderOut[], folderId: number): FolderOut | null {
+  for (const folder of folders) {
+    if (folder.id === folderId) return folder;
+    const child = findFolder(folder.children ?? [], folderId);
+    if (child) return child;
+  }
+  return null;
+}
+
+function getSiblingIds(folders: FolderOut[], parentId: number | null): number[] {
+  if (parentId === null) {
+    return folders.filter((folder) => folder.parent_id === null).map((folder) => folder.id);
+  }
+  return findFolder(folders, parentId)?.children?.map((folder) => folder.id) ?? [];
+}
+
+function moveFolderId(ids: number[], draggedId: number, targetId: number, position: FolderDropPosition): number[] {
+  const withoutDragged = ids.filter((id) => id !== draggedId);
+  const targetIndex = withoutDragged.indexOf(targetId);
+  if (targetIndex < 0) return ids;
+  const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+  const next = [...withoutDragged];
+  next.splice(insertIndex, 0, draggedId);
+  return next;
+}
+
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <Box component="span" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transformOrigin: 'center', color: 'oklch(82% 0.01 275)', flexShrink: 0 }}>
@@ -64,26 +137,54 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 export default function TodoSidebar({
   open, onClose, activeView, activeFolder, onViewChange, onFolderChange,
   onNewFolder, viewCounts, folders, onDeleteFolder, onRenameFolder, onNewSubFolder,
+  onReorderFolders,
 }: TodoSidebarProps) {
   const theme = useTheme();
   const isDesktop = useMediaQuery(theme.breakpoints.up('md'));
   const [collapsedFolders, setCollapsedFolders] = useState<Set<number>>(new Set());
+  const [visibleViewIds, setVisibleViewIds] = useState<string[]>(loadViewIds);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
 
   const [subPopoverPosition, setSubPopoverPosition] = useState<PopoverPosition | null>(null);
   const [subPopoverParent, setSubPopoverParent] = useState<number | null>(null);
   const [subPopoverName, setSubPopoverName] = useState('');
+  const [subPopoverMarker, setSubPopoverMarker] = useState<MarkerValue>({
+    type: 'color',
+    value: MARKER_COLORS[0],
+  });
 
   const [folderMenuAnchor, setFolderMenuAnchor] = useState<null | HTMLElement>(null);
   const [folderMenuTarget, setFolderMenuTarget] = useState<number | null>(null);
 
   const [renamingFolder, setRenamingFolder] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [draggingFolderId, setDraggingFolderId] = useState<number | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<{ id: number; position: FolderDropPosition } | null>(null);
 
   const toggleFolder = (id: number) => {
     setCollapsedFolders((prev) => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
   };
 
+  const visibleViews = useMemo(
+    () => visibleViewIds.map((id) => VIEWS.find((view) => view.id === id)).filter((view): view is SidebarView => Boolean(view)),
+    [visibleViewIds],
+  );
+  const hiddenViews = useMemo(
+    () => VIEWS.filter((view) => !visibleViewIds.includes(view.id)),
+    [visibleViewIds],
+  );
   const rootFolders = folders.filter((f) => f.parent_id === null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(VIEW_STORAGE_KEY, JSON.stringify(visibleViewIds));
+    }
+  }, [visibleViewIds]);
+
+  useEffect(() => {
+    if (activeFolder !== null || !activeView || visibleViewIds.includes(activeView)) return;
+    onViewChange(visibleViewIds[0] ?? 'all');
+  }, [activeFolder, activeView, onViewChange, visibleViewIds]);
 
   return (
     <>
@@ -97,16 +198,29 @@ export default function TodoSidebar({
         onFolderChange={onFolderChange}
         onNewFolder={onNewFolder}
         viewCounts={viewCounts}
+        views={visibleViews}
+        hiddenViews={hiddenViews}
+        visibleViewIds={visibleViewIds}
+        setVisibleViewIds={setVisibleViewIds}
+        viewDialogOpen={viewDialogOpen}
+        setViewDialogOpen={setViewDialogOpen}
         folders={folders}
         rootFolders={rootFolders}
         collapsedFolders={collapsedFolders}
         onToggleFolder={toggleFolder}
+        draggingFolderId={draggingFolderId}
+        setDraggingFolderId={setDraggingFolderId}
+        dragOverFolder={dragOverFolder}
+        setDragOverFolder={setDragOverFolder}
+        onReorderFolders={onReorderFolders}
         subPopoverPosition={subPopoverPosition}
         setSubPopoverPosition={setSubPopoverPosition}
         subPopoverParent={subPopoverParent}
         setSubPopoverParent={setSubPopoverParent}
         subPopoverName={subPopoverName}
         setSubPopoverName={setSubPopoverName}
+        subPopoverMarker={subPopoverMarker}
+        setSubPopoverMarker={setSubPopoverMarker}
         onNewSubFolder={onNewSubFolder}
         folderMenuAnchor={folderMenuAnchor}
         setFolderMenuAnchor={setFolderMenuAnchor}
@@ -125,9 +239,11 @@ export default function TodoSidebar({
 
 function DrawerContent({
   isDesktop, open, onClose, activeView, activeFolder, onViewChange, onFolderChange,
-  onNewFolder, viewCounts, folders, rootFolders, collapsedFolders, onToggleFolder,
+  onNewFolder, viewCounts, views, hiddenViews, visibleViewIds, setVisibleViewIds,
+  viewDialogOpen, setViewDialogOpen, folders, rootFolders, collapsedFolders, onToggleFolder,
+  draggingFolderId, setDraggingFolderId, dragOverFolder, setDragOverFolder, onReorderFolders,
   subPopoverPosition, setSubPopoverPosition, subPopoverParent, setSubPopoverParent,
-  subPopoverName, setSubPopoverName, onNewSubFolder,
+  subPopoverName, setSubPopoverName, subPopoverMarker, setSubPopoverMarker, onNewSubFolder,
   folderMenuAnchor, setFolderMenuAnchor, folderMenuTarget, setFolderMenuTarget,
   renamingFolder, setRenamingFolder, renameValue, setRenameValue,
   onRenameFolder, onDeleteFolder,
@@ -136,12 +252,20 @@ function DrawerContent({
   activeView: string; activeFolder: number | null;
   onViewChange: (id: string) => void; onFolderChange: (id: number) => void;
   onNewFolder: () => void; viewCounts: Record<string, number>;
+  views: SidebarView[]; hiddenViews: SidebarView[];
+  visibleViewIds: string[]; setVisibleViewIds: (ids: string[]) => void;
+  viewDialogOpen: boolean; setViewDialogOpen: (open: boolean) => void;
   folders: FolderOut[]; rootFolders: FolderOut[];
   collapsedFolders: Set<number>; onToggleFolder: (id: number) => void;
+  draggingFolderId: number | null; setDraggingFolderId: (id: number | null) => void;
+  dragOverFolder: { id: number; position: FolderDropPosition } | null;
+  setDragOverFolder: (value: { id: number; position: FolderDropPosition } | null) => void;
+  onReorderFolders: (parentId: number | null, orderedIds: number[]) => void;
   subPopoverPosition: PopoverPosition | null; setSubPopoverPosition: (position: PopoverPosition | null) => void;
   subPopoverParent: number | null; setSubPopoverParent: (p: number | null) => void;
   subPopoverName: string; setSubPopoverName: (n: string) => void;
-  onNewSubFolder: (pid: number, name: string) => void;
+  subPopoverMarker: MarkerValue; setSubPopoverMarker: (m: MarkerValue) => void;
+  onNewSubFolder: (pid: number, name: string, marker: MarkerValue) => void;
   folderMenuAnchor: HTMLElement | null; setFolderMenuAnchor: (a: HTMLElement | null) => void;
   folderMenuTarget: number | null; setFolderMenuTarget: (t: number | null) => void;
   renamingFolder: number | null; setRenamingFolder: (f: number | null) => void;
@@ -150,6 +274,49 @@ function DrawerContent({
   onDeleteFolder: (id: number) => void;
 }) {
   const closeIfMobile = () => { if (!isDesktop) onClose(); };
+  const resetSubPopover = () => {
+    setSubPopoverPosition(null);
+    setSubPopoverParent(null);
+    setSubPopoverName('');
+    setSubPopoverMarker({ type: 'color', value: MARKER_COLORS[0] });
+  };
+
+  const handleFolderDragStart = (folderId: number) => {
+    setDraggingFolderId(folderId);
+  };
+
+  const handleFolderDragOver = (event: React.DragEvent<HTMLElement>, folder: FolderOut) => {
+    if (draggingFolderId === null || draggingFolderId === folder.id) return;
+    const draggedFolder = findFolder(folders, draggingFolderId);
+    if (!draggedFolder || draggedFolder.parent_id !== folder.parent_id) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position: FolderDropPosition = event.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+    setDragOverFolder({ id: folder.id, position });
+  };
+
+  const handleFolderDrop = (event: React.DragEvent<HTMLElement>, folder: FolderOut) => {
+    event.preventDefault();
+    if (draggingFolderId === null || draggingFolderId === folder.id) {
+      setDraggingFolderId(null);
+      setDragOverFolder(null);
+      return;
+    }
+    const draggedFolder = findFolder(folders, draggingFolderId);
+    if (!draggedFolder || draggedFolder.parent_id !== folder.parent_id) {
+      setDraggingFolderId(null);
+      setDragOverFolder(null);
+      return;
+    }
+    const siblingIds = getSiblingIds(folders, folder.parent_id);
+    const orderedIds = moveFolderId(siblingIds, draggingFolderId, folder.id, dragOverFolder?.position ?? 'before');
+    if (orderedIds.join(',') !== siblingIds.join(',')) {
+      onReorderFolders(folder.parent_id, orderedIds);
+    }
+    setDraggingFolderId(null);
+    setDragOverFolder(null);
+  };
 
   const renderFolder = (folder: FolderOut, depth = 0): React.ReactNode => {
     const isCollapsed = collapsedFolders.has(folder.id);
@@ -161,6 +328,11 @@ function DrawerContent({
         renamingFolder={renamingFolder} setRenamingFolder={setRenamingFolder}
         renameValue={renameValue} setRenameValue={setRenameValue}
         onRenameFolder={onRenameFolder}
+        dragOverPosition={dragOverFolder?.id === folder.id ? dragOverFolder.position : null}
+        onDragStart={() => handleFolderDragStart(folder.id)}
+        onDragOver={(event) => handleFolderDragOver(event, folder)}
+        onDrop={(event) => handleFolderDrop(event, folder)}
+        onDragEnd={() => { setDraggingFolderId(null); setDragOverFolder(null); }}
         setSubPopoverPosition={setSubPopoverPosition}
         setSubPopoverParent={setSubPopoverParent}
         setFolderMenuAnchor={setFolderMenuAnchor}
@@ -188,9 +360,16 @@ function DrawerContent({
       </Box>
 
       <Box sx={{ flex: 1, overflowY: 'auto', py: 1 }}>
-        <Typography sx={{ px: 2.5, fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', opacity: 0.6, mb: 0.5 }}>视图</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', px: 2.5, mb: 0.5 }}>
+          <Typography sx={{ fontSize: '0.6875rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'text.secondary', opacity: 0.6, flex: 1 }}>视图</Typography>
+          <Tooltip title="编辑视图">
+            <IconButton size="small" onClick={() => setViewDialogOpen(true)} sx={{ width: 26, height: 26, color: 'text.secondary' }}>
+              <EditRoundedIcon sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
         <List disablePadding>
-          {VIEWS.map((view) => {
+          {views.map((view) => {
             const count = viewCounts[view.id] ?? 0;
             return (
               <ListItemButton key={view.id} selected={activeView === view.id && activeFolder === null}
@@ -229,25 +408,91 @@ function DrawerContent({
     <Popover open={Boolean(subPopoverPosition)}
       anchorReference="anchorPosition"
       anchorPosition={subPopoverPosition ?? undefined}
-      onClose={() => { setSubPopoverPosition(null); setSubPopoverParent(null); setSubPopoverName(''); }}
+      onClose={resetSubPopover}
       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       slotProps={{ paper: { sx: { p: 1.5, minWidth: 220, mt: 0.5, borderRadius: 3 } } }}>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>新建子文件夹</Typography>
       <TextField fullWidth size="small" placeholder="输入子文件夹名称" value={subPopoverName}
         onChange={(e) => setSubPopoverName(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim()); setSubPopoverPosition(null); setSubPopoverParent(null); setSubPopoverName(''); } }} autoFocus />
+        onKeyDown={(e) => { if (e.key === 'Enter' && subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker); resetSubPopover(); } }} autoFocus />
+      <Box sx={{ mt: 1 }}>
+        <MarkerPicker marker={subPopoverMarker} onChange={setSubPopoverMarker} label="子文件夹标识" />
+      </Box>
       <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'flex-end', mt: 1 }}>
-        <Button size="small" onClick={() => { setSubPopoverPosition(null); setSubPopoverParent(null); setSubPopoverName(''); }} sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600 }}>取消</Button>
-        <Button size="small" variant="contained" onClick={() => { if (subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim()); setSubPopoverPosition(null); setSubPopoverParent(null); setSubPopoverName(''); } }} sx={{ fontSize: '0.75rem', fontWeight: 600, borderRadius: 2 }}>创建</Button>
+        <Button size="small" onClick={resetSubPopover} sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600 }}>取消</Button>
+        <Button size="small" variant="contained" onClick={() => { if (subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker); resetSubPopover(); } }} sx={{ fontSize: '0.75rem', fontWeight: 600, borderRadius: 2 }}>创建</Button>
       </Box>
     </Popover>
+  );
+
+  const viewDialog = (
+    <Dialog open={viewDialogOpen} onClose={() => setViewDialogOpen(false)} maxWidth="xs" fullWidth>
+      <DialogTitle sx={{ fontSize: '1rem', fontWeight: 700 }}>编辑视图</DialogTitle>
+      <DialogContent>
+        <List disablePadding>
+          {views.map((view, index) => (
+            <Box key={view.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.75 }}>
+              <Box component="span" sx={{ display: 'flex', width: 20, color: 'text.secondary' }}>{view.icon}</Box>
+              <Typography sx={{ flex: 1, fontSize: '0.875rem', fontWeight: 500 }}>{view.label}</Typography>
+              <Tooltip title="上移">
+                <span>
+                  <IconButton size="small" disabled={index === 0} onClick={() => setVisibleViewIds(moveId(visibleViewIds, view.id, -1))}>
+                    <KeyboardArrowUpRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="下移">
+                <span>
+                  <IconButton size="small" disabled={index === views.length - 1} onClick={() => setVisibleViewIds(moveId(visibleViewIds, view.id, 1))}>
+                    <KeyboardArrowDownRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+              <Tooltip title="隐藏">
+                <span>
+                  <IconButton
+                    size="small"
+                    disabled={visibleViewIds.length <= 1}
+                    onClick={() => setVisibleViewIds(visibleViewIds.filter((id) => id !== view.id))}
+                    color="error"
+                  >
+                    <DeleteOutlineRoundedIcon fontSize="small" />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            </Box>
+          ))}
+        </List>
+
+        {hiddenViews.length > 0 && (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1.5 }}>
+            {hiddenViews.map((view) => (
+              <Button
+                key={view.id}
+                size="small"
+                variant="outlined"
+                startIcon={<AddRoundedIcon />}
+                onClick={() => setVisibleViewIds([...visibleViewIds, view.id])}
+                sx={{ borderRadius: 2, fontSize: '0.75rem' }}
+              >
+                {view.label}
+              </Button>
+            ))}
+          </Box>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setVisibleViewIds(DEFAULT_VIEW_IDS)} size="small">重置</Button>
+        <Button onClick={() => setViewDialogOpen(false)} variant="contained" size="small">完成</Button>
+      </DialogActions>
+    </Dialog>
   );
 
   // Folder context menu
   const folderMenu = (
     <Menu anchorEl={folderMenuAnchor} open={Boolean(folderMenuAnchor)}
       onClose={() => { setFolderMenuAnchor(null); setFolderMenuTarget(null); }}>
-      <MenuItem onClick={() => { if (folderMenuTarget) { setRenamingFolder(folderMenuTarget); const f = folders.find(x => x.id === folderMenuTarget); if (f) setRenameValue(f.name); } setFolderMenuAnchor(null); }}>
+      <MenuItem onClick={() => { if (folderMenuTarget) { setRenamingFolder(folderMenuTarget); const f = findFolder(folders, folderMenuTarget); if (f) setRenameValue(f.name); } setFolderMenuAnchor(null); }}>
         <Box component="span" sx={{ mr: 1, fontSize: '1rem' }}>✏️</Box>重命名
       </MenuItem>
       <MenuItem onClick={() => { if (folderMenuTarget) onDeleteFolder(folderMenuTarget); setFolderMenuAnchor(null); setFolderMenuTarget(null); }} sx={{ color: 'error.main' }}>
@@ -261,6 +506,7 @@ function DrawerContent({
       <Box component="aside" sx={{ width: SIDEBAR_WIDTH, flexShrink: 0, bgcolor: 'background.paper', borderRight: '1px solid', borderColor: 'divider', display: 'flex', flexDirection: 'column', zIndex: 30 }}>
         {content}
         {subPopover}
+        {viewDialog}
         {folderMenu}
       </Box>
     );
@@ -271,6 +517,7 @@ function DrawerContent({
       sx={{ '& .MuiDrawer-paper': { width: SIDEBAR_WIDTH, bgcolor: 'background.paper', boxShadow: '0 16px 48px rgba(0,0,0,0.12)' } }}>
       {content}
       {subPopover}
+      {viewDialog}
       {folderMenu}
     </SwipeableDrawer>
   );
@@ -279,6 +526,7 @@ function DrawerContent({
 function FolderItem({
   folder, depth, isActive, isCollapsed, onToggle, onSelect,
   renamingFolder, setRenamingFolder, renameValue, setRenameValue, onRenameFolder,
+  dragOverPosition, onDragStart, onDragOver, onDrop, onDragEnd,
   setSubPopoverPosition, setSubPopoverParent,
   setFolderMenuAnchor, setFolderMenuTarget,
   children,
@@ -287,6 +535,11 @@ function FolderItem({
   onToggle: () => void; onSelect: () => void;
   renamingFolder: number | null; setRenamingFolder: (f: number | null) => void;
   renameValue: string; setRenameValue: (v: string) => void; onRenameFolder: (id: number, name: string) => void;
+  dragOverPosition: FolderDropPosition | null;
+  onDragStart: () => void;
+  onDragOver: (event: React.DragEvent<HTMLElement>) => void;
+  onDrop: (event: React.DragEvent<HTMLElement>) => void;
+  onDragEnd: () => void;
   setSubPopoverPosition: (position: PopoverPosition | null) => void; setSubPopoverParent: (p: number | null) => void;
   setFolderMenuAnchor: (a: HTMLElement | null) => void; setFolderMenuTarget: (t: number | null) => void;
   children?: React.ReactNode;
@@ -299,12 +552,20 @@ function FolderItem({
       <Box onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} sx={{ position: 'relative' }}>
         <ListItemButton
           onClick={onSelect}
+          onDragOver={onDragOver}
+          onDrop={onDrop}
           selected={isActive}
           sx={{ py: 1, px: 2, pl: 2 + depth * 3, gap: 0.75, height: 44,
             '&.Mui-selected': { bgcolor: 'oklch(90% 0.08 285)', color: 'oklch(20% 0.10 285)', borderRadius: '24px', '&:hover': { bgcolor: 'oklch(90% 0.08 285)' } },
             borderRadius: '24px',
+            ...(dragOverPosition === 'before' ? { borderTop: '2px solid', borderTopColor: 'primary.main' } : {}),
+            ...(dragOverPosition === 'after' ? { borderBottom: '2px solid', borderBottomColor: 'primary.main' } : {}),
           }}>
-          <Box component="span" sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: 'transparent', transition: 'color 0.15s', cursor: 'grab', '&:hover': { color: 'oklch(82% 0.01 275)' }, '&:active': { cursor: 'grabbing' } }}>
+          <Box component="span"
+            draggable={renamingFolder !== folder.id}
+            onDragStart={(e) => { e.stopPropagation(); e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(folder.id)); onDragStart(); }}
+            onDragEnd={onDragEnd}
+            sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, color: 'transparent', transition: 'color 0.15s', cursor: 'grab', '&:hover': { color: 'oklch(82% 0.01 275)' }, '&:active': { cursor: 'grabbing' } }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="18" x2="16" y2="18" />
             </svg>
@@ -317,7 +578,7 @@ function FolderItem({
           ) : (
             <Box sx={{ width: 20, flexShrink: 0 }} />
           )}
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: folder.color, flexShrink: 0 }} />
+          <MarkerIcon type={folder.icon_type} value={folder.icon_value} size={16} />
           {renamingFolder === folder.id ? (
             <TextField size="small" value={renameValue} onChange={(e) => setRenameValue(e.target.value)}
               onBlur={() => { if (renameValue.trim()) onRenameFolder(folder.id, renameValue.trim()); setRenamingFolder(null); }}
@@ -325,7 +586,16 @@ function FolderItem({
               autoFocus onClick={(e) => e.stopPropagation()}
               sx={{ flex: 1, '& .MuiOutlinedInput-root': { fontSize: '0.875rem', fontWeight: 500, height: 32, borderRadius: 1, '& fieldset': { borderColor: 'primary.main', borderWidth: '1.5px' } } }} />
           ) : (
-            <ListItemText primary={folder.name} slotProps={{ primary: { sx: { fontSize: '0.875rem', fontWeight: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } } }} />
+            <>
+              <ListItemText primary={folder.name} slotProps={{ primary: { sx: { fontSize: '0.875rem', fontWeight: 'inherit', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } } }} />
+              {folder.mode === 'kanban' && (
+                <Tooltip title="Kanban 看板">
+                  <Box component="span" aria-label="Kanban 看板" sx={{ display: 'inline-flex', alignItems: 'center', color: 'text.secondary', opacity: 0.7, flexShrink: 0, ml: 0.5 }}>
+                    <ViewKanbanRoundedIcon sx={{ fontSize: 16 }} />
+                  </Box>
+                </Tooltip>
+              )}
+            </>
           )}
           {!renamingFolder && hovered && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>

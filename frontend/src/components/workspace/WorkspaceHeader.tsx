@@ -6,9 +6,10 @@ import Typography from '@mui/material/Typography';
 interface WorkspaceHeaderProps {
   isManageMode: boolean;
   onToggleManage: () => void;
+  appVersion?: string;
 }
 
-export default function WorkspaceHeader({ isManageMode, onToggleManage }: WorkspaceHeaderProps) {
+export default function WorkspaceHeader({ isManageMode, onToggleManage, appVersion }: WorkspaceHeaderProps) {
   return (
     <Box
       sx={{
@@ -36,9 +37,28 @@ export default function WorkspaceHeader({ isManageMode, onToggleManage }: Worksp
         >
           工作台
         </Typography>
-        <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
-          一站式管理任务与记账
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+            一站式管理任务与记账
+          </Typography>
+          {appVersion && (
+            <Typography
+              component="span"
+              sx={{
+                px: 0.75,
+                py: 0.25,
+                borderRadius: 1,
+                bgcolor: 'action.hover',
+                color: 'text.secondary',
+                fontSize: '0.6875rem',
+                fontWeight: 700,
+                lineHeight: 1.4,
+              }}
+            >
+              V{appVersion}
+            </Typography>
+          )}
+        </Box>
       </Box>
 
       {/* 管理模式 pill 切换按钮 */}

@@ -80,13 +80,15 @@ class CategoryCreate(BaseModel):
     ledger_id: int
     parent_id: int | None = None
     name: str = Field(min_length=1, max_length=50)
-    icon: str = "\U0001f4c2"
+    icon_type: str = Field(default="emoji", pattern="^(color|emoji)$")
+    icon_value: str = Field(default="\U0001f4c2", min_length=1, max_length=20)
 
 
 class CategoryUpdate(BaseModel):
     parent_id: int | None = None
     name: str | None = Field(None, min_length=1, max_length=50)
-    icon: str | None = None
+    icon_type: str | None = Field(None, pattern="^(color|emoji)$")
+    icon_value: str | None = Field(None, min_length=1, max_length=20)
 
 
 class CategoryOut(BaseModel):
@@ -94,7 +96,8 @@ class CategoryOut(BaseModel):
     ledger_id: int
     parent_id: int | None = None
     name: str
-    icon: str
+    icon_type: str
+    icon_value: str
     created_at: datetime
     children: list[CategoryOut] = []
     model_config = {"from_attributes": True}
@@ -318,6 +321,7 @@ class DashboardSummary(BaseModel):
 
 class CategoryStatsItem(BaseModel):
     category_name: str
+    category_icon_type: str
     category_icon: str
     total: Decimal
     color: str

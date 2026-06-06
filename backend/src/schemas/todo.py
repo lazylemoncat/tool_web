@@ -39,14 +39,22 @@ class FolderCreate(BaseModel):
     parent_id: int | None = None
     name: str = Field(min_length=1, max_length=50)
     color: str = "#6366f1"
+    icon_type: str = Field(default="color", pattern="^(color|emoji)$")
+    icon_value: str = Field(default="#6366f1", min_length=1, max_length=20)
     sort_order: int = 0
+    mode: str = "todo"  # new
+    kanban_config: dict | None = None
 
 
 class FolderUpdate(BaseModel):
     parent_id: int | None = None
     name: str | None = Field(None, min_length=1, max_length=50)
     color: str | None = None
+    icon_type: str | None = Field(None, pattern="^(color|emoji)$")
+    icon_value: str | None = Field(None, min_length=1, max_length=20)
     sort_order: int | None = None
+    mode: str | None = None  # new
+    kanban_config: dict | None = None
 
 
 class FolderOut(BaseModel):
@@ -54,6 +62,10 @@ class FolderOut(BaseModel):
     parent_id: int | None = None
     name: str
     color: str
+    icon_type: str
+    icon_value: str
+    mode: str = "todo"  # new
+    kanban_config: dict | None = None
     sort_order: int
     created_at: datetime
     updated_at: datetime
@@ -68,6 +80,8 @@ class FolderOut(BaseModel):
 
 class TodoCreate(BaseModel):
     folder_id: int | None = None
+    sprint_id: int | None = None  # new
+    column_id: int | None = None  # new
     parent_id: int | None = None
     title: str = Field(min_length=1, max_length=500)
     note: str | None = Field(None, max_length=10000)
@@ -95,6 +109,8 @@ class TodoCreate(BaseModel):
 
 class TodoUpdate(BaseModel):
     folder_id: int | None = None
+    sprint_id: int | None = None  # new
+    column_id: int | None = None  # new
     parent_id: int | None = None
     title: str | None = Field(None, min_length=1, max_length=500)
     note: str | None = None
@@ -137,6 +153,8 @@ class RecurrenceRuleOut(BaseModel):
 class TodoOut(BaseModel):
     id: int
     folder_id: int | None = None
+    sprint_id: int | None = None  # new
+    column_id: int | None = None  # new
     parent_id: int | None = None
     title: str
     note: str | None = None

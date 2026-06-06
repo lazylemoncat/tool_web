@@ -1,6 +1,6 @@
 """FastAPI router for auth APIs."""
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
 
 from ..core.models import AuthResult, CurrentUser
 from ..core.service import AuthService
@@ -15,11 +15,13 @@ from .schemas import (
     LoginResponse,
     MfaVerifyRequest,
     PasswordPolicyResponse,
+    PasswordResetRequest,
     RecoveryCodesResponse,
     RegisterRequest,
     TotpConfirmRequest,
     TotpSetupResponse,
     UpdatePreferencesRequest,
+    UsernameAvailabilityResponse,
 )
 
 router = APIRouter(prefix="/api/v1/auth", tags=["auth"])
@@ -42,6 +44,21 @@ def _auth_response(result: AuthResult) -> AuthResponse:
         preferences=result.preferences,
         user=_user_response(result.user),
         csrf_token=result.csrf_token,
+    )
+
+
+@router.get(
+    "/username-availability",
+    response_model=UsernameAvailabilityResponse,
+)
+def username_availability(
+    username: str = Query(min_length=2, max_length=50),
+    auth: AuthService = Depends(get_auth_service),
+):
+    normalized_username = username.strip()
+    return UsernameAvailabilityResponse(
+        username=normalized_username,
+        available=auth.username_available(normalized_username),
     )
 
 
@@ -186,6 +203,22 @@ def change_password(
         old_password=body.old_password,
         new_password=body.new_password,
         current_session_id=session_id,
+        ip=_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+    )
+
+
+@router.post("/password/reset", status_code=204)
+def reset_password(
+    body: PasswordResetRequest,
+    request: Request,
+    auth: AuthService = Depends(get_auth_service),
+):
+    auth.reset_password_with_mfa(
+        username=body.username.strip(),
+        method=body.method,
+        code=body.code,
+        new_password=body.new_password,
         ip=_client_ip(request),
         user_agent=request.headers.get("user-agent"),
     )

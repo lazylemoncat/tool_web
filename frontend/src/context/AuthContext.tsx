@@ -1,8 +1,15 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
-import { login as apiLogin, logout as apiLogout, getMe, verifyMfa as apiVerifyMfa, ApiError } from '@/lib/api';
-import type { AuthUser, LoginResponse, MfaMethod } from '@/lib/types';
+import {
+  login as apiLogin,
+  logout as apiLogout,
+  getMe,
+  register as apiRegister,
+  verifyMfa as apiVerifyMfa,
+  ApiError,
+} from '@/lib/api';
+import type { AuthResponse, AuthUser, LoginResponse, MfaMethod } from '@/lib/types';
 
 interface AuthState {
   user: AuthUser | null;
@@ -13,6 +20,7 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (username: string, password: string) => Promise<LoginResponse>;
+  register: (username: string, password: string) => Promise<AuthResponse>;
   verifyMfa: (challengeId: string, method: MfaMethod, code: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -23,6 +31,9 @@ const AuthContext = createContext<AuthContextValue>({
   isLoading: true,
   error: null,
   login: async () => {
+    throw new ApiError(500, 'AuthProvider 未初始化');
+  },
+  register: async () => {
     throw new ApiError(500, 'AuthProvider 未初始化');
   },
   verifyMfa: async () => {},
@@ -69,6 +80,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const register = useCallback(async (username: string, password: string) => {
+    setError(null);
+    try {
+      const res = await apiRegister({ username, password });
+      if (!res.user) {
+        throw new ApiError(400, '注册响应缺少用户信息', res);
+      }
+      setUser(res.user);
+      return res;
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : '注册失败';
+      setError(msg);
+      throw err;
+    }
+  }, []);
+
   const verifyMfa = useCallback(async (challengeId: string, method: MfaMethod, code: string) => {
     setError(null);
     try {
@@ -90,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, error, login, verifyMfa, logout }}>
+    <AuthContext.Provider value={{ user, isAuthenticated: !!user, isLoading, error, login, register, verifyMfa, logout }}>
       {children}
     </AuthContext.Provider>
   );

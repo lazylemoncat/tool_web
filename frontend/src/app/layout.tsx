@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { AppRouterCacheProvider } from '@mui/material-nextjs/v16-appRouter';
 import ThemeRegistry from '@/components/theme/ThemeRegistry';
+import { I18nProvider } from '@/context/I18nContext';
 import { AuthProvider } from '@/context/AuthContext';
 import AuthGuard from '@/components/auth/AuthGuard';
 import LayoutClient from '@/components/layout/LayoutClient';
@@ -23,13 +24,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AppRouterCacheProvider>
-          <ThemeRegistry>
-            <AuthProvider>
-              <AuthGuard>
-                <LayoutClient>{children}</LayoutClient>
-              </AuthGuard>
-            </AuthProvider>
-          </ThemeRegistry>
+          <I18nProvider>
+            <ThemeRegistry>
+              <AuthProvider>
+                <AuthGuard>
+                  <LayoutClient>{children}</LayoutClient>
+                </AuthGuard>
+              </AuthProvider>
+            </ThemeRegistry>
+          </I18nProvider>
         </AppRouterCacheProvider>
       </body>
     </html>

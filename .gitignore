@@ -30,6 +30,7 @@ desktop.ini
 # Claude
 .claude/
 .superpowers/
+.tmp/
 
 # Python venv
 backend/.venv/

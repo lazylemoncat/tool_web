@@ -1,8 +1,13 @@
 import type {
   AuthResponse, LoginRequest, LoginResponse, MeResponse, MfaVerifyRequest,
+  PasswordResetRequest,
+  UsernameAvailabilityResponse,
   TodoOut, TodoCreate, TodoUpdate, TodoListResponse, BulkTodoRequest, TodoToggleBody,
   FolderOut, FolderCreate, FolderUpdate,
+  ReorderItem,
   APITag,
+  Sprint, SprintCreate, SprintUpdate,
+  KanbanColumnData, KanbanColumnCreate, KanbanColumnUpdate,
 } from './types';
 import type {
   LedgerOut, LedgerCreate, LedgerUpdate,
@@ -65,7 +70,7 @@ function extractErrorMessage(data: unknown, fallback: string): string {
   return fallback;
 }
 
-async function apiFetch<T>(
+export async function apiFetch<T>(
   method: string,
   path: string,
   body?: unknown,
@@ -92,7 +97,7 @@ async function apiFetch<T>(
       body: body !== undefined ? JSON.stringify(body) : undefined,
       credentials: 'include',
     });
-  } catch (err) {
+  } catch {
     throw new ApiError(0, '网络连接失败，请检查网络');
   }
 
@@ -149,6 +154,13 @@ export async function verifyMfa(body: MfaVerifyRequest): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('POST', '/api/v1/auth/mfa/verify', body, { skipCsrf: true, skipAuthRefresh: true });
 }
 
+export async function resetPassword(body: PasswordResetRequest): Promise<void> {
+  return apiFetch<void>('POST', '/api/v1/auth/password/reset', body, {
+    skipCsrf: true,
+    skipAuthRefresh: true,
+  });
+}
+
 export async function logout(): Promise<void> {
   await apiFetch<void>('POST', '/api/v1/auth/logout', undefined, { skipCsrf: true });
 }
@@ -171,6 +183,18 @@ export async function register(body: {
   });
 }
 
+export async function checkUsernameAvailability(
+  username: string,
+): Promise<UsernameAvailabilityResponse> {
+  const query = new URLSearchParams({ username });
+  return apiFetch<UsernameAvailabilityResponse>(
+    'GET',
+    `/api/v1/auth/username-availability?${query.toString()}`,
+    undefined,
+    { skipAuthRefresh: true },
+  );
+}
+
 // ===== Todos =====
 export async function listTodos(params?: {
   folder_id?: number;
@@ -180,6 +204,9 @@ export async function listTodos(params?: {
   tag_id?: number;
   skip?: number;
   limit?: number;
+  sprint_id?: number;
+  due_from?: string;
+  due_to?: string;
 }): Promise<TodoListResponse> {
   const query = new URLSearchParams();
   if (params?.folder_id !== undefined) query.set('folder_id', String(params.folder_id));
@@ -187,6 +214,9 @@ export async function listTodos(params?: {
   if (params?.priority) query.set('priority', String(params.priority));
   if (params?.status) query.set('status', params.status);
   if (params?.tag_id) query.set('tag_id', String(params.tag_id));
+  if (params?.sprint_id) query.set('sprint_id', String(params.sprint_id));
+  if (params?.due_from) query.set('due_from', params.due_from);
+  if (params?.due_to) query.set('due_to', params.due_to);
   if (params?.skip) query.set('skip', String(params.skip));
   if (params?.limit) query.set('limit', String(params.limit));
   const qs = query.toString();
@@ -213,6 +243,10 @@ export async function bulkAction(body: BulkTodoRequest): Promise<void> {
   return apiFetch<void>('POST', '/api/v1/todos/bulk', body);
 }
 
+export async function reorderTodos(items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', '/api/v1/todos/reorder', { items });
+}
+
 // ===== Folders =====
 export async function listFolders(params?: { parent_id?: number; skip?: number; limit?: number }): Promise<FolderOut[]> {
   const query = new URLSearchParams();
@@ -233,6 +267,53 @@ export async function updateFolder(id: number, body: FolderUpdate): Promise<Fold
 
 export async function deleteFolder(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/folders/${id}`);
+}
+
+export async function reorderFolders(items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', '/api/v1/folders/reorder', { items });
+}
+
+// ===== Sprints =====
+export async function listSprints(folderId: number): Promise<Sprint[]> {
+  return apiFetch<Sprint[]>('GET', `/api/v1/sprints?folder_id=${folderId}`);
+}
+
+export async function createSprint(body: SprintCreate): Promise<Sprint> {
+  return apiFetch<Sprint>('POST', '/api/v1/sprints', body);
+}
+
+export async function updateSprint(id: number, body: SprintUpdate): Promise<Sprint> {
+  return apiFetch<Sprint>('PUT', `/api/v1/sprints/${id}`, body);
+}
+
+export async function deleteSprint(id: number): Promise<void> {
+  return apiFetch<void>('DELETE', `/api/v1/sprints/${id}`);
+}
+
+// ===== Kanban Columns =====
+export async function listKanbanColumns(sprintId: number): Promise<KanbanColumnData[]> {
+  return apiFetch<KanbanColumnData[]>('GET', `/api/v1/kanban-columns?sprint_id=${sprintId}`);
+}
+
+export async function createKanbanColumn(body: KanbanColumnCreate): Promise<KanbanColumnData> {
+  return apiFetch<KanbanColumnData>('POST', '/api/v1/kanban-columns', body);
+}
+
+export async function updateKanbanColumn(id: number, body: KanbanColumnUpdate): Promise<KanbanColumnData> {
+  return apiFetch<KanbanColumnData>('PUT', `/api/v1/kanban-columns/${id}`, body);
+}
+
+export async function deleteKanbanColumn(id: number): Promise<void> {
+  return apiFetch<void>('DELETE', `/api/v1/kanban-columns/${id}`);
+}
+
+export async function reorderKanbanColumns(items: { id: number; sort_order: number }[]): Promise<void> {
+  return apiFetch<void>('POST', '/api/v1/kanban-columns/reorder', { items });
+}
+
+// ===== Kanban Task Move =====
+export async function moveTodoToColumn(todoId: number, targetColumnId: number): Promise<TodoOut> {
+  return apiFetch<TodoOut>('POST', `/api/v1/todos/${todoId}/move`, { target_column_id: targetColumnId });
 }
 
 // ===== Tags =====

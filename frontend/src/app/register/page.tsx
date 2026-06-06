@@ -1,14 +1,13 @@
 'use client';
 
 // 注册页面入口, 负责账号创建, 密码确认, 密码强度反馈和注册成功跳转.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
 import OutlinedInput from '@mui/material/OutlinedInput';
 import Button from '@mui/material/Button';
 import Alert from '@mui/material/Alert';
 import CircularProgress from '@mui/material/CircularProgress';
-import Snackbar from '@mui/material/Snackbar';
 import Link from '@mui/material/Link';
 import Typography from '@mui/material/Typography';
 import FormControl from '@mui/material/FormControl';
@@ -18,7 +17,12 @@ import AuthLayout from '@/components/auth/AuthLayout';
 import AuthCard, { staggerSx } from '@/components/auth/AuthCard';
 import PasswordInput from '@/components/auth/PasswordInput';
 import PasswordStrengthBar from '@/components/auth/PasswordStrengthBar';
-import { register as apiRegister, ApiError } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { useI18n } from '@/context/I18nContext';
+import { ApiError, checkUsernameAvailability } from '@/lib/api';
+import type { TranslationKey } from '@/i18n/messages';
+
+type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'error';
 
 const registerCardSx = {
   minHeight: 'auto',
@@ -52,26 +56,78 @@ const registerTextInputSx = {
 
 export default function RegisterPage() {
   const router = useRouter();
+  const { register } = useAuth();
+  const { t } = useI18n();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState<TranslationKey | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
-    username?: string;
-    password?: string;
-    confirmPw?: string;
+    username?: TranslationKey;
+    password?: TranslationKey;
+    confirmPw?: TranslationKey;
   }>({});
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
   const [submitting, setSubmitting] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
+
+  const passwordStrengthLabels = [
+    '',
+    t('register.passwordWeak'),
+    t('register.passwordFair'),
+    t('register.passwordMedium'),
+    t('register.passwordStrong'),
+    t('register.passwordVeryStrong'),
+  ];
+
+  useEffect(() => {
+    const normalizedUsername = username.trim();
+    if (normalizedUsername.length < 3) {
+      return undefined;
+    }
+
+    let active = true;
+    const timer = window.setTimeout(async () => {
+      try {
+        const result = await checkUsernameAvailability(normalizedUsername);
+        if (!active) return;
+        setUsernameStatus(result.available ? 'available' : 'taken');
+        setFieldErrors((prev) => {
+          if (!result.available) {
+            return { ...prev, username: 'register.usernameTaken' };
+          }
+          if (
+            prev.username === 'register.usernameTaken'
+            || prev.username === 'register.errors.usernameCheckPending'
+            || prev.username === 'register.errors.usernameCheckFailed'
+          ) {
+            return { ...prev, username: undefined };
+          }
+          return prev;
+        });
+      } catch {
+        if (active) setUsernameStatus('error');
+      }
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [username]);
 
   const validate = (): boolean => {
     const errs: typeof fieldErrors = {};
-    if (!username.trim()) errs.username = '请输入用户名';
-    else if (username.trim().length < 3) errs.username = '用户名至少 3 个字符';
-    if (!password) errs.password = '请输入密码';
-    else if (password.length < 8) errs.password = '密码至少 8 个字符';
-    if (!confirmPw) errs.confirmPw = '请确认密码';
-    else if (confirmPw !== password) errs.confirmPw = '两次密码不一致';
+    if (!username.trim()) errs.username = 'auth.errors.usernameRequired';
+    else if (username.trim().length < 3) errs.username = 'register.errors.usernameMinLength';
+    else if (usernameStatus === 'checking') errs.username = 'register.errors.usernameCheckPending';
+    else if (usernameStatus === 'taken') errs.username = 'register.usernameTaken';
+    if (!password) errs.password = 'auth.errors.passwordRequired';
+    else if (password.length < 8) errs.password = 'register.errors.passwordMinLength';
+    else if (!/[a-zA-Z]/.test(password) || !/\d/.test(password)) {
+      errs.password = 'register.errors.passwordRule';
+    }
+    if (!confirmPw) errs.confirmPw = 'register.errors.confirmPasswordRequired';
+    else if (confirmPw !== password) errs.confirmPw = 'register.passwordMismatched';
     setFieldErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -82,39 +138,49 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
+    setError(null);
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await apiRegister({ username: username.trim(), password });
-      setSnackbarOpen(true);
-      setTimeout(() => router.push('/login'), 1500);
+      await register(username.trim(), password);
+      router.push('/');
     } catch (err) {
       if (err instanceof ApiError) {
         if (err.status === 409) {
-          setError('用户名已存在');
-          setFieldErrors((prev) => ({ ...prev, username: '用户名已存在' }));
+          setError('register.usernameTaken');
+          setUsernameStatus('taken');
+          setFieldErrors((prev) => ({ ...prev, username: 'register.usernameTaken' }));
+        } else if (err.status === 422) {
+          setError('auth.errors.validation');
         } else {
-          setError(err.message);
+          setError('register.errors.failed');
         }
       } else {
-        setError('注册失败，请重试');
+        setError('register.errors.failed');
       }
     } finally {
       setSubmitting(false);
     }
   };
 
+  const usernameHelperKey = fieldErrors.username
+    ?? (usernameStatus === 'checking' ? 'register.usernameChecking' : undefined)
+    ?? (usernameStatus === 'available' ? 'register.usernameAvailable' : undefined)
+    ?? (usernameStatus === 'error' ? 'register.errors.usernameCheckFailed' : undefined);
+  const confirmPasswordHelperKey = fieldErrors.confirmPw
+    ?? (confirmPw ? (confirmPw === password ? 'register.passwordMatched' : 'register.passwordMismatched') : undefined);
+  const confirmPasswordError = !!fieldErrors.confirmPw || Boolean(confirmPw && confirmPw !== password);
+
   return (
     <AuthLayout showDecorations>
-      <AuthCard title="创建账号" cardSx={registerCardSx}>
+      <AuthCard title={t('register.createAccount')} cardSx={registerCardSx}>
         {/* Error Banner */}
         {error && (
           <Alert
             severity="error"
             sx={{ mb: 2.5, borderRadius: 1.5, fontSize: '0.8125rem' }}
           >
-            {error}
+            {t(error)}
           </Alert>
         )}
 
@@ -123,24 +189,35 @@ export default function RegisterPage() {
           <Box sx={staggerSx(0)}>
             <FormControl fullWidth error={!!fieldErrors.username} sx={{ mb: 3.3 }}>
               <FormLabel htmlFor="register-username" sx={registerFieldLabelSx}>
-                用户名
+                {t('auth.username')}
               </FormLabel>
               <OutlinedInput
                 id="register-username"
                 value={username}
                 onChange={(e) => {
-                  setUsername(e.target.value);
+                  const nextUsername = e.target.value;
+                  setUsername(nextUsername);
+                  setUsernameStatus(nextUsername.trim().length >= 3 ? 'checking' : 'idle');
                   clearFieldError('username');
                 }}
                 autoFocus
                 disabled={submitting}
-                placeholder="输入用户名"
+                placeholder={t('register.usernamePlaceholder')}
                 autoComplete="username"
                 sx={registerTextInputSx}
               />
-              {fieldErrors.username && (
-                <FormHelperText sx={{ mx: 0, mt: '4px', fontSize: 12 }}>
-                  {fieldErrors.username}
+              {usernameHelperKey && (
+                <FormHelperText
+                  sx={{
+                    mx: 0,
+                    mt: '4px',
+                    fontSize: 12,
+                    color: usernameStatus === 'available' && !fieldErrors.username
+                      ? 'success.main'
+                      : undefined,
+                  }}
+                >
+                  {t(usernameHelperKey)}
                 </FormHelperText>
               )}
             </FormControl>
@@ -149,36 +226,41 @@ export default function RegisterPage() {
           {/* 密码 */}
           <Box sx={staggerSx(1)}>
             <PasswordInput
-              label="密码"
+              label={t('auth.password')}
               value={password}
               onChange={(e) => {
                 setPassword(e.target.value);
                 clearFieldError('password');
               }}
               error={!!fieldErrors.password}
-              helperText={fieldErrors.password}
-              placeholder="至少 8 位"
+              helperText={fieldErrors.password ? t(fieldErrors.password) : undefined}
+              placeholder={t('register.passwordPlaceholder')}
               autoComplete="new-password"
               disabled={submitting}
               sx={{ mb: 0 }}
               labelSx={registerFieldLabelSx}
               inputSx={registerTextInputSx}
             />
-            <PasswordStrengthBar password={password} />
+            <PasswordStrengthBar
+              password={password}
+              helpText={t('register.passwordRuleHelp')}
+              labelPrefix={t('register.passwordStrength')}
+              strengthLabels={passwordStrengthLabels}
+            />
           </Box>
 
           {/* 确认密码 */}
           <Box sx={staggerSx(2)}>
             <PasswordInput
-              label="确认密码"
+              label={t('register.confirmPassword')}
               value={confirmPw}
               onChange={(e) => {
                 setConfirmPw(e.target.value);
                 clearFieldError('confirmPw');
               }}
-              error={!!fieldErrors.confirmPw}
-              helperText={fieldErrors.confirmPw}
-              placeholder="再次输入密码"
+              error={confirmPasswordError}
+              helperText={confirmPasswordHelperKey ? t(confirmPasswordHelperKey) : undefined}
+              placeholder={t('register.confirmPasswordPlaceholder')}
               autoComplete="new-password"
               disabled={submitting}
               sx={{ mb: 3.3 }}
@@ -208,11 +290,11 @@ export default function RegisterPage() {
                 },
               }}
             >
-              {submitting ? (
-                <CircularProgress size={20} sx={{ color: '#fff' }} />
-              ) : (
-                '创建账号'
-              )}
+                {submitting ? (
+                  <CircularProgress size={20} sx={{ color: '#fff' }} />
+                ) : (
+                  t('register.createAccount')
+                )}
             </Button>
           </Box>
 
@@ -226,25 +308,17 @@ export default function RegisterPage() {
                 color: 'text.secondary',
               }}
             >
-              已有账号？{' '}
+              {t('register.hasAccount')}{' '}
               <Link
                 href="/login"
                 underline="none"
                 sx={{ fontWeight: 600, color: 'primary.main' }}
               >
-                返回登录
+                {t('register.backToLogin')}
               </Link>
             </Typography>
           </Box>
         </Box>
-
-        {/* 注册成功 Snackbar */}
-        <Snackbar
-          open={snackbarOpen}
-          autoHideDuration={1500}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-          message="注册成功"
-        />
       </AuthCard>
     </AuthLayout>
   );

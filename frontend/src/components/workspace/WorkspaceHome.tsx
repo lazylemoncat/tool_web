@@ -30,6 +30,7 @@ import type { LedgerOut, DashboardSummary, StatsResponse } from '@/lib/financeTy
 
 export default function WorkspaceHome() {
   const router = useRouter();
+  const appVersion = process.env.NEXT_PUBLIC_APP_VERSION;
 
   // 管理模式状态
   const [isManageMode, setIsManageMode] = useState(false);
@@ -270,7 +271,7 @@ export default function WorkspaceHome() {
       }}
     >
       {/* 页面头部 */}
-      <WorkspaceHeader isManageMode={isManageMode} onToggleManage={handleToggleManage} />
+      <WorkspaceHeader isManageMode={isManageMode} onToggleManage={handleToggleManage} appVersion={appVersion} />
 
       {/* 管理模式工具栏 */}
       {isManageMode && (

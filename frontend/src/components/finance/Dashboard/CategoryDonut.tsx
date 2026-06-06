@@ -1,6 +1,7 @@
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import { PieChart } from '@mui/x-charts/PieChart';
+import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { CategoryDataItem } from '@/lib/financeTypes';
 
 interface CategoryDonutProps {
@@ -48,9 +49,12 @@ export default function CategoryDonut({ data }: CategoryDonutProps) {
             {data.map((d) => (
               <Box key={d.category_name} sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: '0.6875rem' }}>
                 <Box sx={{ width: 10, height: 10, bgcolor: d.color, borderRadius: 0.5, flexShrink: 0 }} />
-                <Typography noWrap sx={{ flex: 1, minWidth: 0, fontSize: '0.6875rem', color: 'text.primary' }}>
-                  {d.category_icon} {d.category_name}
-                </Typography>
+                <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <MarkerIcon type={d.category_icon_type} value={d.category_icon} size={14} />
+                  <Typography noWrap sx={{ minWidth: 0, fontSize: '0.6875rem', color: 'text.primary' }}>
+                    {d.category_name}
+                  </Typography>
+                </Box>
                 <Typography sx={{ flexShrink: 0, fontSize: '0.6875rem', color: 'text.secondary', fontWeight: 500 }}>¥{Number(d.total).toLocaleString()}</Typography>
               </Box>
             ))}

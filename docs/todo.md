@@ -5,6 +5,7 @@
 Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功能:
 
 - **文件夹管理**: 创建嵌套文件夹, 自定义颜色, 拖拽排序, 级联删除
+- **文件夹模式**: 文件夹支持 `todo` 和 `kanban` 两种模式, 选择 `kanban` 后进入看板视图并显示侧边栏看板图标
 - **任务 CRUD**: 创建/查看/编辑/删除任务, 支持标题、备注、优先级、截止日期
 - **子任务**: 任务内嵌套子任务, 可展开/折叠, 显示完成进度
 - **优先级**: 三级优先级 (高/中/低), 彩色标签显示
@@ -43,6 +44,16 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 **拖拽排序**: 长按文件夹拖拽手柄 (⠿) 可重新排列顺序.
 
 **颜色标识**: 每个文件夹可设置十六进制颜色 (如 `#4a7c59`), 以彩色圆点显示.
+
+**工作模式**: 创建文件夹时可选择 Todo 列表或 Kanban 看板模式. `kanban` 模式文件夹由后端返回 `mode: "kanban"`, 前端会自动切换到看板视图, 侧边栏文件夹名称右侧显示看板图标.
+
+**Kanban 新建任务**: 在 Kanban 看板第一列点击新增按钮时, 前端打开专用 `KanbanTaskDialog`, 传递当前 `sprint_id` 与目标 `column_id`. 保存后调用 `POST /api/v1/kanban/tasks`, 并按当前 sprint 重新拉取 `kanban_tasks` 与列信息, 新任务会直接显示在第一列.
+
+**Kanban 任务流转**: 看板卡片来自独立 `kanban_tasks` 表. 确认按钮, 拖拽移动, Drawer 中切换列和删除操作分别调用 `/api/v1/kanban/tasks/{id}/move` 与 `/api/v1/kanban/tasks/{id}`, 不再复用普通 `/todos` 接口.
+
+**Kanban 列删除**: 删除列时, 后端会将该列内的独立 `kanban_tasks` 迁移到同一 sprint 中排序最靠前的其他列; 如果没有其他列, 任务的 `column_id` 置空.
+
+**Kanban 动态字段**: 文件夹 `kanban_config.kanban_template.fields` 定义系统字段和自定义字段. 如果文件夹没有持久化模板, 前端会使用默认 Kanban 任务模板. 新建弹窗按模板渲染字段, 使用 `default_value` 初始化表单并做必填校验, 日期字段使用 MUI X `DatePicker` 和共享日期显示格式. 后端按同一模板校验 `custom_fields`, 并保存到 `kanban_tasks.custom_fields`.
 
 ### 2. 创建任务
 
@@ -209,6 +220,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `parent_id` | `Integer` | FOREIGN KEY → folders.id, NULLABLE | 父文件夹 (嵌套) |
 | `name` | `String(50)` | NOT NULL | 文件夹名称 |
 | `color` | `String(7)` | DEFAULT `#6366f1` | 十六进制颜色 |
+| `mode` | `String(10)` | DEFAULT `todo` | 文件夹工作模式, `todo` 或 `kanban` |
+| `kanban_config` | `JSON/Text` | NULLABLE | Kanban 模板配置, 包含 `kanban_template.fields` |
 | `sort_order` | `Integer` | DEFAULT 0 | 排序顺序 |
 | `created_at` | `DateTime` | DEFAULT utcnow | 创建时间 |
 | `updated_at` | `DateTime` | DEFAULT utcnow, ON UPDATE utcnow | 更新时间 |
@@ -218,6 +231,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 - `parent` → `Folder.children` (自引用, 级联删除)
 - `children` → `Folder` (自引用, 级联删除)
 - `todos` → `Todo` (一对多, 级联删除)
+- `sprints` → `Sprint` (一对多, 级联删除)
+- `kanban_tasks` → `KanbanTask` (一对多, 级联删除)
 
 ### todos 表
 
@@ -244,6 +259,29 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 - `children` → `Todo` (自引用, 级联删除)
 - `tags` → `Tag` (多对多, 通过 `todo_tags` 关联表)
 - `recurrence_rules` → `RecurrenceRule` (一对多, 级联删除)
+
+### kanban_tasks 表
+
+| 列名 | 类型 | 约束 | 说明 |
+|------|------|------|------|
+| `id` | `Integer` | PRIMARY KEY, AUTOINCREMENT | Kanban 任务唯一 ID |
+| `user_id` | `Integer` | FOREIGN KEY → auth_users.id, NOT NULL, INDEXED | 所属用户 |
+| `folder_id` | `Integer` | FOREIGN KEY → folders.id, NOT NULL, INDEXED | 所属 Kanban 文件夹 |
+| `sprint_id` | `Integer` | FOREIGN KEY → sprints.id, NULLABLE | 所属 Sprint |
+| `column_id` | `Integer` | FOREIGN KEY → kanban_columns.id, NULLABLE | 所属看板列 |
+| `title` | `String(500)` | NOT NULL | 任务标题 |
+| `version` | `String(100)` | NULLABLE | 版本字段 |
+| `task_type` | `String(50)` | NULLABLE | 类型字段 |
+| `priority` | `String(10)` | NULLABLE | 优先级, 如 `P0`/`P1`/`P2`/`P3` |
+| `requirement_desc` | `Text` | NULLABLE | 需求描述 |
+| `technical_desc` | `Text` | NULLABLE | 技术描述 |
+| `acceptance_criteria` | `Text` | NULLABLE | 验收标准 |
+| `custom_fields` | `JSON` | NULLABLE | 模板定义的自定义字段值 |
+| `sort_order` | `Integer` | DEFAULT 0 | 列内排序 |
+| `created_at` | `DateTime` | DEFAULT utcnow | 创建时间 |
+| `updated_at` | `DateTime` | DEFAULT utcnow, ON UPDATE utcnow | 更新时间 |
+
+**约束说明**: 后端创建, 更新和移动 Kanban 任务时会校验 `folder_id`, `sprint_id`, `column_id` 归属一致, 并检查目标列 `capacity`.
 
 ### recurrence_rules 表
 
@@ -288,15 +326,21 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 |------|------|
 | `backend/src/routers/todo.py` | 任务 API 路由: CRUD, toggle 完成, 重排, 重复逻辑, 批量操作 (bulk), 分页响应结构, 所有权校验 |
 | `backend/src/routers/folder.py` | 文件夹 API 路由: CRUD, 重排 |
+| `backend/src/routers/kanban_task.py` | KanbanTask API 路由: 独立看板任务 CRUD, 模板字段校验, 容量检查, 移动列 |
+| `backend/src/routers/kanban_column.py` | Kanban 列 API 路由: 列 CRUD, 重排, 基于 `kanban_tasks` 的列任务数统计 |
 | `backend/src/routers/tag.py` | 标签 API 路由: 列表 (支持 search 和 folder_id)/创建 (幂等)/删除 |
 | `backend/src/routers/theme.py` | 主题 API 路由: CRUD |
 | `backend/src/models/todo.py` | SQLAlchemy ORM 模型: `Todo`, `Folder`, `RecurrenceRule`, `Base` |
+| `backend/src/models/kanban_task.py` | SQLAlchemy ORM 模型: 独立 `KanbanTask` 表和 Folder/Column 关系 |
+| `backend/src/models/kanban.py` | SQLAlchemy ORM 模型: `Sprint`, `KanbanColumn` |
 | `backend/src/models/tag.py` | SQLAlchemy ORM 模型: `Tag`, `todo_tags` 关联表 |
 | `backend/src/models/theme.py` | SQLAlchemy ORM 模型: `UserTheme` |
 | `backend/src/schemas/todo.py` | Pydantic 模型: `TodoCreate/Update/Out`, `FolderCreate/Update/Out`, `RecurrenceRuleOut` 等 |
+| `backend/src/schemas/kanban_task.py` | Pydantic 模型: `KanbanTaskCreate/Update/Out`, `MoveKanbanTaskRequest` |
+| `backend/src/schemas/kanban.py` | Pydantic 模型: `Sprint*`, `KanbanColumn*` |
 | `backend/src/schemas/tag.py` | Pydantic 模型: `TagCreate`, `TagOut` |
 | `backend/src/schemas/theme.py` | Pydantic 模型: `ThemeCreate/Update/Out/FullOut` |
-| `backend/src/database.py` | 数据库连接: 表迁移, 自动创建新表 (`recurrence_rules`, `todo_tags`, `tags`, `user_themes`) |
+| `backend/src/database.py` | 数据库连接: 表迁移, 自动创建新表 (`recurrence_rules`, `todo_tags`, `tags`, `user_themes`), 并补齐旧库 `folders.mode` 字段 |
 
 ### 任务 API 端点
 
@@ -320,13 +364,27 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `priority` | int | 按优先级筛选 (1/2/3) |
 | `status` | string | `active` 或 `completed` |
 | `tag_id` | int | 按标签筛选 |
+| `sprint_id` | int | 按 Kanban Sprint 筛选 |
+| `column_id` | int | 按 Kanban 列筛选 |
 | `skip` | int | 分页偏移 (默认 0, ≥0) |
 | `limit` | int | 每页数量 (默认 100, 1-500) |
+
+### KanbanTask API 端点
+
+| 方法 | 路径 | 认证 | 说明 |
+|------|------|------|------|
+| `GET` | `/api/v1/kanban/tasks?folder_id=&sprint_id=&column_id=` | Cookie/Token | 获取独立 Kanban 任务列表 |
+| `POST` | `/api/v1/kanban/tasks` | Cookie/Token | 创建 Kanban 任务, 按 `kanban_config` 模板校验系统字段和 `custom_fields` |
+| `PUT` | `/api/v1/kanban/tasks/{id}` | Cookie/Token | 更新 Kanban 任务和列/ Sprint 位置 |
+| `DELETE` | `/api/v1/kanban/tasks/{id}` | Cookie/Token | 删除 Kanban 任务 |
+| `PUT` | `/api/v1/kanban/tasks/{id}/move` | Cookie/Token | 移动 Kanban 任务到目标列, 校验目标列容量和归属 |
 
 **POST /api/v1/todos 请求体**:
 ```json
 {
   "folder_id": 1,
+  "sprint_id": 1,
+  "column_id": 1,
   "parent_id": null,
   "title": "买猫粮",
   "note": "皇家猫粮",
@@ -345,6 +403,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
   "data": {
     "id": 42,
     "folder_id": 1,
+    "sprint_id": 1,
+    "column_id": 1,
     "parent_id": null,
     "title": "买猫粮",
     "note": "皇家猫粮",
@@ -382,6 +442,7 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `limit` | int | 每页数量 (默认 100, 1-500) |
 
 **FolderOut 包含**:
+- `mode` 字段, 用于前端决定进入 Todo 列表或 Kanban 看板模式
 - 嵌套的 `children` 字段 (递归 FolderOut 数组)
 - 计算字段 `todo_count` (该文件夹下根级任务数量, 不含子任务)
 
@@ -409,6 +470,15 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 
 | 文件 | 作用 |
 |------|------|
+| `frontend/src/app/todo/page.tsx` | Next.js Todo 页面: 根据文件夹 `mode` 切换普通 Todo 列表和 Kanban 看板, 管理 Kanban sprint/column/task 状态和刷新 |
+| `frontend/src/lib/api/kanbanTask.ts` | KanbanTask API 封装: 列表, 创建, 更新, 删除, 移动 |
+| `frontend/src/components/todo/kanban/KanbanTaskDialog.tsx` | Kanban 新建任务弹窗: 根据模板渲染系统字段和自定义字段, 使用 MUI X `DatePicker` 处理日期字段 |
+| `frontend/src/components/todo/kanban/templateDefaults.ts` | Kanban 默认任务模板: 在文件夹未持久化模板时提供共享字段回退 |
+| `frontend/src/components/todo/kanban/FieldTemplateEditor.tsx` | Kanban 任务卡模板编辑器: 编辑系统字段显示顺序和自定义字段 |
+| `frontend/src/components/todo/kanban/KanbanBoard.tsx` | Kanban 看板容器: 按列渲染独立 `KanbanTaskOut` 卡片并处理拖拽落点 |
+| `frontend/src/components/todo/kanban/KanbanColumn.tsx` | Kanban 列组件: 显示列容量/任务数, 第一列提供新建入口 |
+| `frontend/src/components/todo/kanban/KanbanCard.tsx` | Kanban 卡片组件: 展示模板配置的卡片字段和确认流转按钮 |
+| `frontend/src/components/todo/kanban/KanbanTaskDrawer.tsx` | Kanban 任务详情 Drawer: 展示模板详情字段, 支持切换列和删除 |
 | `frontend/src/pages/TodoPage.tsx` | Todo 页面: 管理筛选状态 (含默认筛选回退), URL 同步筛选参数, 递归文件夹查找, 标签按文件夹过滤, 键盘快捷键 (N, /, Esc) |
 | `frontend/.umirc.ts` | Umi 路由配置: 注册 `/todo` 页面和其他模块路由 |
 | `frontend/src/layouts/index.tsx` | 全局布局: 鉴权守卫, i18n, 主题加载, 顶部栏, 页面级主题上下文 |
@@ -598,3 +668,13 @@ The Todo page now lives at `frontend/src/pages/TodoPage.tsx`. The Umi route is c
 ## Backend Type Checking
 
 Todo, folder, recurrence, and tag ORM models in `backend/src/models/todo.py` and `backend/src/models/tag.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Relationship fields are typed as lists or nullable parent objects so mypy can validate router code without treating instance attributes as `Column` objects.
+
+## Todo Sidebar And Kanban Updates
+
+- Todo sidebar views are user-configurable in `frontend/src/components/layout/TodoSidebar.tsx`. The visible built-in views are saved in `localStorage` under `tool_web.todo.sidebar_views`; users can hide views such as `completed`, add hidden views back, reset, and reorder the visible view list.
+- Sidebar view selection is converted to explicit Todo query params in `frontend/src/app/todo/page.tsx`: `completed` forces `status=completed`, `today` forces active tasks with `due_from=due_to=today`, and `upcoming` forces active tasks with `due_from=tomorrow`. Selecting a sidebar view also syncs the toolbar status filter so switching between views such as `completed` and `all` does not reuse a stale status filter.
+- Folder drag sorting in the sidebar only works among siblings with the same `parent_id`. The frontend calls `POST /api/v1/folders/reorder` with contiguous `sort_order` values, and the backend rejects reorder requests containing folders from different parent groups.
+- Folder creation and subfolder creation use the shared `MarkerPicker` in `frontend/src/components/shared/MarkerPicker.tsx`. Folder API payloads now include `icon_type` (`color` or `emoji`) and `icon_value`; sidebar folder rows render the marker through `MarkerIcon`.
+- Todo task drag sorting is handled in `frontend/src/components/todo/TaskList.tsx` and `frontend/src/components/todo/TaskDetail.tsx`. Root tasks and expanded child tasks can only be reordered within the same `parent_id` group, and the page persists the order through `POST /api/v1/todos/reorder`.
+- Kanban new task creation no longer exposes a sprint selector. New cards are bound to the currently active sprint and the column from which the create action was opened.
+- `KanbanBoard` uses a thicker horizontal scrollbar so users can drag it more easily on wide boards.

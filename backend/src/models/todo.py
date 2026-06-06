@@ -17,9 +17,12 @@ from sqlalchemy import (
     String,
     Text,
 )
+from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 if TYPE_CHECKING:
+    from .kanban import KanbanColumn, Sprint  # noqa: F401
+    from .kanban_task import KanbanTask
     from .tag import Tag
     from .user import User
 
@@ -47,6 +50,17 @@ class Folder(Base):
     color: Mapped[str] = mapped_column(
         String(9), default="#6366f1", nullable=True
     )
+    icon_type: Mapped[str] = mapped_column(
+        String(10), default="color", nullable=True
+    )
+    icon_value: Mapped[str] = mapped_column(
+        String(20), default="#6366f1", nullable=True
+    )
+    # "todo" | "kanban"
+    mode: Mapped[str] = mapped_column(
+        String(10), default="todo", nullable=True
+    )
+    kanban_config: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True
@@ -67,6 +81,12 @@ class Folder(Base):
     )
     todos: Mapped[list[Todo]] = relationship(
         "Todo", back_populates="folder", cascade="all, delete-orphan"
+    )
+    sprints: Mapped[list[Sprint]] = relationship(
+        "Sprint", back_populates="folder", cascade="all, delete-orphan"
+    )
+    kanban_tasks: Mapped[list[KanbanTask]] = relationship(
+        "KanbanTask", back_populates="folder", cascade="all, delete-orphan"
     )
 
 
@@ -93,6 +113,14 @@ class Todo(Base):
     )
     folder_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("folders.id", ondelete="CASCADE"), nullable=True
+    )
+    sprint_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("sprints.id", ondelete="SET NULL"), nullable=True
+    )
+    column_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("kanban_columns.id", ondelete="SET NULL"),
+        nullable=True,
     )
     parent_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("todos.id", ondelete="CASCADE"), nullable=True
@@ -123,6 +151,9 @@ class Todo(Base):
     user: Mapped[User] = relationship("User")
     folder: Mapped[Folder | None] = relationship(
         "Folder", back_populates="todos"
+    )
+    kanban_column: Mapped[KanbanColumn | None] = relationship(
+        "KanbanColumn", back_populates="todos"
     )
     parent: Mapped[Todo | None] = relationship(
         "Todo", remote_side=[id], back_populates="children"

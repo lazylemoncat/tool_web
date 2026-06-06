@@ -19,7 +19,16 @@ from .auth.fastapi_adapter.exceptions import auth_error_handler
 from .auth.fastapi_adapter.router import router as auth_router
 from .database import init_db
 from .middleware.logging import log_requests
-from .routers import finance, folder, tag, theme, todo
+from .routers import (
+    finance,
+    folder,
+    kanban_column,
+    kanban_task,
+    sprint,
+    tag,
+    theme,
+    todo,
+)
 from .utils.errors import AppError, app_error_handler
 from .utils.rate_limit import rate_limit_middleware
 
@@ -92,6 +101,9 @@ app.include_router(folder.router)
 app.include_router(todo.router)
 app.include_router(theme.router)
 app.include_router(tag.router)
+app.include_router(sprint.router)
+app.include_router(kanban_column.router)
+app.include_router(kanban_task.router)
 app.include_router(finance.router)
 
 uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")

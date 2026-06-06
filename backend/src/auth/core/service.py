@@ -61,6 +61,9 @@ class AuthService:
             require_digit=self.settings.password_require_digit,
         )
 
+    def username_available(self, username: str) -> bool:
+        return self.store.get_user_by_username(username) is None
+
     def register(
         self,
         *,
@@ -352,6 +355,59 @@ class AuthService:
             "password_changed",
             user_id=user.id,
             session_id=current_session_id,
+            ip=ip,
+            user_agent=user_agent,
+        )
+        self.store.db.commit()
+
+    def reset_password_with_mfa(
+        self,
+        *,
+        username: str,
+        method: str,
+        code: str,
+        new_password: str,
+        ip: str | None,
+        user_agent: str | None,
+    ) -> None:
+        user = self.store.get_user_by_username(username)
+        if not user or not user.is_active:
+            raise MfaInvalidError()
+        if not self.store.enabled_mfa_methods(user.id):
+            raise MfaInvalidError()
+
+        ok = False
+        if method == "totp":
+            ok = self._verify_totp_for_user(user.id, code, None)
+        elif method == "recovery_code":
+            ok = self.store.consume_recovery_code(
+                user_id=user.id, code=code, ip=ip, user_agent=user_agent
+            )
+            if ok:
+                self.store.audit(
+                    "mfa_recovery_code_used",
+                    user_id=user.id,
+                    ip=ip,
+                    user_agent=user_agent,
+                )
+
+        if not ok:
+            self.store.audit(
+                "password_reset_mfa_failure",
+                user_id=user.id,
+                ip=ip,
+                user_agent=user_agent,
+            )
+            self.store.db.commit()
+            raise MfaInvalidError()
+
+        validate_password(new_password, self.password_policy())
+        user.password_hash = self.password_hasher.hash(new_password)
+        user.password_changed_at = utcnow()
+        self.store.revoke_user_sessions(user.id, "password_reset")
+        self.store.audit(
+            "password_reset_success",
+            user_id=user.id,
             ip=ip,
             user_agent=user_agent,
         )

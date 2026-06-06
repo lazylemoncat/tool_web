@@ -10,6 +10,7 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
 import type { AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut, TransactionOut } from '@/lib/financeTypes';
 
@@ -131,7 +132,14 @@ export default function TransactionFormDialog({
           </TextField>
           <TextField select fullWidth size="small" label="分类" value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}>
             <MenuItem value="">未分类</MenuItem>
-            {categories.map((c) => <MenuItem key={c.id} value={c.id}>{c.icon} {c.name}</MenuItem>)}
+            {categories.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
+                  <MarkerIcon type={c.icon_type} value={c.icon_value} size={16} />
+                  {c.name}
+                </Box>
+              </MenuItem>
+            ))}
           </TextField>
         </Box>
 

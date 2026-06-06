@@ -59,7 +59,8 @@ export interface CategoryOut {
   ledger_id: number;
   parent_id: number | null;
   name: string;
-  icon: string;
+  icon_type: 'color' | 'emoji';
+  icon_value: string;
   created_at: string;
   children: CategoryOut[];
 }
@@ -68,13 +69,15 @@ export interface CategoryCreate {
   ledger_id: number;
   parent_id?: number | null;
   name: string;
-  icon?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
 }
 
 export interface CategoryUpdate {
   parent_id?: number | null;
   name?: string;
-  icon?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
 }
 
 // Finance Tags (标签)
@@ -277,6 +280,7 @@ export interface DashboardSummary {
 // Stats (for charts)
 export interface CategoryDataItem {
   category_name: string;
+  category_icon_type: 'color' | 'emoji';
   category_icon: string;
   total: string;
   color: string;

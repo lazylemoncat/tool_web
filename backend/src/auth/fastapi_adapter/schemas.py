@@ -24,6 +24,13 @@ class MfaVerifyRequest(BaseModel):
     remember_me: bool = False
 
 
+class PasswordResetRequest(BaseModel):
+    username: str = Field(min_length=2, max_length=50)
+    method: Literal["totp", "recovery_code"]
+    code: str = Field(min_length=1)
+    new_password: str = Field(min_length=1, max_length=100)
+
+
 class AuthUserResponse(BaseModel):
     id: int
     username: str
@@ -48,6 +55,11 @@ class LoginResponse(BaseModel):
     challenge_id: str | None = None
     available_methods: list[str] = []
     expires_in: int | None = None
+
+
+class UsernameAvailabilityResponse(BaseModel):
+    username: str
+    available: bool
 
 
 class UpdatePreferencesRequest(BaseModel):

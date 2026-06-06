@@ -14,6 +14,13 @@ export interface MfaVerifyRequest {
   remember_me?: boolean;
 }
 
+export interface PasswordResetRequest {
+  username: string;
+  method: MfaMethod;
+  code: string;
+  new_password: string;
+}
+
 export interface AuthUser {
   id: number;
   username: string;
@@ -37,6 +44,11 @@ export interface LoginResponse extends AuthResponse {
 
 export type MeResponse = AuthResponse;
 
+export interface UsernameAvailabilityResponse {
+  username: string;
+  available: boolean;
+}
+
 // ===== Tags =====
 export interface APITag {
   id: number;
@@ -53,6 +65,8 @@ export interface RecurrenceRuleOut {
 export interface TodoOut {
   id: number;
   folder_id: number | null;
+  sprint_id: number | null;
+  column_id: number | null;
   parent_id: number | null;
   title: string;
   note: string | null;
@@ -70,6 +84,8 @@ export interface TodoOut {
 
 export interface TodoCreate {
   folder_id?: number | null;
+  sprint_id?: number | null;
+  column_id?: number | null;
   parent_id?: number | null;
   title: string;
   note?: string | null;
@@ -82,6 +98,8 @@ export interface TodoCreate {
 
 export interface TodoUpdate {
   folder_id?: number | null;
+  sprint_id?: number | null;
+  column_id?: number | null;
   parent_id?: number | null;
   title?: string;
   note?: string | null;
@@ -100,6 +118,11 @@ export interface TodoListResponse {
   limit: number;
 }
 
+export interface ReorderItem {
+  id: number;
+  sort_order: number;
+}
+
 export interface BulkTodoRequest {
   ids: number[];
   action: 'complete' | 'delete' | 'move';
@@ -110,12 +133,93 @@ export interface TodoToggleBody {
   complete_children?: boolean;
 }
 
+// ===== KanbanTask (independent from Todo) =====
+export interface KanbanTaskOut {
+  id: number;
+  folder_id: number;
+  sprint_id: number | null;
+  column_id: number | null;
+  title: string;
+  version: string | null;
+  task_type: string | null;
+  priority: string | null;  // P0/P1/P2/P3
+  requirement_desc: string | null;
+  technical_desc: string | null;
+  acceptance_criteria: string | null;
+  custom_fields: Record<string, unknown> | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KanbanTaskCreate {
+  folder_id: number;
+  sprint_id?: number | null;
+  column_id?: number | null;
+  title: string;
+  version?: string | null;
+  task_type?: string | null;
+  priority?: string | null;
+  requirement_desc?: string | null;
+  technical_desc?: string | null;
+  acceptance_criteria?: string | null;
+  custom_fields?: Record<string, unknown> | null;
+  sort_order?: number;
+}
+
+export interface KanbanTaskUpdate {
+  title?: string;
+  sprint_id?: number | null;
+  column_id?: number | null;
+  version?: string | null;
+  task_type?: string | null;
+  priority?: string | null;
+  requirement_desc?: string | null;
+  technical_desc?: string | null;
+  acceptance_criteria?: string | null;
+  custom_fields?: Record<string, unknown> | null;
+  sort_order?: number;
+}
+
+export interface MoveKanbanTaskRequest {
+  target_column_id: number;
+  target_sprint_id?: number | null;
+  sort_order?: number;
+}
+
+// ===== Field definition (for kanban_config template) =====
+export interface FieldDef {
+  key: string;
+  label: string;
+  type: 'text' | 'textarea' | 'select' | 'number' | 'date';
+  show_on_card: boolean;
+  show_in_detail: boolean;
+  required: boolean;
+  order: number;
+  system: boolean;
+  editable?: boolean;
+  default_value?: string;
+  options?: string[];
+}
+
+export interface KanbanTemplate {
+  fields: FieldDef[];
+}
+
+export interface KanbanConfig {
+  kanban_template: KanbanTemplate;
+}
+
 // ===== Folders =====
 export interface FolderOut {
   id: number;
   parent_id: number | null;
   name: string;
   color: string;
+  icon_type: 'color' | 'emoji';
+  icon_value: string;
+  mode: string;  // "todo" | "kanban"
+  kanban_config: KanbanConfig | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -127,14 +231,84 @@ export interface FolderCreate {
   parent_id?: number | null;
   name: string;
   color?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
   sort_order?: number;
+  mode?: string;  // "todo" | "kanban"
 }
 
 export interface FolderUpdate {
   parent_id?: number | null;
   name?: string;
   color?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
   sort_order?: number;
+  mode?: string;
+  kanban_config?: KanbanConfig | null;
+}
+
+// ===== Kanban: Sprint & Columns =====
+export interface Sprint {
+  id: number;
+  folder_id: number;
+  name: string;
+  goal: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  status: 'active' | 'planned' | 'completed';
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SprintCreate {
+  folder_id: number;
+  name: string;
+  goal?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: string;
+  sort_order?: number;
+}
+
+export interface SprintUpdate {
+  name?: string;
+  goal?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status?: string;
+  sort_order?: number;
+}
+
+export interface KanbanColumnData {
+  id: number;
+  sprint_id: number;
+  name: string;
+  color: string | null;
+  capacity: number | null;
+  sort_order: number;
+  is_archived: boolean;
+  task_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface KanbanColumnCreate {
+  sprint_id: number;
+  name: string;
+  color?: string;
+  capacity?: number | null;
+  sort_order?: number;
+  is_archived?: boolean;
+}
+
+export interface KanbanColumnUpdate {
+  name?: string;
+  color?: string;
+  capacity?: number | null;
+  sort_order?: number;
+  is_archived?: boolean;
 }
 
 // ===== Priority helpers =====

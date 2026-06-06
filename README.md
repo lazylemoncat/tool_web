@@ -10,7 +10,7 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 - **Todo 任务管理**: 文件夹, 标签, 优先级, 子任务, 搜索筛选, 拖拽排序, 批量操作.
 - **Finance 个人记账**: 多账本, 账户, 分类, 标签, 交易, 子交易, 预算, 事件, 图表统计.
 - **自定义主题**: 亮色/暗色/Matcha/跟随系统, 用户上传 JSON 主题, 页面级 token 覆盖, 自定义按钮和脚本桥接.
-- **国际化**: 中文和英文 JSON 词典.
+- **国际化**: 中文和英文 TypeScript 词典, 登录页支持语言切换和本地化错误提示.
 - **响应式布局**: 桌面顶部栏, TODO 侧边栏, 移动端顶栏与抽屉式导航.
 - **RESTful API**: FastAPI 后端, 统一认证与模块化路由.
 
@@ -22,7 +22,7 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 | 后端 | FastAPI, SQLAlchemy ORM, bcrypt, PyJWT |
 | 数据库 | SQLite |
 | 部署 | Docker Compose, Next.js, FastAPI |
-| 测试 | pytest, TestClient |
+| 测试 | pytest, TestClient, Vitest, React Testing Library |
 
 ## 项目结构
 
@@ -45,7 +45,8 @@ tool_web/
 │   ├── src/
 │   │   ├── app/                 # Next App Router 页面
 │   │   ├── components/          # UI, layout, todo, finance, auth, settings
-│   │   ├── context/             # AuthContext 登录态
+│   │   ├── context/             # AuthContext 登录态, I18nContext 语言状态
+│   │   ├── i18n/                # 前端中文/英文文案词典
 │   │   ├── lib/                 # API client 与共享类型
 │   │   └── theme.ts             # MUI 主题
 │   ├── public/
@@ -113,16 +114,20 @@ npm run dev
 
 ```bash
 cd frontend
+npm run test
 npm run build
 ```
 
 ```bash
 cd backend
 uv sync --extra dev
+uv run --with ruff ruff check src tests
+uv run --with mypy mypy --ignore-missing-imports src tests
 JWT_SECRET=test uv run python -m pytest tests/ -v
 ```
 
-> 如果本地 `node_modules` 仍是旧依赖, 请先执行 `npm install` 以刷新依赖和 `package-lock.json`.
+> 如果本地 `node_modules` 仍是旧依赖, 请先执行 `npm install` 或 `npm ci` 以刷新依赖和 `package-lock.json`.
+> 当前前端 `npm run lint` 仍有重构遗留的 baseline 错误, CI 暂时将 lint 作为非阻塞输出, 详见 `docs/testing.md`.
 
 ## 前端开发约定
 
@@ -134,6 +139,7 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 ## 常用文档
 
 - [前端架构](docs/frontend.md)
+- [测试方案](docs/testing.md)
 - [API 文档](docs/api.md)
 - [认证模块](docs/auth.md)
 - [Todo 模块](docs/todo.md)
@@ -154,8 +160,8 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 
 项目包含两个 Docker 部署 workflow:
 
-- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
-- `.github/workflows/dev-test-deploy.yml`: 当代码 push 到 `dev` 分支时触发. 先执行同样的 `ruff` 和 `mypy` 后端质量检查. 检查通过后,构建并推送 `:dev` 测试镜像,在测试服务器写入独立的 `docker-compose.test.yml`,使用独立 Compose project 和测试数据目录运行测试环境. 默认测试端口为前端 `18003`,后端 `18004`,可通过 GitHub Variables 调整.
+- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`, `pytest tests -q`; 同时执行前端质量检查: `npm ci`, `npm run lint` (当前非阻塞), `npm run test`, `npm run build`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
+- `.github/workflows/dev-test-deploy.yml`: 当代码 push 到 `dev` 分支时触发. 先执行同样的后端和前端质量检查. 检查通过后,构建并推送 `:dev` 测试镜像,在测试服务器写入独立的 `docker-compose.test.yml`,使用独立 Compose project 和测试数据目录运行测试环境. 默认测试端口为前端 `18003`,后端 `18004`,可通过 GitHub Variables 调整.
 
 Ruff 配置位于 `backend/pyproject.toml`,当前启用规则前缀为 `E`, `W`, `N`, `I`, `F`, `UP`.
 

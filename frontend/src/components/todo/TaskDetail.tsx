@@ -1,3 +1,5 @@
+import { useState } from 'react';
+import type { DragEvent } from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
@@ -9,12 +11,59 @@ interface TaskDetailProps {
   folders?: FolderOut[];
   onEdit?: () => void;
   onDelete?: () => void;
+  onReorderTasks?: (parentId: number | null, orderedIds: number[]) => void;
 }
 
-export default function TaskDetail({ task, folders, onEdit, onDelete }: TaskDetailProps) {
+type TaskDropPosition = 'before' | 'after';
+
+function moveTaskId(ids: number[], draggedId: number, targetId: number, position: TaskDropPosition): number[] {
+  const withoutDragged = ids.filter((id) => id !== draggedId);
+  const targetIndex = withoutDragged.indexOf(targetId);
+  if (targetIndex < 0) return ids;
+  const insertIndex = position === 'after' ? targetIndex + 1 : targetIndex;
+  const next = [...withoutDragged];
+  next.splice(insertIndex, 0, draggedId);
+  return next;
+}
+
+export default function TaskDetail({ task, folders, onEdit, onDelete, onReorderTasks }: TaskDetailProps) {
+  const [draggingChildId, setDraggingChildId] = useState<number | null>(null);
+  const [dragOverChild, setDragOverChild] = useState<{ id: number; position: TaskDropPosition } | null>(null);
   const folderName = folders?.find((f) => f.id === task.folder_id)?.name || (task.folder_id ? '未命名' : '无');
   const createdAt = task.created_at ? dayjs(task.created_at).format('YYYY-MM-DD HH:mm') : '-';
   const updatedAt = task.updated_at ? dayjs(task.updated_at).format('YYYY-MM-DD HH:mm') : '-';
+
+  const handleChildDragStart = (event: DragEvent<HTMLElement>, childId: number) => {
+    event.stopPropagation();
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(childId));
+    setDraggingChildId(childId);
+  };
+
+  const handleChildDragOver = (event: DragEvent<HTMLElement>, child: TodoOut) => {
+    if (draggingChildId === null || draggingChildId === child.id) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const rect = event.currentTarget.getBoundingClientRect();
+    const position: TaskDropPosition = event.clientY > rect.top + rect.height / 2 ? 'after' : 'before';
+    setDragOverChild({ id: child.id, position });
+  };
+
+  const handleChildDrop = (event: DragEvent<HTMLElement>, child: TodoOut) => {
+    event.preventDefault();
+    if (draggingChildId === null || draggingChildId === child.id) {
+      setDraggingChildId(null);
+      setDragOverChild(null);
+      return;
+    }
+    const childIds = task.children.map((item) => item.id);
+    const orderedIds = moveTaskId(childIds, draggingChildId, child.id, dragOverChild?.position ?? 'before');
+    if (orderedIds.join(',') !== childIds.join(',')) {
+      onReorderTasks?.(task.id, orderedIds);
+    }
+    setDraggingChildId(null);
+    setDragOverChild(null);
+  };
 
   return (
     <Box sx={{ mt: 0.25, px: { xs: 2, sm: 8.5 }, py: 2.5, bgcolor: 'oklch(94% 0.005 275)', borderRadius: '0 0 12px 12px' }}>
@@ -38,7 +87,31 @@ export default function TaskDetail({ task, folders, onEdit, onDelete }: TaskDeta
         <Box sx={{ mb: 2 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>子任务</Typography>
           {task.children.map((child) => (
-            <Box key={child.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.5 }}>
+            <Box
+              key={child.id}
+              onDragOver={(event) => handleChildDragOver(event, child)}
+              onDrop={(event) => handleChildDrop(event, child)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 1,
+                py: 0.5,
+                borderTop: dragOverChild?.id === child.id && dragOverChild.position === 'before' ? '2px solid' : '2px solid transparent',
+                borderBottom: dragOverChild?.id === child.id && dragOverChild.position === 'after' ? '2px solid' : '2px solid transparent',
+                borderColor: dragOverChild?.id === child.id ? 'primary.main' : 'transparent',
+              }}
+            >
+              <Box
+                component="span"
+                draggable
+                onDragStart={(event) => handleChildDragStart(event, child.id)}
+                onDragEnd={() => { setDraggingChildId(null); setDragOverChild(null); }}
+                sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, color: 'text.secondary', cursor: 'grab', '&:active': { cursor: 'grabbing' } }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="8" y1="6" x2="16" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="8" y1="18" x2="16" y2="18" />
+                </svg>
+              </Box>
               <Box sx={{ width: 16, height: 16, borderRadius: '50%', border: '2px solid', borderColor: child.is_completed ? 'primary.main' : 'oklch(82% 0.01 275)', bgcolor: child.is_completed ? 'primary.main' : 'transparent', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
                 ...(child.is_completed && { '&::after': { content: '""', width: 6, height: 3, borderLeft: '1.5px solid #fff', borderBottom: '1.5px solid #fff', transform: 'rotate(-45deg) translateY(-0.5px)' } }),
               }} />

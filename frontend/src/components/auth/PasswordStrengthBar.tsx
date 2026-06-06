@@ -2,7 +2,10 @@
 
 // 注册页密码强度条, 按长度, 大小写, 数字和特殊字符计算四段式强度反馈.
 import Box from '@mui/material/Box';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
+import HelpOutlineRoundedIcon from '@mui/icons-material/HelpOutlineRounded';
 
 export function getPasswordStrength(password: string): { score: number; label: string } {
   let score = 0;
@@ -18,10 +21,20 @@ export function getPasswordStrength(password: string): { score: number; label: s
 
 interface PasswordStrengthBarProps {
   password: string;
+  helpText?: string;
+  labelPrefix?: string;
+  strengthLabels?: string[];
 }
 
-export default function PasswordStrengthBar({ password }: PasswordStrengthBarProps) {
-  const { score, label } = getPasswordStrength(password);
+export default function PasswordStrengthBar({
+  password,
+  helpText,
+  labelPrefix = '密码强度',
+  strengthLabels,
+}: PasswordStrengthBarProps) {
+  const strength = getPasswordStrength(password);
+  const score = strength.score;
+  const label = strengthLabels?.[score] ?? strength.label;
 
   const getSegmentColor = (index: number) => {
     if (index >= score) return 'divider';
@@ -46,18 +59,42 @@ export default function PasswordStrengthBar({ password }: PasswordStrengthBarPro
           />
         ))}
       </Box>
-      {label && (
-        <Typography
-          variant="caption"
+      {(label || helpText) && (
+        <Box
           sx={{
             mt: '4px',
-            display: 'block',
-            color: 'text.secondary',
-            fontSize: '11px',
+            minHeight: 20,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
           }}
         >
-          密码强度：{label}
-        </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: 'text.secondary',
+              fontSize: '11px',
+              lineHeight: '20px',
+            }}
+          >
+            {label ? `${labelPrefix}: ${label}` : labelPrefix}
+          </Typography>
+          {helpText && (
+            <Tooltip title={helpText}>
+              <IconButton
+                size="small"
+                aria-label={helpText}
+                sx={{
+                  width: 20,
+                  height: 20,
+                  color: 'text.secondary',
+                }}
+              >
+                <HelpOutlineRoundedIcon sx={{ fontSize: 15 }} />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
       )}
     </Box>
   );

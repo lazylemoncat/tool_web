@@ -89,6 +89,8 @@ Event 页面展示: 交易列表、总支出/收入、关联关系.
 
 支持 Transaction ↔ Todo, Transaction ↔ Event 等任意关联.
 
+Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源均属于当前用户. 查询和删除关系时也会按 `from` 资源归属隔离, 避免跨用户读取或删除关系.
+
 ## 页面导航
 
 访问 `/finance` 进入记账模块.
@@ -307,3 +309,9 @@ Finance is now routed by Umi through `frontend/.umirc.ts`. The shared finance co
 ## Backend Type Checking
 
 Finance ORM models in `backend/src/models/finance.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Numeric money fields are typed as `Decimal`, and stats responses should be built with `CategoryStatsItem` / `TrendStatsItem` schema objects rather than untyped dictionaries.
+
+## Category Marker Update
+
+Finance categories now use `icon_type` (`color` or `emoji`) and `icon_value` instead of the legacy free-text `icon` API field. Category creation in `frontend/src/components/finance/CategoriesTab.tsx` uses the shared `MarkerPicker`, with emoji values selected from presets rather than typed manually.
+
+Stats category data includes `category_icon_type` alongside `category_icon` so `frontend/src/components/finance/Dashboard/CategoryDonut.tsx` can render either a color marker or an emoji marker in the legend.

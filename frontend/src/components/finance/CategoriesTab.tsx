@@ -11,6 +11,7 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
+import MarkerPicker, { MARKER_EMOJIS, MarkerIcon, type MarkerValue } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
 import type { CategoryOut } from '@/lib/financeTypes';
 
@@ -23,7 +24,7 @@ function CategoryNode({ category, onRefresh }: { category: CategoryOut; onRefres
       <Box onClick={() => hasChildren && setExpanded(!expanded)}
         sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 1, px: 1, borderRadius: 1.5, cursor: hasChildren ? 'pointer' : 'default', '&:hover': { bgcolor: 'action.hover' } }}>
         <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', width: 14, textAlign: 'center' }}>{hasChildren ? (expanded ? '▼' : '▶') : ''}</Typography>
-        <Typography sx={{ fontSize: '0.875rem' }}>{category.icon || '📂'}</Typography>
+        <MarkerIcon type={category.icon_type} value={category.icon_value} size={16} />
         <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: 'text.primary', flex: 1 }}>{category.name}</Typography>
         {hasChildren && <Typography sx={{ fontSize: '0.5625rem', color: '#A5A2AD' }}>{category.children.length} 个子分类</Typography>}
       </Box>
@@ -32,7 +33,7 @@ function CategoryNode({ category, onRefresh }: { category: CategoryOut; onRefres
           <Box sx={{ pl: 3 }}>
             {category.children.map((child) => (
               <Box key={child.id} sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 0.625, px: 1, borderRadius: 1.5, fontSize: '0.6875rem', color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
-                <Typography sx={{ fontSize: '0.75rem' }}>{child.icon || '📄'}</Typography>
+                <MarkerIcon type={child.icon_type} value={child.icon_value} size={14} />
                 <Typography sx={{ fontSize: '0.6875rem', flex: 1 }}>{child.name}</Typography>
               </Box>
             ))}
@@ -52,11 +53,15 @@ interface CategoriesTabProps {
 export default function CategoriesTab({ categories, activeLedgerId, onRefresh }: CategoriesTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState('');
-  const [icon, setIcon] = useState('');
+  const [marker, setMarker] = useState<MarkerValue>({ type: 'emoji', value: MARKER_EMOJIS[1] });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const resetForm = () => { setName(''); setIcon(''); setError(''); };
+  const resetForm = () => {
+    setName('');
+    setMarker({ type: 'emoji', value: MARKER_EMOJIS[1] });
+    setError('');
+  };
 
   const handleCreate = async () => {
     setError('');
@@ -64,7 +69,12 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
     if (!activeLedgerId) { setError('未选择账本'); return; }
     setSaving(true);
     try {
-      await api.createCategory({ ledger_id: activeLedgerId, name: name.trim(), icon: icon || '📂' });
+      await api.createCategory({
+        ledger_id: activeLedgerId,
+        name: name.trim(),
+        icon_type: marker.type,
+        icon_value: marker.value,
+      });
       setDialogOpen(false); resetForm(); onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : '创建失败');
@@ -107,7 +117,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
         <DialogContent sx={{ pt: 2.5 }}>
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
           <TextField fullWidth label="名称" size="small" value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} autoFocus />
-          <TextField fullWidth label="图标" size="small" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="🍜" />
+          <MarkerPicker marker={marker} onChange={setMarker} label="分类标识" />
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button variant="text" onClick={handleClose} sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'none' }}>取消</Button>

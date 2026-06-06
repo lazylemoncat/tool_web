@@ -14,6 +14,53 @@ def test_create_todo(client, auth_headers):
     assert body["children"] == []
 
 
+def test_create_kanban_todo_returns_column_fields(client, auth_headers):
+    folder_resp = client.post(
+        "/api/v1/folders",
+        json={"name": "Board", "mode": "kanban"},
+        headers=auth_headers,
+    )
+    assert folder_resp.status_code == 201
+    folder_id = folder_resp.json()["id"]
+
+    sprint_resp = client.get(
+        f"/api/v1/sprints?folder_id={folder_id}",
+        headers=auth_headers,
+    )
+    assert sprint_resp.status_code == 200
+    sprint_id = sprint_resp.json()[0]["id"]
+
+    columns_resp = client.get(
+        f"/api/v1/kanban-columns?sprint_id={sprint_id}",
+        headers=auth_headers,
+    )
+    assert columns_resp.status_code == 200
+    column_id = columns_resp.json()[0]["id"]
+
+    create_resp = client.post(
+        "/api/v1/todos",
+        json={
+            "folder_id": folder_id,
+            "column_id": column_id,
+            "title": "Kanban Task",
+        },
+        headers=auth_headers,
+    )
+    assert create_resp.status_code == 201
+    created = create_resp.json()
+    assert created["sprint_id"] == sprint_id
+    assert created["column_id"] == column_id
+
+    list_resp = client.get(
+        f"/api/v1/todos?folder_id={folder_id}&sprint_id={sprint_id}",
+        headers=auth_headers,
+    )
+    assert list_resp.status_code == 200
+    listed = list_resp.json()["items"][0]
+    assert listed["sprint_id"] == sprint_id
+    assert listed["column_id"] == column_id
+
+
 def test_list_todos(client, auth_headers):
     client.post(
         "/api/v1/todos", json={"title": "Task 1"}, headers=auth_headers
