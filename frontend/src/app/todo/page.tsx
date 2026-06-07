@@ -20,6 +20,7 @@ import {
   SprintTabs, KanbanBoard, KanbanTaskDrawer,
   KanbanSettingsDialog, KanbanTaskDialog, CapacityExceededDialog,
 } from '@/components/todo/kanban';
+import { getKanbanSubtasks, type KanbanSubtask } from '@/components/todo/kanban/KanbanTaskDrawer';
 import type {
   TodoOut, FolderOut, APITag, Sprint, KanbanColumnData, KanbanTaskOut,
   FieldDef, KanbanConfig,
@@ -709,15 +710,17 @@ export default function TodoPage() {
     }
   }, [fetchAllData]);
 
-  const handleNewSubFolder = useCallback(async (parentId: number, name: string, marker: MarkerValue) => {
+  const handleNewSubFolder = useCallback(async (parentId: number, name: string, marker: MarkerValue, mode: 'todo' | 'kanban' = 'todo') => {
     try {
-      await createFolder({
+      const newFolder = await createFolder({
         name,
         parent_id: parentId,
         color: marker.type === 'color' ? marker.value : MARKER_COLORS[0],
         icon_type: marker.type,
         icon_value: marker.value,
+        mode,
       });
+      folderModeOverridesRef.current[newFolder.id] = mode;
       showSnackbar(`✅ 已创建子文件夹「${name}」`, 'success');
       fetchAllData();
     } catch (err) {
@@ -896,6 +899,39 @@ export default function TodoPage() {
     }
   }, [activeFolder, activeSprintId, kanbanNewTaskCol, refreshKanbanBoard, editingKanbanTask]);
 
+  const persistKanbanSubtasks = useCallback(async (task: KanbanTaskOut, subtasks: KanbanSubtask[]) => {
+    const customFields = {
+      ...(task.custom_fields ?? {}),
+      __subtasks: subtasks,
+    };
+    const updatedTask = await updateKanbanTask(task.id, { custom_fields: customFields });
+    setKanbanTasks((prev) => prev.map((item) => (item.id === updatedTask.id ? updatedTask : item)));
+    setDrawerTask(updatedTask);
+  }, []);
+
+  const handleAddKanbanSubtask = useCallback(async (task: KanbanTaskOut, title: string) => {
+    const subtasks = [
+      ...getKanbanSubtasks(task),
+      { id: `${Date.now()}_${Math.random().toString(36).slice(2)}`, title, completed: false },
+    ];
+    try {
+      await persistKanbanSubtasks(task, subtasks);
+    } catch (err) {
+      showSnackbar(err instanceof ApiError ? err.message : '新增子任务失败', 'error');
+    }
+  }, [persistKanbanSubtasks]);
+
+  const handleToggleKanbanSubtask = useCallback(async (task: KanbanTaskOut, subtaskId: string) => {
+    const subtasks = getKanbanSubtasks(task).map((subtask) => (
+      subtask.id === subtaskId ? { ...subtask, completed: !subtask.completed } : subtask
+    ));
+    try {
+      await persistKanbanSubtasks(task, subtasks);
+    } catch (err) {
+      showSnackbar(err instanceof ApiError ? err.message : '更新子任务失败', 'error');
+    }
+  }, [persistKanbanSubtasks]);
+
   // View title
   const viewTitle = useMemo(() => {
     if (activeFolder !== null) return findFolderById(folders, activeFolder)?.name || '文件夹';
@@ -986,7 +1022,6 @@ export default function TodoPage() {
               </Typography>
               <Chip label="Kanban" size="small" sx={{ bgcolor: '#EADDFF', color: '#21005D', fontSize: '0.7rem' }} />
             </Box>
-
             <SprintTabs
               sprints={sprints}
               activeSprintId={activeSprintId}
@@ -1117,6 +1152,8 @@ export default function TodoPage() {
         onMove={handleBackFlow}
         onDelete={(taskId) => handleDeleteKanbanTask(taskId)}
         onEdit={handleEditKanbanTask}
+        onAddSubtask={handleAddKanbanSubtask}
+        onToggleSubtask={handleToggleKanbanSubtask}
       />
 
       {/* Kanban Settings Dialog */}

@@ -1,11 +1,10 @@
 'use client';
 
+import { useState, type MouseEvent } from 'react';
 import Box from '@mui/material/Box';
-import type { MouseEvent } from 'react';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
+import Button from '@mui/material/Button';
+import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import ToggleButton from '@mui/material/ToggleButton';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Typography from '@mui/material/Typography';
@@ -30,34 +29,34 @@ export const MARKER_COLORS = [
 
 export const MARKER_EMOJIS = [
   '📁',
-  '📝',
+  '📄',
   '🚨',
   '📅',
-  '💼',
-  '📚',
-  '🧹',
-  '🏃',
-  '💵',
-  '💸',
-  '🧮',
-  '🧾',
-  '🏦',
-  '🐷',
-  '📈',
-  '💳',
-  '🛍️',
-  '🎮',
-  '💊',
-  '📂',
-  '✅',
+  '💎',
   '📌',
+  '🧠',
+  '🏃',
+  '💼',
+  '💻',
+  '🔬',
+  '🎯',
+  '🏠',
+  '🎨',
+  '📊',
+  '💰',
+  '🛠️',
+  '🎉',
+  '🧪',
+  '📝',
+  '✅',
+  '📚',
   '⭐',
   '💡',
-  '💰',
-  '🍽️',
-  '🚕',
-  '🏠',
-  '🛒',
+  '💵',
+  '🗂️',
+  '🚀',
+  '🏔️',
+  '🧭',
   '🎁',
 ];
 
@@ -113,6 +112,8 @@ export function MarkerIcon({
 }
 
 export default function MarkerPicker({ marker, onChange, label = '标识' }: MarkerPickerProps) {
+  const [emojiAnchor, setEmojiAnchor] = useState<HTMLElement | null>(null);
+
   const handleTypeChange = (_: MouseEvent<HTMLElement>, nextType: MarkerType | null) => {
     if (!nextType) return;
     onChange({
@@ -121,8 +122,9 @@ export default function MarkerPicker({ marker, onChange, label = '标识' }: Mar
     });
   };
 
-  const handleEmojiChange = (event: SelectChangeEvent<string>) => {
-    onChange({ type: 'emoji', value: event.target.value });
+  const handleEmojiChange = (emoji: string) => {
+    onChange({ type: 'emoji', value: emoji });
+    setEmojiAnchor(null);
   };
 
   return (
@@ -140,7 +142,7 @@ export default function MarkerPicker({ marker, onChange, label = '标识' }: Mar
         size="small"
         sx={{ mb: 1, '& .MuiToggleButton-root': { borderRadius: 2, py: 0.75, fontSize: '0.8125rem' } }}
       >
-        <ToggleButton value="color">纯色</ToggleButton>
+        <ToggleButton value="color">颜色</ToggleButton>
         <ToggleButton value="emoji">Emoji</ToggleButton>
       </ToggleButtonGroup>
 
@@ -169,20 +171,49 @@ export default function MarkerPicker({ marker, onChange, label = '标识' }: Mar
           ))}
         </Box>
       ) : (
-        <FormControl fullWidth size="small">
-          <InputLabel>Emoji</InputLabel>
-          <Select
-            label="Emoji"
-            value={marker.value}
-            onChange={handleEmojiChange}
+        <>
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={(event) => setEmojiAnchor(event.currentTarget)}
+            sx={{ justifyContent: 'space-between', minHeight: 38, px: 1.25 }}
           >
-            {MARKER_EMOJIS.map((emoji) => (
-              <MenuItem key={emoji} value={emoji}>
-                {emoji}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
+            <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 1 }}>
+              <Box component="span" sx={{ fontSize: 20, lineHeight: 1 }}>{marker.value}</Box>
+              <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.8125rem' }}>Emoji</Box>
+            </Box>
+            <Box component="span" sx={{ color: 'text.secondary', fontSize: '0.75rem' }}>选择</Box>
+          </Button>
+          <Menu
+            anchorEl={emojiAnchor}
+            open={Boolean(emojiAnchor)}
+            onClose={() => setEmojiAnchor(null)}
+            slotProps={{
+              paper: {
+                sx: {
+                  mt: 0.5,
+                  width: 236,
+                  maxHeight: 260,
+                  p: 0.75,
+                  overflowY: 'auto',
+                },
+              },
+            }}
+          >
+            <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 0.5 }}>
+              {MARKER_EMOJIS.map((emoji) => (
+                <MenuItem
+                  key={emoji}
+                  selected={marker.value === emoji}
+                  onClick={() => handleEmojiChange(emoji)}
+                  sx={{ minHeight: 34, minWidth: 0, justifyContent: 'center', borderRadius: 1, p: 0, fontSize: 18 }}
+                >
+                  {emoji}
+                </MenuItem>
+              ))}
+            </Box>
+          </Menu>
+        </>
       )}
     </Box>
   );

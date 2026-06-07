@@ -8,68 +8,94 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
 import type { FieldDef } from '@/lib/types';
 import CustomFieldDialog from './CustomFieldDialog';
-import { resolveKanbanFields } from './templateDefaults';
+import { DEFAULT_KANBAN_FIELDS, resolveKanbanFields } from './templateDefaults';
 
 interface FieldTemplateEditorProps {
   fields: FieldDef[];
   onSave: (fields: FieldDef[]) => void;
 }
 
+function normalizeOrder(fields: FieldDef[]): FieldDef[] {
+  return fields.map((field, index) => ({ ...field, order: index + 1 }));
+}
+
 export default function FieldTemplateEditor({ fields, onSave }: FieldTemplateEditorProps) {
-  const [localFields, setLocalFields] = useState(() => resolveKanbanFields(fields).sort((a, b) => a.order - b.order));
+  const [localFields, setLocalFields] = useState(() => normalizeOrder(resolveKanbanFields(fields).sort((a, b) => a.order - b.order)));
   const [editingField, setEditingField] = useState<{ index: number; field: FieldDef } | null>(null);
   const [addingField, setAddingField] = useState(false);
 
-  const handleEdit = (index: number) => setEditingField({ index, field: { ...localFields[index] } });
+  const persist = (nextFields: FieldDef[]) => {
+    const normalized = normalizeOrder(nextFields);
+    setLocalFields(normalized);
+    onSave(normalized);
+  };
+
+  const handleMove = (index: number, direction: -1 | 1) => {
+    const targetIndex = index + direction;
+    if (targetIndex < 0 || targetIndex >= localFields.length) return;
+    const updated = [...localFields];
+    [updated[index], updated[targetIndex]] = [updated[targetIndex], updated[index]];
+    persist(updated);
+  };
+
   const handleDelete = (index: number) => {
-    const updated = localFields.filter((_, i) => i !== index);
-    setLocalFields(updated);
-    onSave(updated);
+    const field = localFields[index];
+    if (field.key === 'title') return;
+    persist(localFields.filter((_, i) => i !== index));
   };
+
   const handleSaveField = (field: FieldDef) => {
-    let updated: FieldDef[];
     if (editingField) {
-      updated = localFields.map((f, i) => i === editingField.index ? { ...f, ...field, key: f.key } : f);
-      setLocalFields(updated);
+      persist(localFields.map((item, index) => (
+        index === editingField.index ? { ...item, ...field, key: item.key, system: item.system } : item
+      )));
       setEditingField(null);
-    } else {
-      updated = [...localFields, { ...field, order: localFields.length + 1 }];
-      setLocalFields(updated);
-      setAddingField(false);
+      return;
     }
-    onSave(updated);
+
+    persist([...localFields, { ...field, order: localFields.length + 1 }]);
+    setAddingField(false);
   };
+
   const handleReset = () => {
-    if (confirm('恢复默认模板将重置所有自定义字段，确认？')) {
-      setLocalFields(resolveKanbanFields());
-    }
+    persist(DEFAULT_KANBAN_FIELDS.map((field) => ({ ...field })));
   };
 
   return (
     <Box>
-      {localFields.map((f, i) => (
-        <Box key={f.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 0.75, border: 1, borderColor: 'divider', borderRadius: 1, mb: 0.5 }}>
-          <Box sx={{ flex: 1 }}>
+      {localFields.map((field, index) => (
+        <Box key={field.key} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 0.75, border: 1, borderColor: 'divider', borderRadius: 1, mb: 0.5 }}>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="body2" component="span" sx={{ fontWeight: 500 }}>
-              {f.label}
-              {f.required && <Chip label="必填" size="small" color="error" sx={{ ml: 0.5, height: 18, fontSize: '0.65rem' }} />}
+              {field.label}
+              {field.required && <Chip label="必填" size="small" color="error" sx={{ ml: 0.5, height: 18, fontSize: '0.65rem' }} />}
+              {!field.show_on_card && <Chip label="卡片隐藏" size="small" sx={{ ml: 0.5, height: 18, fontSize: '0.65rem' }} />}
+              {!field.show_in_detail && <Chip label="详情隐藏" size="small" sx={{ ml: 0.5, height: 18, fontSize: '0.65rem' }} />}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {f.type}{f.system ? ' · 系统字段' : ' · 自定义'}
-              {f.options?.length ? ` · [${f.options.join(', ')}]` : ''}
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {field.type}{field.system ? ' · 系统字段' : ' · 自定义字段'}
+              {field.options?.length ? ` · [${field.options.join(', ')}]` : ''}
             </Typography>
           </Box>
-          {!f.system && (
-            <>
-              <IconButton size="small" onClick={() => handleEdit(i)}><EditIcon fontSize="small" /></IconButton>
-              <IconButton size="small" onClick={() => handleDelete(i)}><DeleteIcon fontSize="small" color="error" /></IconButton>
-            </>
-          )}
+          <IconButton size="small" disabled={index === 0} onClick={() => handleMove(index, -1)}>
+            <KeyboardArrowUpRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" disabled={index === localFields.length - 1} onClick={() => handleMove(index, 1)}>
+            <KeyboardArrowDownRoundedIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" onClick={() => setEditingField({ index, field: { ...field } })}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" disabled={field.key === 'title'} onClick={() => handleDelete(index)}>
+            <DeleteIcon fontSize="small" color={field.key === 'title' ? 'disabled' : 'error'} />
+          </IconButton>
         </Box>
       ))}
-      <Button size="small" sx={{ mt: 1 }} onClick={() => setAddingField(true)}>+ 新增字段</Button>
+      <Button size="small" sx={{ mt: 1 }} onClick={() => setAddingField(true)}>新增字段</Button>
       <Button size="small" sx={{ mt: 1, ml: 1, color: 'warning.main' }} onClick={handleReset}>恢复默认模板</Button>
       <CustomFieldDialog
         open={addingField || !!editingField}

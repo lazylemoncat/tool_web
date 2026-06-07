@@ -13,6 +13,8 @@ import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import Popover from '@mui/material/Popover';
 import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import Tooltip from '@mui/material/Tooltip';
@@ -52,7 +54,7 @@ interface TodoSidebarProps {
   folders: FolderOut[];
   onDeleteFolder: (folderId: number) => void;
   onRenameFolder: (folderId: number, newName: string) => void;
-  onNewSubFolder: (parentId: number, name: string, marker: MarkerValue) => void;
+  onNewSubFolder: (parentId: number, name: string, marker: MarkerValue, mode: 'todo' | 'kanban') => void;
   onReorderFolders: (parentId: number | null, orderedIds: number[]) => void;
 }
 
@@ -152,6 +154,7 @@ export default function TodoSidebar({
     type: 'color',
     value: MARKER_COLORS[0],
   });
+  const [subPopoverMode, setSubPopoverMode] = useState<'todo' | 'kanban'>('todo');
 
   const [folderMenuAnchor, setFolderMenuAnchor] = useState<null | HTMLElement>(null);
   const [folderMenuTarget, setFolderMenuTarget] = useState<number | null>(null);
@@ -221,6 +224,8 @@ export default function TodoSidebar({
         setSubPopoverName={setSubPopoverName}
         subPopoverMarker={subPopoverMarker}
         setSubPopoverMarker={setSubPopoverMarker}
+        subPopoverMode={subPopoverMode}
+        setSubPopoverMode={setSubPopoverMode}
         onNewSubFolder={onNewSubFolder}
         folderMenuAnchor={folderMenuAnchor}
         setFolderMenuAnchor={setFolderMenuAnchor}
@@ -243,7 +248,8 @@ function DrawerContent({
   viewDialogOpen, setViewDialogOpen, folders, rootFolders, collapsedFolders, onToggleFolder,
   draggingFolderId, setDraggingFolderId, dragOverFolder, setDragOverFolder, onReorderFolders,
   subPopoverPosition, setSubPopoverPosition, subPopoverParent, setSubPopoverParent,
-  subPopoverName, setSubPopoverName, subPopoverMarker, setSubPopoverMarker, onNewSubFolder,
+  subPopoverName, setSubPopoverName, subPopoverMarker, setSubPopoverMarker,
+  subPopoverMode, setSubPopoverMode, onNewSubFolder,
   folderMenuAnchor, setFolderMenuAnchor, folderMenuTarget, setFolderMenuTarget,
   renamingFolder, setRenamingFolder, renameValue, setRenameValue,
   onRenameFolder, onDeleteFolder,
@@ -265,7 +271,8 @@ function DrawerContent({
   subPopoverParent: number | null; setSubPopoverParent: (p: number | null) => void;
   subPopoverName: string; setSubPopoverName: (n: string) => void;
   subPopoverMarker: MarkerValue; setSubPopoverMarker: (m: MarkerValue) => void;
-  onNewSubFolder: (pid: number, name: string, marker: MarkerValue) => void;
+  subPopoverMode: 'todo' | 'kanban'; setSubPopoverMode: (mode: 'todo' | 'kanban') => void;
+  onNewSubFolder: (pid: number, name: string, marker: MarkerValue, mode: 'todo' | 'kanban') => void;
   folderMenuAnchor: HTMLElement | null; setFolderMenuAnchor: (a: HTMLElement | null) => void;
   folderMenuTarget: number | null; setFolderMenuTarget: (t: number | null) => void;
   renamingFolder: number | null; setRenamingFolder: (f: number | null) => void;
@@ -279,6 +286,7 @@ function DrawerContent({
     setSubPopoverParent(null);
     setSubPopoverName('');
     setSubPopoverMarker({ type: 'color', value: MARKER_COLORS[0] });
+    setSubPopoverMode('todo');
   };
 
   const handleFolderDragStart = (folderId: number) => {
@@ -414,13 +422,24 @@ function DrawerContent({
       <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>新建子文件夹</Typography>
       <TextField fullWidth size="small" placeholder="输入子文件夹名称" value={subPopoverName}
         onChange={(e) => setSubPopoverName(e.target.value)}
-        onKeyDown={(e) => { if (e.key === 'Enter' && subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker); resetSubPopover(); } }} autoFocus />
+        onKeyDown={(e) => { if (e.key === 'Enter' && subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker, subPopoverMode); resetSubPopover(); } }} autoFocus />
+      <ToggleButtonGroup
+        value={subPopoverMode}
+        exclusive
+        fullWidth
+        size="small"
+        onChange={(_, mode) => { if (mode) setSubPopoverMode(mode); }}
+        sx={{ mt: 1, '& .MuiToggleButton-root': { py: 0.75, fontSize: '0.75rem' } }}
+      >
+        <ToggleButton value="todo">TODO</ToggleButton>
+        <ToggleButton value="kanban">Kanban</ToggleButton>
+      </ToggleButtonGroup>
       <Box sx={{ mt: 1 }}>
         <MarkerPicker marker={subPopoverMarker} onChange={setSubPopoverMarker} label="子文件夹标识" />
       </Box>
       <Box sx={{ display: 'flex', gap: 0.75, justifyContent: 'flex-end', mt: 1 }}>
         <Button size="small" onClick={resetSubPopover} sx={{ fontSize: '0.75rem', color: 'text.secondary', fontWeight: 600 }}>取消</Button>
-        <Button size="small" variant="contained" onClick={() => { if (subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker); resetSubPopover(); } }} sx={{ fontSize: '0.75rem', fontWeight: 600, borderRadius: 2 }}>创建</Button>
+        <Button size="small" variant="contained" onClick={() => { if (subPopoverName.trim() && subPopoverParent !== null) { onNewSubFolder(subPopoverParent, subPopoverName.trim(), subPopoverMarker, subPopoverMode); resetSubPopover(); } }} sx={{ fontSize: '0.75rem', fontWeight: 600, borderRadius: 2 }}>创建</Button>
       </Box>
     </Popover>
   );

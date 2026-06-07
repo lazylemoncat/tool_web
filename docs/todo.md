@@ -678,3 +678,8 @@ Todo, folder, recurrence, and tag ORM models in `backend/src/models/todo.py` and
 - Todo task drag sorting is handled in `frontend/src/components/todo/TaskList.tsx` and `frontend/src/components/todo/TaskDetail.tsx`. Root tasks and expanded child tasks can only be reordered within the same `parent_id` group, and the page persists the order through `POST /api/v1/todos/reorder`.
 - Kanban new task creation no longer exposes a sprint selector. New cards are bound to the currently active sprint and the column from which the create action was opened.
 - `KanbanBoard` uses a thicker horizontal scrollbar so users can drag it more easily on wide boards.
+- Subfolder creation now exposes the same `todo` / `kanban` mode choice as root folder creation, and the selected mode is sent in the folder create payload.
+- `MarkerPicker` renders emoji choices in a fixed-height grid menu instead of a long select dropdown.
+- The existing active Sprint goal display is moved directly under the Kanban folder title and enlarged without adding an emphasized color panel.
+- Kanban task templates can add fields, delete non-title fields, move field order, and edit type, required, card visibility, and detail visibility settings.
+- Kanban task subtasks are edited in the task drawer and stored under `kanban_tasks.custom_fields.__subtasks`.
