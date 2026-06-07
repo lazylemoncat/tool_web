@@ -61,6 +61,7 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - Todo task drag sorting only reorders siblings with the same `parent_id`; root tasks are handled by `TaskList`, and expanded child tasks are handled by `TaskDetail`.
 - Kanban task creation hides the sprint selector in create mode and binds new cards to the currently active sprint. The Kanban board horizontal scrollbar is thicker for easier dragging.
 - Workspace home reads `NEXT_PUBLIC_APP_VERSION`, injected from `frontend/package.json` by `frontend/next.config.ts`, and shows it as a compact version label.
+- `frontend/src/components/layout/GlobalNav.tsx` uses a shared nav item list for desktop links and the mobile top-bar menu, so mobile users can navigate to Home, Todo, Calendar, and Finance.
 - `frontend/src/components/shared/MarkerPicker.tsx` provides the shared pure-color or preset-emoji marker selector. Todo folder creation, Todo subfolder creation, and Finance category creation all use this component, and display markers through `MarkerIcon`.
 - Finance categories use `icon_type` and `icon_value` in API payloads and responses. Emoji markers are selected from the preset dropdown, not entered as free text.
 
