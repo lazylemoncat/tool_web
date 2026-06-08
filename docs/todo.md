@@ -340,7 +340,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `backend/src/schemas/kanban.py` | Pydantic 模型: `Sprint*`, `KanbanColumn*` |
 | `backend/src/schemas/tag.py` | Pydantic 模型: `TagCreate`, `TagOut` |
 | `backend/src/schemas/theme.py` | Pydantic 模型: `ThemeCreate/Update/Out/FullOut` |
-| `backend/src/database.py` | 数据库连接: 表迁移, 自动创建新表 (`recurrence_rules`, `todo_tags`, `tags`, `user_themes`), 并补齐旧库 `folders.mode` 字段 |
+| `backend/src/database.py` | 数据库连接: 引擎创建, Alembic 迁移执行, Admin 种子用户初始化 |
+| `backend/migrations/` | Alembic schema 迁移目录; Todo 表结构变更必须新增 revision, 不再写入 `database.py` |
 
 ### 任务 API 端点
 

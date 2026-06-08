@@ -14,7 +14,7 @@
   - `backend/src/models/tag.py`
   - `backend/src/models/finance.py`
   - `backend/src/models/theme.py`
-- Assumptions: SQLAlchemy models are the schema source of truth because migration files were not found. `resource_relations` is modeled as an application-level polymorphic relation because its type/id columns are not declared as foreign keys.
+- Assumptions: SQLAlchemy models and Alembic migrations are the schema source of truth. `resource_relations` is modeled as an application-level polymorphic relation because its type/id columns are not declared as foreign keys.
 
 ### Frontend component overview
 

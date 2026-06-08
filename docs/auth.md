@@ -375,17 +375,19 @@ Token 已过期时返回 401, 前端自动清除登录状态并跳转到登录�
 
 | 文件 | 作用 |
 |------|------|
-| `backend/src/routers/auth.py` | 认证 API 路由: `/register`, `/login`, `/me`, `/preferences`, `/password`, `/refresh`, `/logout`, `/account` |
+| `backend/src/auth/fastapi_adapter/router.py` | 认证 API 路由: `/register`, `/login`, `/me`, `/preferences`, `/password`, `/refresh`, `/logout`, `/account`, `/mfa/*` |
 | `backend/src/models/user.py` | SQLAlchemy ORM 模型: `User` 表定义, 含 `failed_login_attempts`, `locked_until` 锁定字段 |
-| `backend/src/schemas/auth.py` | Pydantic 模型: `RegisterRequest`, `LoginRequest`, `AuthResponse`, `UpdatePreferencesRequest`, `ChangePasswordRequest`, `DeleteAccountRequest`, `RefreshRequest` |
-| `backend/src/utils/security.py` | 安全工具: `hash_password`, `verify_password`, `create_token`, `decode_token`, `JWT_EXPIRE_HOURS_REMEMBER`, `decode_token_with_grace()` |
-| `backend/src/middleware/auth.py` | 认证中间件: `get_current_user` FastAPI 依赖注入, 从 httpOnly cookie 或 Authorization header 解析 token |
+| `backend/src/auth/fastapi_adapter/schemas.py` | Pydantic 模型: 登录, 注册, 用户响应, 偏好, 密码, MFA, session 等认证请求和响应 |
+| `backend/src/auth/core/password.py` | 密码哈希与验证工具: `PasswordHasher` |
+| `backend/src/auth/core/tokens.py` | Access token 创建与解析工具: `TokenService` |
+| `backend/src/middleware/auth.py` | 兼容导出: `get_current_user` 指向新认证模块的 `require_user` |
 | `backend/src/middleware/logging.py` | 请求日志中间件: `log_requests()`, `get_security_logger()` 安全事件日志 |
 | `backend/src/utils/rate_limit.py` | 速率限制中间件: 针对所有认证端点的 IP 级别限流 |
 | `backend/src/utils/errors.py` | 统一异常类: `AppError`, `BadRequestError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`, `ConflictError`, `RateLimitError`, `AccountLockedError` |
 | `backend/src/main.py` | FastAPI 入口: CORS 配置, 中间件注册, 统一异常处理器 (RequestValidationError / HTTPException / AppError) |
-| `backend/src/database.py` | 数据库连接: 引擎创建, 表迁移, Admin 种子用户初始化 |
-| `backend/requirements.txt` | Python 依赖: `fastapi`, `bcrypt`, `pyjwt`, `sqlalchemy`, `pydantic` |
+| `backend/src/database.py` | 数据库连接: 引擎创建, Alembic 迁移执行, Admin 种子用户初始化 |
+| `backend/migrations/` | Alembic schema 迁移目录; 新增表或字段必须新增 revision, 不再写入 `database.py` |
+| `backend/requirements.txt` | Python 依赖: `fastapi`, `bcrypt`, `pyjwt`, `sqlalchemy`, `alembic`, `pydantic` |
 
 ### 认证相关 API 端点
 
@@ -629,6 +631,12 @@ services:
 Authentication state is owned by `frontend/src/context/AuthContext.tsx`, while the route guard and authenticated shell are mounted from `frontend/src/app/layout.tsx`. Older references in historical sections to Umi, Vite, `frontend/src/App.tsx`, or `frontend/src/main.tsx` mean pre-Next migration entries.
 
 The current Next.js login page is `frontend/src/app/login/page.tsx`. It calls `frontend/src/lib/api.ts` directly, does not auto-refresh on `/api/v1/auth/login` 401 responses, and supports the `mfa_required` response by collecting a TOTP code or recovery code before calling `/api/v1/auth/mfa/verify`.
+
+## Current Backend Note
+
+Authentication is owned by the reusable module under `backend/src/auth`. The active FastAPI router is `backend/src/auth/fastapi_adapter/router.py`, mounted from `backend/src/main.py`.
+
+Legacy auth implementation files `backend/src/routers/auth.py`, `backend/src/schemas/auth.py`, and `backend/src/utils/security.py` have been removed. Existing business routers still import `backend/src/models/user.py` and `backend/src/middleware/auth.py`; those files are compatibility exports that point to the reusable auth module.
 
 ## Backend Type Checking
 

@@ -9,7 +9,7 @@ title Full Database ERD Overview
 ' - backend/src/models/finance.py
 ' - backend/src/models/theme.py
 ' Assumptions:
-' - SQLAlchemy models are treated as the source of truth because migration files were not found in the inspected repository.
+' - SQLAlchemy models and Alembic migrations are treated as the source of truth.
 ' - Standard granularity includes primary keys, foreign keys, and core business fields while omitting most created_at and updated_at audit fields.
 ' - Repeated user ownership edges are summarized in a note because every user_id field already exposes the users.id foreign key.
 ' - resource_relations stores polymorphic links through type and id fields, so its links are documented as application-level references instead of database foreign keys.

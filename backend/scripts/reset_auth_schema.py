@@ -16,13 +16,13 @@ import src.models.finance  # noqa: F401,E402
 import src.models.tag  # noqa: F401,E402
 import src.models.theme  # noqa: F401,E402
 import src.models.user  # noqa: F401,E402
-from src.database import SessionLocal, _seed_admin, engine  # noqa: E402
+from src.database import SessionLocal, _run_migrations, _seed_admin, engine  # noqa: E402
 from src.models.todo import Base  # noqa: E402
 
 
 def main() -> None:
     Base.metadata.drop_all(bind=engine)
-    Base.metadata.create_all(bind=engine)
+    _run_migrations()
     _seed_admin()
     db = SessionLocal()
     try:

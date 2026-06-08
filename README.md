@@ -31,7 +31,8 @@ tool_web/
 ├── backend/
 │   ├── src/
 │   │   ├── main.py              # FastAPI 入口: CORS, 路由注册, 中间件
-│   │   ├── database.py          # 数据库连接, session 管理
+│   │   ├── database.py          # 数据库连接, Alembic 迁移执行, session 管理
+│   ├── migrations/              # Alembic schema 迁移
 │   │   ├── models/              # SQLAlchemy 模型
 │   │   ├── schemas/             # Pydantic schema
 │   │   ├── routers/             # auth / todo / folder / tag / finance / theme
