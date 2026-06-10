@@ -9,6 +9,8 @@ ENV UV_INDEX_URL=https://pypi.org/simple/
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
+COPY alembic.ini ./
+COPY migrations/ ./migrations/
 COPY src/ ./src/
 
 RUN mkdir -p /app/data
