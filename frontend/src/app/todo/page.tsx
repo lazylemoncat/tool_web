@@ -25,7 +25,7 @@ import type {
   TodoOut, FolderOut, APITag, Sprint, KanbanColumnData, KanbanTaskOut,
   FieldDef, KanbanConfig,
 } from '@/lib/types';
-import { RECUR_TO_RRULE } from '@/lib/types';
+import { getRecurrenceLabel, toRRule } from '@/lib/types';
 import type { KanbanTaskFormData } from '@/components/todo/kanban/KanbanTaskDialog';
 import {
   listTodos, createTodo, updateTodo, deleteTodo, toggleTodo, bulkAction,
@@ -136,6 +136,20 @@ function reorderTodoSiblings(
   });
 }
 
+function replaceTodoById(todos: TodoOut[], updated: TodoOut): TodoOut[] {
+  return todos.map((todo) => {
+    if (todo.id === updated.id) {
+      const previousChildren = todo.children ?? [];
+      const updatedChildren = updated.children?.length ? updated.children : previousChildren;
+      return { ...updated, children: updatedChildren };
+    }
+    return {
+      ...todo,
+      children: replaceTodoById(todo.children ?? [], updated),
+    };
+  });
+}
+
 function findFolderById(folders: FolderOut[], folderId: number): FolderOut | undefined {
   for (const folder of folders) {
     if (folder.id === folderId) return folder;
@@ -143,11 +157,6 @@ function findFolderById(folders: FolderOut[], folderId: number): FolderOut | und
     if (child) return child;
   }
   return undefined;
-}
-
-function buildTodoRefreshParams(folderId: number | null, sprintId: number | null): TodoQueryParams | undefined {
-  if (folderId === null) return undefined;
-  return sprintId !== null ? { folder_id: folderId, sprint_id: sprintId } : { folder_id: folderId };
 }
 
 function buildTodoQueryParams({
@@ -482,7 +491,7 @@ export default function TodoPage() {
       due_date: todo.due_date || '',
       folder_id: todo.folder_id,
       tag_ids: todo.tags?.map((t) => t.id) || [],
-      recurrence: '',
+      recurrence: getRecurrenceLabel(todo.recurrence_rules?.[0]?.rrule_string),
     });
     setTaskDialogMode('edit');
     setTaskDialogOpen(true);
@@ -510,17 +519,27 @@ export default function TodoPage() {
 
   const handleSaveTask = useCallback(async (data: TaskFormData) => {
     try {
-      const rrules = data.recurrence && data.recurrence !== '不重复' ? [RECUR_TO_RRULE[data.recurrence] || ''] : [];
+      const rrule = toRRule(data.recurrence);
+      const refreshParams = buildTodoQueryParams({
+        activeFolder,
+        activeView,
+        searchQuery,
+        priorityFilter,
+        statusFilter,
+        tagFilter,
+      });
       if (data.id) {
-        await updateTodo(data.id, {
+        const updated = await updateTodo(data.id, {
           title: data.title,
           note: data.note || undefined,
           priority: data.priority,
           due_date: data.due_date || null,
           folder_id: data.folder_id,
           tag_ids: data.tag_ids,
-          recurrence_rules: rrules.filter(Boolean),
+          recurrence_rules: rrule ? [rrule] : [],
         });
+        setTodos((prev) => replaceTodoById(prev, updated));
+        setViewCountTodos((prev) => replaceTodoById(prev, updated));
         setTaskDialogOpen(false);
         showSnackbar('✅ 任务已更新', 'success');
       } else {
@@ -534,23 +553,28 @@ export default function TodoPage() {
           column_id: data.column_id,
           parent_id: data.parent_id,
           tag_ids: data.tag_ids,
-          recurrence_rules: rrules.filter(Boolean),
+          recurrence_rules: rrule ? [rrule] : [],
         });
         setTaskDialogOpen(false);
         showSnackbar('✅ 任务已创建', 'success');
       }
-      // Re-fetch after save
-      fetchAllData(
-        buildTodoRefreshParams(data.folder_id ?? activeFolder, data.sprint_id ?? activeSprintId),
-      );
+      await fetchAllData(refreshParams);
     } catch (err) {
       showSnackbar(err instanceof ApiError ? err.message : '保存失败', 'error');
     }
-  }, [activeFolder, activeSprintId, fetchAllData]);
+  }, [
+    activeFolder,
+    activeView,
+    fetchAllData,
+    priorityFilter,
+    searchQuery,
+    statusFilter,
+    tagFilter,
+  ]);
 
   const handleSaveAndNew = useCallback(async (data: TaskFormData) => {
     try {
-      const rrules = data.recurrence && data.recurrence !== '不重复' ? [RECUR_TO_RRULE[data.recurrence] || ''] : [];
+      const rrule = toRRule(data.recurrence);
       await createTodo({
         title: data.title,
         note: data.note || undefined,
@@ -561,16 +585,21 @@ export default function TodoPage() {
         column_id: data.column_id,
         parent_id: data.parent_id,
         tag_ids: data.tag_ids,
-        recurrence_rules: rrules.filter(Boolean),
+        recurrence_rules: rrule ? [rrule] : [],
       });
       showSnackbar('✅ 任务已创建，继续新建', 'success');
-      fetchAllData(
-        buildTodoRefreshParams(data.folder_id ?? activeFolder, data.sprint_id ?? activeSprintId),
-      );
+      await fetchAllData(buildTodoQueryParams({
+        activeFolder,
+        activeView,
+        searchQuery,
+        priorityFilter,
+        statusFilter,
+        tagFilter,
+      }));
     } catch (err) {
       showSnackbar(err instanceof ApiError ? err.message : '保存失败', 'error');
     }
-  }, [activeFolder, activeSprintId, fetchAllData]);
+  }, [activeFolder, activeView, fetchAllData, priorityFilter, searchQuery, statusFilter, tagFilter]);
 
   const handleConfirmDeleteTask = useCallback(async () => {
     if (!deleteTaskTarget) return;

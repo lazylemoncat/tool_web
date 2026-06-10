@@ -10,47 +10,75 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import * as api from '@/lib/api';
 import type { FinanceTagOut } from '@/lib/financeTypes';
 
 interface TagsTabProps {
   tags: FinanceTagOut[];
   activeLedgerId: number | null;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<unknown>;
 }
 
 const TAG_BG_COLORS = ['#E8E0FF', '#D1FAE5', '#FEE2E2', '#DBEAFE', '#FEF3C7', '#EDE9FE'];
 
+function moveItem<T>(items: T[], from: number, to: number): T[] {
+  if (to < 0 || to >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingTag, setEditingTag] = useState<FinanceTagOut | null>(null);
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const resetForm = () => { setName(''); setError(''); };
+  const resetForm = () => { setEditingTag(null); setName(''); setError(''); };
 
-  const handleCreate = async () => {
+  const openCreate = () => { resetForm(); setDialogOpen(true); };
+  const openEdit = (tag: FinanceTagOut) => { setEditingTag(tag); setName(tag.name); setError(''); setDialogOpen(true); };
+  const handleClose = () => { setDialogOpen(false); resetForm(); };
+
+  const handleSave = async () => {
     setError('');
     if (!name.trim()) return;
     if (!activeLedgerId) { setError('未选择账本'); return; }
     setSaving(true);
     try {
-      await api.createFinanceTag({ ledger_id: activeLedgerId, name: name.trim() });
-      setDialogOpen(false); resetForm(); onRefresh();
+      if (editingTag) {
+        await api.updateFinanceTag(editingTag.id, { name: name.trim() });
+      } else {
+        await api.createFinanceTag({ ledger_id: activeLedgerId, name: name.trim(), sort_order: tags.length });
+      }
+      setDialogOpen(false);
+      resetForm();
+      await onRefresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : '创建失败');
+      setError(err instanceof Error ? err.message : '保存失败');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleClose = () => { setDialogOpen(false); resetForm(); };
-
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (tag: FinanceTagOut) => {
+    if (!window.confirm(`确定删除标签「${tag.name}」吗？`)) return;
     try {
-      await api.deleteFinanceTag(id);
-      onRefresh();
-    } catch { /* ignore */ }
+      await api.deleteFinanceTag(tag.id);
+      await onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '删除失败');
+    }
+  };
+
+  const handleMove = async (from: number, to: number) => {
+    if (!activeLedgerId) return;
+    const ordered = moveItem(tags, from, to);
+    await api.reorderFinanceTags(activeLedgerId, ordered.map((tag, index) => ({ id: tag.id, sort_order: index })));
+    await onRefresh();
   };
 
   return (
@@ -58,27 +86,39 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>标签管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>管理交易标签</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新建、重命名、删除和排序交易标签</Typography>
         </Box>
-        <Button variant="contained" size="small" onClick={() => setDialogOpen(true)}
+        <Button variant="contained" size="small" onClick={openCreate}
           sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
           + 新建标签
         </Button>
       </Box>
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
       {tags.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography sx={{ fontSize: '3rem', mb: 1 }}>🔖</Typography>
           <Typography sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>暂无标签</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>点击"新建标签"开始</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>点击&quot;新建标签&quot;开始</Typography>
         </Box>
       ) : (
         <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: '#EDECF0' }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {tags.map((tag, i) => (
-              <Typography key={tag.id} sx={{ bgcolor: TAG_BG_COLORS[i % TAG_BG_COLORS.length], color: '#1E1C24', px: 1.5, py: 0.625, borderRadius: 2, fontSize: '0.6875rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                {tag.name}
-                <Typography component="span" onClick={() => handleDelete(tag.id)} sx={{ fontSize: '0.8125rem', opacity: 0.4, cursor: 'pointer', '&:hover': { opacity: 0.8 } }}>×</Typography>
-              </Typography>
+              <Box key={tag.id} sx={{ bgcolor: TAG_BG_COLORS[i % TAG_BG_COLORS.length], color: '#1E1C24', px: 1.25, py: 0.625, borderRadius: 2, fontSize: '0.6875rem', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 600 }}>{tag.name}</Typography>
+                <Tooltip title="上移">
+                  <IconButton size="small" disabled={i === 0} onClick={() => handleMove(i, i - 1)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>↑</IconButton>
+                </Tooltip>
+                <Tooltip title="下移">
+                  <IconButton size="small" disabled={i === tags.length - 1} onClick={() => handleMove(i, i + 1)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>↓</IconButton>
+                </Tooltip>
+                <Tooltip title="重命名">
+                  <IconButton size="small" onClick={() => openEdit(tag)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>✎</IconButton>
+                </Tooltip>
+                <Tooltip title="删除">
+                  <IconButton size="small" onClick={() => handleDelete(tag)} sx={{ width: 20, height: 20, fontSize: '0.75rem', color: '#EF4444' }}>×</IconButton>
+                </Tooltip>
+              </Box>
             ))}
           </Box>
         </Box>
@@ -86,7 +126,7 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
 
       <Dialog open={dialogOpen} onClose={handleClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
         <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>新建标签</Typography>
+          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{editingTag ? '重命名标签' : '新建标签'}</Typography>
           <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)' }}>✕</IconButton>
         </Box>
         <DialogContent sx={{ pt: 2.5 }}>
@@ -95,7 +135,7 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button variant="text" onClick={handleClose} sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'none' }}>取消</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={!name.trim() || saving} sx={{ borderRadius: 4, px: 3, boxShadow: 'none', textTransform: 'none' }}>保存</Button>
+          <Button variant="contained" onClick={handleSave} disabled={!name.trim() || saving} sx={{ borderRadius: 4, px: 3, boxShadow: 'none', textTransform: 'none' }}>保存</Button>
         </DialogActions>
       </Dialog>
     </Box>

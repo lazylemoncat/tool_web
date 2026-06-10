@@ -194,6 +194,7 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/ledgers` | 账本列表 |
 | `POST` | `/api/v1/finance/ledgers` | 创建账本 |
+| `POST` | `/api/v1/finance/ledgers/reorder` | 调整账本排序 |
 | `PUT` | `/api/v1/finance/ledgers/{id}` | 更新账本 |
 | `DELETE` | `/api/v1/finance/ledgers/{id}` | 删除账本 |
 
@@ -202,6 +203,7 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/accounts?ledger_id=` | 账户列表 |
 | `POST` | `/api/v1/finance/accounts` | 创建账户 |
+| `POST` | `/api/v1/finance/accounts/reorder?ledger_id=` | 调整账户排序 |
 | `PUT` | `/api/v1/finance/accounts/{id}` | 更新账户 |
 | `DELETE` | `/api/v1/finance/accounts/{id}` | 删除账户 |
 
@@ -210,6 +212,7 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/categories?ledger_id=` | 分类树 |
 | `POST` | `/api/v1/finance/categories` | 创建分类 |
+| `POST` | `/api/v1/finance/categories/reorder?ledger_id=` | 调整分类排序 |
 | `PUT` | `/api/v1/finance/categories/{id}` | 更新分类 |
 | `DELETE` | `/api/v1/finance/categories/{id}` | 删除分类 |
 
@@ -218,6 +221,8 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/tags?ledger_id=&search=` | 标签列表 |
 | `POST` | `/api/v1/finance/tags` | 创建标签 (幂等) |
+| `PUT` | `/api/v1/finance/tags/{id}` | 更新标签 |
+| `POST` | `/api/v1/finance/tags/reorder?ledger_id=` | 调整标签排序 |
 | `DELETE` | `/api/v1/finance/tags/{id}` | 删除标签 |
 
 ### 交易 (Transaction)
@@ -243,6 +248,7 @@ Query 参数:
 |------|------|------|
 | `GET` | `/api/v1/finance/budgets?ledger_id=` | 预算列表 (含进度) |
 | `POST` | `/api/v1/finance/budgets` | 创建预算 |
+| `POST` | `/api/v1/finance/budgets/reorder?ledger_id=` | 调整预算排序 |
 | `PUT` | `/api/v1/finance/budgets/{id}` | 更新预算 |
 | `DELETE` | `/api/v1/finance/budgets/{id}` | 删除预算 |
 

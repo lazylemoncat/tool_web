@@ -139,7 +139,7 @@ Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文�
 
 预算列表, 每条显示: 名称、进度条、花费/预算数值. 支持新建/编辑 (Modal) 和删除.
 
-预算列表支持拖拽排序. 当前预算数据表没有排序字段, 前端按账本将预算顺序保存在本地, 避免引入数据库迁移扩大本次改动范围.
+预算列表支持排序, 顺序写入 `Budget.sort_order`. 账本、账户、分类、标签和预算均支持通过后端 reorder API 持久化顺序.
 
 预算字段: 名称、金额、币种、RRULE 重复规则、筛选条件 (分类/标签/事件)、结转、提醒阈值.
 
@@ -153,8 +153,8 @@ Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文�
 
 基础管理页承接分类树管理与标签管理:
 
-- 分类管理: 新建、重命名、删除、创建子分类、调整父分类.
-- 标签管理: 新建、删除交易标签.
+- 分类管理: 新建、重命名、删除、创建子分类、调整父分类和顺序.
+- 标签管理: 新建、重命名、删除交易标签和调整顺序.
 
 事件字段: 名称、描述、开始/结束时间、颜色.
 
@@ -237,14 +237,14 @@ Stats 接口用于前端仪表盘图表通信: `category_data` 返回分类名, 
 
 | 表名 | 说明 | 关键字段 |
 |------|------|----------|
-| `ledgers` | 账本 | user_id, name, icon, currency |
-| `accounts` | 账户 | user_id, ledger_id, name, type, initial_balance |
-| `finance_categories` | 分类 | user_id, ledger_id, parent_id, name, icon |
-| `finance_tags` | 标签 | user_id, ledger_id, name |
+| `ledgers` | 账本 | user_id, name, icon, currency, sort_order |
+| `accounts` | 账户 | user_id, ledger_id, name, type, initial_balance, sort_order |
+| `finance_categories` | 分类 | user_id, ledger_id, parent_id, name, icon, sort_order |
+| `finance_tags` | 标签 | user_id, ledger_id, name, sort_order |
 | `transactions` | 交易 | user_id, ledger_id, account_id, type, amount, category_id, note, event_id |
 | `split_items` | 拆单项 | transaction_id, amount, category_id, note |
 | `events` | 事件 | user_id, ledger_id, name, start_at, end_at, color |
-| `budgets` | 预算 | user_id, ledger_id, name, amount, rrule, filters, alert_threshold |
+| `budgets` | 预算 | user_id, ledger_id, name, amount, rrule, filters, alert_threshold, sort_order |
 | `attachments` | 附件 | user_id, url, mime_type, size |
 | `resource_relations` | 关系 | from_type, from_id, relation_type, to_type, to_id |
 | `transaction_tags` | 交易-标签关联 | transaction_id, tag_id |

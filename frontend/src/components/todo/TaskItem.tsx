@@ -9,6 +9,7 @@ import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import PriorityDot from '@/components/shared/PriorityDot';
 import type { TodoOut } from '@/lib/types';
+import { getRecurrenceLabel } from '@/lib/types';
 import dayjs from 'dayjs';
 
 interface TaskItemProps {
@@ -52,6 +53,8 @@ export default function TaskItem({
   const isOverdue = task.due_date ? dayjs(task.due_date).isBefore(dayjs(), 'day') && !task.is_completed : false;
   const childCount = task.children?.length ?? 0;
   const doneChildCount = task.children?.filter(c => c.is_completed).length ?? 0;
+  const recurrenceLabel = getRecurrenceLabel(task.recurrence_rules?.[0]?.rrule_string);
+  const hasRecurrence = recurrenceLabel !== '不重复';
 
   return (
     <>
@@ -100,6 +103,12 @@ export default function TaskItem({
             {task.due_date && (
               <Chip label={task.due_date} size="small"
                 sx={{ fontSize: '0.6875rem', fontWeight: 500, borderRadius: '999px', bgcolor: isOverdue ? 'oklch(95% 0.08 25)' : 'action.hover', color: isOverdue ? 'oklch(30% 0.12 25)' : 'text.secondary', height: 22 }} />
+            )}
+            {hasRecurrence && (
+              <Chip icon={<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" /><polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+              </svg>} label={recurrenceLabel} size="small"
+                sx={{ fontSize: '0.6875rem', fontWeight: 500, borderRadius: '999px', bgcolor: 'oklch(94% 0.04 250)', color: 'oklch(32% 0.07 250)', height: 22, '& .MuiChip-icon': { mx: 0, ml: 0.5, color: 'inherit' } }} />
             )}
             {task.tags?.map((tag) => (
               <Chip key={tag.id} label={`#${tag.name}`} size="small"

@@ -13,7 +13,7 @@ import type {
   LedgerOut, LedgerCreate, LedgerUpdate,
   AccountOut, AccountCreate, AccountUpdate,
   CategoryOut, CategoryCreate, CategoryUpdate,
-  FinanceTagOut, FinanceTagCreate,
+  FinanceTagOut, FinanceTagCreate, FinanceTagUpdate,
   BudgetOut, BudgetCreate, BudgetUpdate,
   FinanceEventOut, FinanceEventCreate, FinanceEventUpdate, EventSummary,
   TransactionOut, TransactionCreate, TransactionUpdate, TransactionListResponse,
@@ -350,6 +350,10 @@ export async function deleteLedger(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/ledgers/${id}`);
 }
 
+export async function reorderLedgers(items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', '/api/v1/finance/ledgers/reorder', { items });
+}
+
 // ===== Finance: Accounts =====
 export async function listAccounts(ledgerId: number): Promise<AccountOut[]> {
   return apiFetch<AccountOut[]>('GET', `/api/v1/finance/accounts?ledger_id=${ledgerId}`);
@@ -365,6 +369,10 @@ export async function updateAccount(id: number, body: AccountUpdate): Promise<Ac
 
 export async function deleteAccount(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/accounts/${id}`);
+}
+
+export async function reorderAccounts(ledgerId: number, items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', `/api/v1/finance/accounts/reorder?ledger_id=${ledgerId}`, { items });
 }
 
 // ===== Finance: Categories =====
@@ -384,6 +392,10 @@ export async function deleteCategory(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/categories/${id}`);
 }
 
+export async function reorderCategories(ledgerId: number, items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', `/api/v1/finance/categories/reorder?ledger_id=${ledgerId}`, { items });
+}
+
 // ===== Finance: Tags =====
 export async function listFinanceTags(ledgerId: number): Promise<FinanceTagOut[]> {
   return apiFetch<FinanceTagOut[]>('GET', `/api/v1/finance/tags?ledger_id=${ledgerId}`);
@@ -393,8 +405,16 @@ export async function createFinanceTag(body: FinanceTagCreate): Promise<FinanceT
   return apiFetch<FinanceTagOut>('POST', '/api/v1/finance/tags', body);
 }
 
+export async function updateFinanceTag(id: number, body: FinanceTagUpdate): Promise<FinanceTagOut> {
+  return apiFetch<FinanceTagOut>('PUT', `/api/v1/finance/tags/${id}`, body);
+}
+
 export async function deleteFinanceTag(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/tags/${id}`);
+}
+
+export async function reorderFinanceTags(ledgerId: number, items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', `/api/v1/finance/tags/reorder?ledger_id=${ledgerId}`, { items });
 }
 
 // ===== Finance: Budgets =====
@@ -412,6 +432,10 @@ export async function updateBudget(id: number, body: BudgetUpdate): Promise<Budg
 
 export async function deleteBudget(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/budgets/${id}`);
+}
+
+export async function reorderBudgets(ledgerId: number, items: ReorderItem[]): Promise<void> {
+  return apiFetch<void>('POST', `/api/v1/finance/budgets/reorder?ledger_id=${ledgerId}`, { items });
 }
 
 // ===== Finance: Events =====

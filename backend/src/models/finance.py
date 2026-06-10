@@ -104,6 +104,7 @@ class Ledger(Base):
     currency: Mapped[str] = mapped_column(
         String(10), default="CNY", nullable=True
     )
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True
     )
@@ -162,6 +163,7 @@ class Account(Base):
     archived: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=True
     )
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True
     )
@@ -209,6 +211,7 @@ class FinanceCategory(Base):
     icon_value: Mapped[str] = mapped_column(
         String(20), default="\U0001f4c2", nullable=True
     )
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True
     )
@@ -253,6 +256,7 @@ class FinanceTag(Base):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(50), nullable=False)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
 
     user: Mapped[User] = relationship("User")
     ledger: Mapped[Ledger] = relationship("Ledger", back_populates="tags")
@@ -481,6 +485,7 @@ class Budget(Base):
     alert_threshold: Mapped[int] = mapped_column(
         Integer, default=80, nullable=True
     )
+    sort_order: Mapped[int] = mapped_column(Integer, default=0, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, nullable=True
     )

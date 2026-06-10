@@ -252,28 +252,36 @@ export default function FinancePage() {
                 <AccountsTab
                   accounts={accounts}
                   activeLedgerId={activeLedgerId}
-                  onRefresh={() => activeLedgerId && fetchAllData(activeLedgerId)}
+                  onRefresh={async () => {
+                    if (activeLedgerId) await fetchAllData(activeLedgerId);
+                  }}
                 />
               )}
               {activeTab === 'categories' && (
                 <CategoriesTab
                   categories={categories}
                   activeLedgerId={activeLedgerId}
-                  onRefresh={() => activeLedgerId && fetchAllData(activeLedgerId)}
+                  onRefresh={async () => {
+                    if (activeLedgerId) await fetchAllData(activeLedgerId);
+                  }}
                 />
               )}
               {activeTab === 'tags' && (
                 <TagsTab
                   tags={tags}
                   activeLedgerId={activeLedgerId}
-                  onRefresh={() => activeLedgerId && fetchAllData(activeLedgerId)}
+                  onRefresh={async () => {
+                    if (activeLedgerId) await fetchAllData(activeLedgerId);
+                  }}
                 />
               )}
               {activeTab === 'budgets' && (
                 <BudgetsTab
                   budgets={budgets}
                   activeLedgerId={activeLedgerId}
-                  onRefresh={() => activeLedgerId && fetchAllData(activeLedgerId)}
+                  onRefresh={async () => {
+                    if (activeLedgerId) await fetchAllData(activeLedgerId);
+                  }}
                 />
               )}
               {activeTab === 'events' && (

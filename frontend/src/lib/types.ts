@@ -339,6 +339,7 @@ export const RECUR_DISPLAY: Record<string, string> = {
   'FREQ=DAILY': '每天',
   'FREQ=WEEKLY': '每周',
   'FREQ=MONTHLY': '每月',
+  'FREQ=YEARLY': '每年',
 };
 
 export const RECUR_TO_RRULE: Record<string, string> = {
@@ -346,4 +347,18 @@ export const RECUR_TO_RRULE: Record<string, string> = {
   '每天': 'FREQ=DAILY',
   '每周': 'FREQ=WEEKLY',
   '每月': 'FREQ=MONTHLY',
+  '每年': 'FREQ=YEARLY',
 };
+
+export function getRecurrenceLabel(rrule?: string | null): string {
+  if (!rrule) return '不重复';
+  for (const [prefix, label] of Object.entries(RECUR_DISPLAY)) {
+    if (rrule.includes(prefix)) return label;
+  }
+  return rrule;
+}
+
+export function toRRule(recurrence?: string | null): string {
+  if (!recurrence || recurrence === '不重复') return '';
+  return RECUR_TO_RRULE[recurrence] ?? recurrence.trim();
+}

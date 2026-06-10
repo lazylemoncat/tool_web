@@ -45,6 +45,7 @@ from ..schemas.finance import (
     EventUpdate,
     FinanceTagCreate,
     FinanceTagOut,
+    FinanceTagUpdate,
     LedgerCreate,
     LedgerOut,
     LedgerUpdate,
@@ -106,11 +107,16 @@ def _calc_account_balance(account_id: int, db: Session) -> Decimal:
     )
 
 
+def _finance_sort_key(item):
+    return (item.sort_order or 0, item.created_at or datetime.min, item.id)
+
+
 def _build_category_tree(categories):
-    roots = [c for c in categories if c.parent_id is None]
+    ordered = sorted(categories, key=_finance_sort_key)
+    roots = [c for c in ordered if c.parent_id is None]
 
     def build(cat):
-        children = [c for c in categories if c.parent_id == cat.id]
+        children = [c for c in ordered if c.parent_id == cat.id]
         d = CategoryOut.model_validate(cat)
         d.children = [build(child) for child in children]
         return d
@@ -201,6 +207,31 @@ def _ensure_relation_resource_access(
         raise HTTPException(404, "resource not found")
 
 
+def _reorder_finance_items(
+    db: Session,
+    model,
+    body: ReorderBatch,
+    current_user: User,
+    ledger_id: int | None = None,
+) -> None:
+    if not body.items:
+        return
+    ids = [item.id for item in body.items]
+    q = db.query(model).filter(
+        getattr(model, "id").in_(ids),
+        getattr(model, "user_id") == current_user.id,
+    )
+    if ledger_id is not None and hasattr(model, "ledger_id"):
+        q = q.filter(getattr(model, "ledger_id") == ledger_id)
+    rows = q.all()
+    if len(rows) != len(set(ids)):
+        raise HTTPException(404, "some items were not found")
+    order_by_id = {item.id: item.sort_order for item in body.items}
+    for row in rows:
+        row.sort_order = order_by_id[row.id]
+    db.commit()
+
+
 # --- Ledger ---
 
 
@@ -212,9 +243,19 @@ def list_ledgers(
     return (
         db.query(Ledger)
         .filter(Ledger.user_id == current_user.id)
-        .order_by(Ledger.created_at)
+        .order_by(Ledger.sort_order, Ledger.created_at, Ledger.id)
         .all()
     )
+
+
+
+@router.post("/ledgers/reorder", status_code=204)
+def reorder_ledgers(
+    body: ReorderBatch,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _reorder_finance_items(db, Ledger, body, current_user)
 
 
 @router.post("/ledgers", response_model=LedgerOut, status_code=201)
@@ -283,7 +324,7 @@ def list_accounts(
             Account.user_id == current_user.id,
             Account.ledger_id == ledger_id,
         )
-        .order_by(Account.created_at)
+        .order_by(Account.sort_order, Account.created_at, Account.id)
         .all()
     )
     result = []
@@ -292,6 +333,17 @@ def list_accounts(
         d.current_balance = _calc_account_balance(a.id, db)
         result.append(d)
     return result
+
+
+
+@router.post("/accounts/reorder", status_code=204)
+def reorder_accounts(
+    body: ReorderBatch,
+    ledger_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _reorder_finance_items(db, Account, body, current_user, ledger_id)
 
 
 @router.post("/accounts", response_model=AccountOut, status_code=201)
@@ -364,10 +416,21 @@ def list_categories(
             FinanceCategory.user_id == current_user.id,
             FinanceCategory.ledger_id == ledger_id,
         )
-        .order_by(FinanceCategory.name)
+        .order_by(FinanceCategory.sort_order, FinanceCategory.name, FinanceCategory.id)
         .all()
     )
     return _build_category_tree(categories)
+
+
+
+@router.post("/categories/reorder", status_code=204)
+def reorder_categories(
+    body: ReorderBatch,
+    ledger_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _reorder_finance_items(db, FinanceCategory, body, current_user, ledger_id)
 
 
 @router.post("/categories", response_model=CategoryOut, status_code=201)
@@ -454,7 +517,7 @@ def list_tags(
     )
     if search:
         q = q.filter(FinanceTag.name.ilike(f"%{search}%"))
-    return q.order_by(FinanceTag.name).all()
+    return q.order_by(FinanceTag.sort_order, FinanceTag.name, FinanceTag.id).all()
 
 
 @router.post("/tags", response_model=FinanceTagOut, status_code=201)
@@ -479,6 +542,38 @@ def create_tag(
     db.commit()
     db.refresh(tag)
     return tag
+
+
+
+@router.put("/tags/{tag_id}", response_model=FinanceTagOut)
+def update_tag(
+    tag_id: int,
+    body: FinanceTagUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tag = (
+        db.query(FinanceTag)
+        .filter(FinanceTag.id == tag_id, FinanceTag.user_id == current_user.id)
+        .first()
+    )
+    if not tag:
+        raise HTTPException(404, "tag not found")
+    for key, val in body.model_dump(exclude_unset=True).items():
+        setattr(tag, key, val)
+    db.commit()
+    db.refresh(tag)
+    return tag
+
+
+@router.post("/tags/reorder", status_code=204)
+def reorder_tags(
+    body: ReorderBatch,
+    ledger_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _reorder_finance_items(db, FinanceTag, body, current_user, ledger_id)
 
 
 @router.delete("/tags/{tag_id}", status_code=204)
@@ -1115,6 +1210,7 @@ def list_budgets(
             Budget.user_id == current_user.id,
             Budget.ledger_id == ledger_id,
         )
+        .order_by(Budget.sort_order, Budget.created_at, Budget.id)
         .all()
     )
     result = []
@@ -1127,6 +1223,17 @@ def list_budgets(
         )
         result.append(d)
     return result
+
+
+
+@router.post("/budgets/reorder", status_code=204)
+def reorder_budgets(
+    body: ReorderBatch,
+    ledger_id: int = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _reorder_finance_items(db, Budget, body, current_user, ledger_id)
 
 
 @router.post("/budgets", response_model=BudgetOut, status_code=201)
@@ -1352,6 +1459,7 @@ def get_dashboard(
             Budget.user_id == current_user.id,
             Budget.ledger_id == ledger_id,
         )
+        .order_by(Budget.sort_order, Budget.created_at, Budget.id)
         .all()
     )
     budget_list = []

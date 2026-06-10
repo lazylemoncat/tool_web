@@ -29,12 +29,14 @@ class LedgerCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     icon: str = "\U0001f4b0"
     currency: str = Field(default="CNY", min_length=1, max_length=10)
+    sort_order: int = 0
 
 
 class LedgerUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=50)
     icon: str | None = None
     currency: str | None = Field(None, min_length=1, max_length=10)
+    sort_order: int | None = None
 
 
 class LedgerOut(BaseModel):
@@ -42,6 +44,7 @@ class LedgerOut(BaseModel):
     name: str
     icon: str
     currency: str
+    sort_order: int = 0
     created_at: datetime
     model_config = {"from_attributes": True}
 
@@ -52,6 +55,7 @@ class AccountCreate(BaseModel):
     type: str = "cash"
     currency: str = Field(default="CNY", min_length=1, max_length=10)
     initial_balance: Decimal = Field(default=Decimal("0"), ge=0)
+    sort_order: int = 0
 
 
 class AccountUpdate(BaseModel):
@@ -60,6 +64,7 @@ class AccountUpdate(BaseModel):
     currency: str | None = Field(None, min_length=1, max_length=10)
     initial_balance: Decimal | None = None
     archived: bool | None = None
+    sort_order: int | None = None
 
 
 class AccountOut(BaseModel):
@@ -70,6 +75,7 @@ class AccountOut(BaseModel):
     currency: str
     initial_balance: Decimal
     archived: bool
+    sort_order: int = 0
     created_at: datetime
     updated_at: datetime
     current_balance: Decimal = Decimal("0")
@@ -82,6 +88,7 @@ class CategoryCreate(BaseModel):
     name: str = Field(min_length=1, max_length=50)
     icon_type: str = Field(default="emoji", pattern="^(color|emoji)$")
     icon_value: str = Field(default="\U0001f4c2", min_length=1, max_length=20)
+    sort_order: int = 0
 
 
 class CategoryUpdate(BaseModel):
@@ -89,6 +96,7 @@ class CategoryUpdate(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=50)
     icon_type: str | None = Field(None, pattern="^(color|emoji)$")
     icon_value: str | None = Field(None, min_length=1, max_length=20)
+    sort_order: int | None = None
 
 
 class CategoryOut(BaseModel):
@@ -98,6 +106,7 @@ class CategoryOut(BaseModel):
     name: str
     icon_type: str
     icon_value: str
+    sort_order: int = 0
     created_at: datetime
     children: list[CategoryOut] = []
     model_config = {"from_attributes": True}
@@ -106,12 +115,19 @@ class CategoryOut(BaseModel):
 class FinanceTagCreate(BaseModel):
     ledger_id: int
     name: str = Field(min_length=1, max_length=50)
+    sort_order: int = 0
+
+
+class FinanceTagUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=50)
+    sort_order: int | None = None
 
 
 class FinanceTagOut(BaseModel):
     id: int
     ledger_id: int
     name: str
+    sort_order: int = 0
     model_config = {"from_attributes": True}
 
 
@@ -262,6 +278,7 @@ class BudgetCreate(BaseModel):
     filters: dict | None = None
     rollover: bool = False
     alert_threshold: int = Field(default=80, ge=1, le=100)
+    sort_order: int = 0
 
     @field_validator("rrule")
     @classmethod
@@ -282,6 +299,7 @@ class BudgetUpdate(BaseModel):
     filters: dict | None = None
     rollover: bool | None = None
     alert_threshold: int | None = Field(None, ge=1, le=100)
+    sort_order: int | None = None
 
 
 class BudgetOut(BaseModel):
@@ -294,6 +312,7 @@ class BudgetOut(BaseModel):
     filters: dict | None = None
     rollover: bool
     alert_threshold: int
+    sort_order: int = 0
     created_at: datetime
     updated_at: datetime
     current_spent: Decimal = Decimal("0")

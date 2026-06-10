@@ -43,7 +43,8 @@ export interface TaskFormData {
   column_id?: number | null;
 }
 
-const RECUR_OPTIONS = ['不重复', '每天', '每周', '每月'];
+const RECUR_OPTIONS = ['不重复', '每天', '每周', '每月', '每年'];
+const CUSTOM_RECUR_OPTION = 'RRULE';
 
 export default function TaskDialog({
   open, mode, onClose, onSave, onSaveAndNew, initialData,
@@ -56,6 +57,7 @@ export default function TaskDialog({
   const [folderId, setFolderId] = useState<number | null>(null);
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [recurrence, setRecurrence] = useState('不重复');
+  const [customRrule, setCustomRrule] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -69,7 +71,14 @@ export default function TaskDialog({
       setDueDate(initialData?.due_date || '');
       setFolderId(initialData?.folder_id ?? null);
       setTagIds(initialData?.tag_ids || []);
-      setRecurrence(initialData?.recurrence || '不重复');
+      const initialRecurrence = initialData?.recurrence || '不重复';
+      if (RECUR_OPTIONS.includes(initialRecurrence)) {
+        setRecurrence(initialRecurrence);
+        setCustomRrule('');
+      } else {
+        setRecurrence(CUSTOM_RECUR_OPTION);
+        setCustomRrule(initialRecurrence);
+      }
       setErrors({});
       setSubmitting(false);
     }
@@ -78,13 +87,17 @@ export default function TaskDialog({
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!title.trim()) newErrors.title = '请输入任务标题';
+    if (recurrence === CUSTOM_RECUR_OPTION && !customRrule.trim()) {
+      newErrors.recurrence = '请输入 RRULE，例如 FREQ=WEEKLY;INTERVAL=2';
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const getFormData = (): TaskFormData => ({
     title: title.trim(), note, priority, due_date: dueDate,
-    folder_id: folderId, tag_ids: tagIds, recurrence,
+    folder_id: folderId, tag_ids: tagIds,
+    recurrence: recurrence === CUSTOM_RECUR_OPTION ? customRrule.trim() : recurrence,
     ...(initialData?.id ? { id: initialData.id } : {}),
     ...(initialData?.parent_id ? { parent_id: initialData.parent_id } : {}),
     ...(initialData?.sprint_id ? { sprint_id: initialData.sprint_id } : {}),
@@ -101,7 +114,7 @@ export default function TaskDialog({
     if (!validate()) return;
     if (onSaveAndNew) {
       onSaveAndNew(getFormData());
-      setTitle(''); setNote(''); setTagIds([]); setDueDate('');
+      setTitle(''); setNote(''); setTagIds([]); setDueDate(''); setRecurrence('不重复'); setCustomRrule('');
     }
   };
 
@@ -185,15 +198,28 @@ export default function TaskDialog({
         <Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>周期性</Typography>
           <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
-            {RECUR_OPTIONS.map((opt) => (
+            {[...RECUR_OPTIONS, CUSTOM_RECUR_OPTION].map((opt) => (
               <Button key={opt} variant={recurrence === opt ? 'contained' : 'outlined'} size="small" onClick={() => setRecurrence(opt)}
                 sx={{ borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600, px: 1.75, py: 0.5, minWidth: 'auto',
                   ...(recurrence !== opt && { borderColor: 'oklch(82% 0.01 275)', color: 'text.secondary', '&:hover': { borderColor: 'primary.main', color: 'primary.main' } }),
                 }}>
-                {opt}
+                {opt === CUSTOM_RECUR_OPTION ? '自定义 RRULE' : opt}
               </Button>
             ))}
           </Box>
+          {recurrence === CUSTOM_RECUR_OPTION && (
+            <TextField
+              fullWidth
+              size="small"
+              label="RRULE"
+              placeholder="例如：FREQ=WEEKLY;INTERVAL=2"
+              value={customRrule}
+              onChange={(e) => setCustomRrule(e.target.value)}
+              error={!!errors.recurrence}
+              helperText={errors.recurrence || '使用 iCalendar RRULE 格式，例如 FREQ=MONTHLY;BYMONTHDAY=1'}
+              sx={{ mt: 1.25 }}
+            />
+          )}
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, pt: 1, borderTop: '1px solid', borderColor: 'divider', gap: 1, justifyContent: 'space-between' }}>

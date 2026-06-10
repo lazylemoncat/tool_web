@@ -18,7 +18,7 @@ import type { AccountOut } from '@/lib/financeTypes';
 interface AccountsTabProps {
   accounts: AccountOut[];
   activeLedgerId: number | null;
-  onRefresh: () => void;
+  onRefresh: () => void | Promise<unknown>;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -33,20 +33,39 @@ const ACCOUNT_TYPES = ['借记卡', '信用卡', '现金', '电子钱包', '虚�
 
 export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: AccountsTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<AccountOut | null>(null);
   const [name, setName] = useState('');
   const [type, setType] = useState('借记卡');
   const [initialBalance, setInitialBalance] = useState('');
+  const [archived, setArchived] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
   const resetForm = () => {
+    setEditingAccount(null);
     setName('');
     setType('借记卡');
     setInitialBalance('');
+    setArchived(false);
     setError('');
   };
 
-  const handleCreate = async () => {
+  const openCreate = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (account: AccountOut) => {
+    setEditingAccount(account);
+    setName(account.name);
+    setType(account.type || '借记卡');
+    setInitialBalance(String(account.initial_balance ?? ''));
+    setArchived(Boolean(account.archived));
+    setError('');
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
     setError('');
     if (!name.trim()) return;
     if (!activeLedgerId) {
@@ -56,17 +75,27 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
     setSaving(true);
     try {
       const balance = initialBalance ? Number(initialBalance) : 0;
-      await api.createAccount({
-        ledger_id: activeLedgerId,
-        name: name.trim(),
-        type,
-        initial_balance: balance,
-      });
+      if (editingAccount) {
+        await api.updateAccount(editingAccount.id, {
+          name: name.trim(),
+          type,
+          initial_balance: balance,
+          archived,
+        });
+      } else {
+        await api.createAccount({
+          ledger_id: activeLedgerId,
+          name: name.trim(),
+          type,
+          initial_balance: balance,
+          sort_order: accounts.length,
+        });
+      }
       setDialogOpen(false);
       resetForm();
-      onRefresh();
+      await onRefresh();
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : '创建账户失败';
+      const msg = err instanceof ApiError ? err.message : '保存账户失败';
       setError(msg);
     } finally {
       setSaving(false);
@@ -78,27 +107,54 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
     resetForm();
   };
 
+  const handleDelete = async (account: AccountOut) => {
+    if (!window.confirm(`确定删除账户“${account.name}”？相关流水会受数据库级联规则影响。`)) return;
+    try {
+      await api.deleteAccount(account.id);
+      await onRefresh();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : '删除账户失败';
+      setError(msg);
+    }
+  };
+
+  const handleMove = async (index: number, direction: -1 | 1) => {
+    if (!activeLedgerId) return;
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= accounts.length) return;
+    const next = [...accounts];
+    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+    try {
+      await api.reorderAccounts(activeLedgerId, next.map((account, i) => ({ id: account.id, sort_order: i })));
+      await onRefresh();
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : '账户排序失败';
+      setError(msg);
+    }
+  };
+
   return (
     <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>账户管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>管理你的资金账户</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新增、重命名、删除并调整资金账户顺序</Typography>
         </Box>
-        <Button variant="contained" size="small" onClick={() => setDialogOpen(true)}
+        <Button variant="contained" size="small" onClick={openCreate}
           sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
           + 新建账户
         </Button>
       </Box>
+      {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
       {accounts.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 8 }}>
           <Typography sx={{ fontSize: '3rem', mb: 1 }}>🏦</Typography>
           <Typography sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>暂无账户</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>点击"新建账户"开始</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>点击“新建账户”开始</Typography>
         </Box>
       ) : (
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 2 }}>
-          {accounts.map((acc) => {
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 2 }}>
+          {accounts.map((acc, index) => {
             const balance = Number(acc.current_balance || acc.initial_balance);
             return (
               <Box key={acc.id} sx={{ bgcolor: 'background.paper', borderRadius: 3.5, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: '#EDECF0', display: 'flex', alignItems: 'flex-start', gap: 1.75, opacity: acc.archived ? 0.55 : 1 }}>
@@ -107,12 +163,18 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
                 </Box>
                 <Box sx={{ flex: 1, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: '0.8125rem', color: 'text.primary', mb: 0.375 }}>{acc.name}</Typography>
-                  <Box sx={{ display: 'flex', gap: 0.5, mb: 1 }}>
+                  <Box sx={{ display: 'flex', gap: 0.5, mb: 1, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', bgcolor: '#F5F6FA', px: 1, py: 0.25, borderRadius: 1 }}>{acc.type}</Typography>
                     {acc.archived && <Typography sx={{ fontSize: '0.625rem', color: '#F59E0B', bgcolor: '#FFFBEB', px: 1, py: 0.25, borderRadius: 1 }}>已归档</Typography>}
                   </Box>
                   <Typography sx={{ fontSize: '1.375rem', fontWeight: 700, color: balance < 0 ? '#EF4444' : acc.archived ? '#A5A2AD' : 'text.primary', mb: 0.375 }}>¥{balance.toLocaleString()}</Typography>
-                  <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD' }}>初始余额 ¥{Number(acc.initial_balance).toLocaleString()}</Typography>
+                  <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 1 }}>初始余额 ¥{Number(acc.initial_balance).toLocaleString()}</Typography>
+                  <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                    <Button size="small" variant="outlined" onClick={() => openEdit(acc)} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>编辑</Button>
+                    <Button size="small" variant="outlined" onClick={() => handleMove(index, -1)} disabled={index === 0} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>上移</Button>
+                    <Button size="small" variant="outlined" onClick={() => handleMove(index, 1)} disabled={index === accounts.length - 1} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>下移</Button>
+                    <Button size="small" color="error" variant="text" onClick={() => handleDelete(acc)} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>删除</Button>
+                  </Box>
                 </Box>
               </Box>
             );
@@ -123,7 +185,7 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
       <Dialog open={dialogOpen} onClose={handleClose} maxWidth="xs" fullWidth
         slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
         <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>新建账户</Typography>
+          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{editingAccount ? '编辑账户' : '新建账户'}</Typography>
           <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)' }}>✕</IconButton>
         </Box>
         <DialogContent sx={{ pt: 2.5 }}>
@@ -134,12 +196,18 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
             {ACCOUNT_TYPES.map((t) => <MenuItem key={t} value={t}>{t}</MenuItem>)}
           </TextField>
           <TextField fullWidth label="初始余额" size="small" type="number" value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
+            onChange={(e) => setInitialBalance(e.target.value)} sx={{ mb: editingAccount ? 2 : 0 }}
             slotProps={{ htmlInput: { step: '0.01', min: '0' } }} />
+          {editingAccount && (
+            <TextField select fullWidth label="状态" size="small" value={archived ? 'archived' : 'active'} onChange={(e) => setArchived(e.target.value === 'archived')}>
+              <MenuItem value="active">正常</MenuItem>
+              <MenuItem value="archived">归档</MenuItem>
+            </TextField>
+          )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
           <Button variant="text" onClick={handleClose} sx={{ color: 'text.secondary', fontWeight: 600, textTransform: 'none' }}>取消</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={!name.trim() || saving}
+          <Button variant="contained" onClick={handleSave} disabled={!name.trim() || saving}
             sx={{ borderRadius: 4, px: 3, boxShadow: 'none', textTransform: 'none', fontWeight: 600 }}>
             {saving ? '保存中...' : '保存'}
           </Button>

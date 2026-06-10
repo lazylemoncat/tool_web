@@ -6,6 +6,7 @@ export interface LedgerOut {
   name: string;
   icon: string;
   currency: string;
+  sort_order?: number;
   created_at: string;
 }
 
@@ -13,12 +14,14 @@ export interface LedgerCreate {
   name: string;
   icon?: string;
   currency?: string;
+  sort_order?: number;
 }
 
 export interface LedgerUpdate {
   name?: string;
   icon?: string;
   currency?: string;
+  sort_order?: number;
 }
 
 // Accounts (账户)
@@ -32,6 +35,7 @@ export interface AccountOut {
   currency: string;
   initial_balance: string;
   archived: boolean;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
   current_balance?: string;
@@ -43,6 +47,7 @@ export interface AccountCreate {
   type?: string;
   currency?: string;
   initial_balance?: number | string;
+  sort_order?: number;
 }
 
 export interface AccountUpdate {
@@ -51,6 +56,7 @@ export interface AccountUpdate {
   currency?: string;
   initial_balance?: number | string;
   archived?: boolean;
+  sort_order?: number;
 }
 
 // Categories (分类 - tree)
@@ -61,6 +67,7 @@ export interface CategoryOut {
   name: string;
   icon_type: 'color' | 'emoji';
   icon_value: string;
+  sort_order?: number;
   created_at: string;
   children: CategoryOut[];
 }
@@ -71,6 +78,7 @@ export interface CategoryCreate {
   name: string;
   icon_type?: 'color' | 'emoji';
   icon_value?: string;
+  sort_order?: number;
 }
 
 export interface CategoryUpdate {
@@ -78,6 +86,7 @@ export interface CategoryUpdate {
   name?: string;
   icon_type?: 'color' | 'emoji';
   icon_value?: string;
+  sort_order?: number;
 }
 
 // Finance Tags (标签)
@@ -85,11 +94,18 @@ export interface FinanceTagOut {
   id: number;
   ledger_id: number;
   name: string;
+  sort_order?: number;
 }
 
 export interface FinanceTagCreate {
   ledger_id: number;
   name: string;
+  sort_order?: number;
+}
+
+export interface FinanceTagUpdate {
+  name?: string;
+  sort_order?: number;
 }
 
 // Budgets (预算)
@@ -103,6 +119,7 @@ export interface BudgetOut {
   filters: Record<string, unknown> | null;
   rollover: boolean;
   alert_threshold: number;
+  sort_order?: number;
   created_at: string;
   updated_at: string;
   current_spent?: string;
@@ -118,6 +135,7 @@ export interface BudgetCreate {
   filters?: Record<string, unknown> | null;
   rollover?: boolean;
   alert_threshold?: number;
+  sort_order?: number;
 }
 
 export interface BudgetUpdate {
@@ -128,6 +146,7 @@ export interface BudgetUpdate {
   filters?: Record<string, unknown> | null;
   rollover?: boolean;
   alert_threshold?: number;
+  sort_order?: number;
 }
 
 // Events (事件)
