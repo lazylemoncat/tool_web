@@ -82,7 +82,7 @@ export default function FinanceSidebar({
             {ledgers.map((l) => (
               <Box
                 key={l.id}
-                onClick={() => { onSelectLedger(l.id); setBookDropdownOpen(false); }}
+                onClick={() => { onSelectLedger(l.id); setBookDropdownOpen(false); onClose(); }}
                 sx={{
                   display: 'flex', alignItems: 'center', gap: 1, px: 1.5, py: 1,
                   fontSize: '0.8125rem', cursor: 'pointer',

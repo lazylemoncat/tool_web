@@ -133,6 +133,9 @@ def _build_transaction_out(tx, db=None):
     if tx.event:
         d.event = EventOut.model_validate(tx.event)
     d.tags = [FinanceTagOut.model_validate(t) for t in (tx.tags or [])]
+    d.attachments = [
+        AttachmentOut.model_validate(a) for a in (tx.attachments or [])
+    ]
     d.split_items = [
         SplitItemOut.model_validate(s) for s in (tx.split_items or [])
     ]
@@ -416,7 +419,11 @@ def list_categories(
             FinanceCategory.user_id == current_user.id,
             FinanceCategory.ledger_id == ledger_id,
         )
-        .order_by(FinanceCategory.sort_order, FinanceCategory.name, FinanceCategory.id)
+        .order_by(
+            FinanceCategory.sort_order,
+            FinanceCategory.name,
+            FinanceCategory.id,
+        )
         .all()
     )
     return _build_category_tree(categories)
@@ -517,7 +524,10 @@ def list_tags(
     )
     if search:
         q = q.filter(FinanceTag.name.ilike(f"%{search}%"))
-    return q.order_by(FinanceTag.sort_order, FinanceTag.name, FinanceTag.id).all()
+    return (
+        q.order_by(FinanceTag.sort_order, FinanceTag.name, FinanceTag.id)
+        .all()
+    )
 
 
 @router.post("/tags", response_model=FinanceTagOut, status_code=201)
@@ -646,6 +656,7 @@ def list_transactions(
             joinedload(Transaction.category),
             joinedload(Transaction.event),
             joinedload(Transaction.tags),
+            joinedload(Transaction.attachments),
             joinedload(Transaction.children),
             joinedload(Transaction.split_items).joinedload(SplitItem.category),
         )
@@ -707,6 +718,7 @@ def get_transaction(
             joinedload(Transaction.category),
             joinedload(Transaction.event),
             joinedload(Transaction.tags),
+            joinedload(Transaction.attachments),
             joinedload(Transaction.split_items).joinedload(SplitItem.category),
         )
         .filter(

@@ -24,6 +24,7 @@ export default function TransactionDetailDrawer({ open, onClose, transaction, on
   const amountColor = isIncome ? '#10B981' : '#EF4444';
   const amountPrefix = isIncome ? '+' : '-';
   const hasSubs = transaction.split_items && transaction.split_items.length > 0;
+  const attachments = transaction.attachments || [];
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}
@@ -78,6 +79,31 @@ export default function TransactionDetailDrawer({ open, onClose, transaction, on
           <Box sx={{ mb: 2.5, bgcolor: '#F9FAFB', borderRadius: 2, p: 1.5 }}>
             <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.5 }}>备注</Typography>
             <Typography sx={{ fontSize: '0.75rem', color: 'text.primary' }}>{transaction.note}</Typography>
+          </Box>
+        )}
+
+        {attachments.length > 0 && (
+          <Box sx={{ mb: 2.5 }}>
+            <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.75 }}>附件</Typography>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+              {attachments.map((attachment) => {
+                const parts = attachment.url.split('/');
+                const name = parts[parts.length - 1] || `附件 ${attachment.id}`;
+                return (
+                  <Button
+                    key={attachment.id}
+                    href={attachment.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    variant="outlined"
+                    size="small"
+                    sx={{ justifyContent: 'flex-start', borderRadius: 2, textTransform: 'none', fontSize: '0.75rem' }}
+                  >
+                    {name}
+                  </Button>
+                );
+              })}
+            </Box>
           </Box>
         )}
 

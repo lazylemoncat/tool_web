@@ -16,7 +16,7 @@ import type {
   FinanceTagOut, FinanceTagCreate, FinanceTagUpdate,
   BudgetOut, BudgetCreate, BudgetUpdate,
   FinanceEventOut, FinanceEventCreate, FinanceEventUpdate, EventSummary,
-  TransactionOut, TransactionCreate, TransactionUpdate, TransactionListResponse,
+  TransactionOut, TransactionCreate, TransactionUpdate, TransactionListResponse, AttachmentOut,
   DashboardSummary, StatsResponse,
 } from './financeTypes';
 
@@ -497,6 +497,27 @@ export async function updateTransaction(id: number, body: TransactionUpdate): Pr
 
 export async function deleteTransaction(id: number): Promise<void> {
   return apiFetch<void>('DELETE', `/api/v1/finance/transactions/${id}`);
+}
+
+export async function uploadFinanceAttachment(file: File): Promise<AttachmentOut> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const headers: Record<string, string> = {};
+  const csrf = getCsrfToken();
+  if (csrf) headers['X-CSRF-Token'] = csrf;
+
+  const res = await fetch('/api/v1/finance/attachments/upload', {
+    method: 'POST',
+    headers,
+    body: formData,
+    credentials: 'include',
+  });
+  const text = await res.text();
+  const data = text ? JSON.parse(text) as unknown : undefined;
+  if (!res.ok) {
+    throw new ApiError(res.status, extractErrorMessage(data, `请求失败 (${res.status})`), data);
+  }
+  return data as AttachmentOut;
 }
 
 // ===== Finance: Dashboard & Stats =====

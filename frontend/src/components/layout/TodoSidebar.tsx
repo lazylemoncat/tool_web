@@ -128,6 +128,13 @@ function moveFolderId(ids: number[], draggedId: number, targetId: number, positi
   return next;
 }
 
+function folderMarker(folder: FolderOut): MarkerValue {
+  if (folder.icon_type === 'emoji') {
+    return { type: 'emoji', value: folder.icon_value };
+  }
+  return { type: 'color', value: folder.icon_value || folder.color || MARKER_COLORS[0] };
+}
+
 function ChevronIcon({ expanded }: { expanded: boolean }) {
   return (
     <Box component="span" sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transformOrigin: 'center', color: 'oklch(82% 0.01 275)', flexShrink: 0 }}>
@@ -343,6 +350,7 @@ function DrawerContent({
         onDragEnd={() => { setDraggingFolderId(null); setDragOverFolder(null); }}
         setSubPopoverPosition={setSubPopoverPosition}
         setSubPopoverParent={setSubPopoverParent}
+        setSubPopoverMarker={setSubPopoverMarker}
         setFolderMenuAnchor={setFolderMenuAnchor}
         setFolderMenuTarget={setFolderMenuTarget}
       >
@@ -546,7 +554,7 @@ function FolderItem({
   folder, depth, isActive, isCollapsed, onToggle, onSelect,
   renamingFolder, setRenamingFolder, renameValue, setRenameValue, onRenameFolder,
   dragOverPosition, onDragStart, onDragOver, onDrop, onDragEnd,
-  setSubPopoverPosition, setSubPopoverParent,
+  setSubPopoverPosition, setSubPopoverParent, setSubPopoverMarker,
   setFolderMenuAnchor, setFolderMenuTarget,
   children,
 }: {
@@ -560,6 +568,7 @@ function FolderItem({
   onDrop: (event: React.DragEvent<HTMLElement>) => void;
   onDragEnd: () => void;
   setSubPopoverPosition: (position: PopoverPosition | null) => void; setSubPopoverParent: (p: number | null) => void;
+  setSubPopoverMarker: (marker: MarkerValue) => void;
   setFolderMenuAnchor: (a: HTMLElement | null) => void; setFolderMenuTarget: (t: number | null) => void;
   children?: React.ReactNode;
 }) {
@@ -618,7 +627,7 @@ function FolderItem({
           )}
           {!renamingFolder && hovered && (
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, ml: 'auto' }}>
-              <IconButton size="small" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSubPopoverPosition({ top: rect.bottom, left: rect.left }); setSubPopoverParent(folder.id); }} title="新建子文件夹"
+              <IconButton size="small" onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSubPopoverPosition({ top: rect.bottom, left: rect.left }); setSubPopoverParent(folder.id); setSubPopoverMarker(folderMarker(folder)); }} title="新建子文件夹"
                 sx={{ width: 26, height: 26, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
               </IconButton>

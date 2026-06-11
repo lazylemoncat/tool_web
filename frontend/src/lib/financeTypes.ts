@@ -219,9 +219,17 @@ export interface TransactionOut {
   event?: FinanceEventOut;
   tags?: FinanceTagOut[];
   split_items?: SplitItemOut[];
-  attachments?: unknown[];
+  attachments?: AttachmentOut[];
   linked_todos?: unknown[];
   children?: TransactionOut[];
+}
+
+export interface AttachmentOut {
+  id: number;
+  url: string;
+  mime_type: string;
+  size: number;
+  created_at: string;
 }
 
 export interface SplitItemOut {

@@ -23,7 +23,7 @@ interface TagsTabProps {
 const TAG_BG_COLORS = ['#E8E0FF', '#D1FAE5', '#FEE2E2', '#DBEAFE', '#FEF3C7', '#EDE9FE'];
 
 function moveItem<T>(items: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= items.length) return items;
+  if (from === to || to < 0 || to >= items.length) return items;
   const next = [...items];
   const [item] = next.splice(from, 1);
   next.splice(to, 0, item);
@@ -36,6 +36,7 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [draggedTagId, setDraggedTagId] = useState<number | null>(null);
 
   const resetForm = () => { setEditingTag(null); setName(''); setError(''); };
 
@@ -81,6 +82,19 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
     await onRefresh();
   };
 
+  const handleDrop = async (targetId: number) => {
+    if (draggedTagId === null || draggedTagId === targetId) return;
+    const from = tags.findIndex((tag) => tag.id === draggedTagId);
+    const to = tags.findIndex((tag) => tag.id === targetId);
+    setDraggedTagId(null);
+    if (from < 0 || to < 0) return;
+    try {
+      await handleMove(from, to);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '排序失败');
+    }
+  };
+
   return (
     <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
@@ -104,13 +118,32 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
         <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 2, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: '#EDECF0' }}>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {tags.map((tag, i) => (
-              <Box key={tag.id} sx={{ bgcolor: TAG_BG_COLORS[i % TAG_BG_COLORS.length], color: '#1E1C24', px: 1.25, py: 0.625, borderRadius: 2, fontSize: '0.6875rem', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+              <Box
+                key={tag.id}
+                draggable
+                onDragStart={() => setDraggedTagId(tag.id)}
+                onDragEnd={() => setDraggedTagId(null)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => handleDrop(tag.id)}
+                sx={{
+                  bgcolor: TAG_BG_COLORS[i % TAG_BG_COLORS.length],
+                  color: '#1E1C24',
+                  px: 1.25,
+                  py: 0.625,
+                  borderRadius: 2,
+                  fontSize: '0.6875rem',
+                  fontWeight: 500,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  cursor: 'grab',
+                  outline: draggedTagId === tag.id ? '2px solid #6D5DFC' : 'none',
+                  opacity: draggedTagId === tag.id ? 0.55 : 1,
+                }}
+              >
                 <Typography component="span" sx={{ fontSize: '0.6875rem', fontWeight: 600 }}>{tag.name}</Typography>
-                <Tooltip title="上移">
-                  <IconButton size="small" disabled={i === 0} onClick={() => handleMove(i, i - 1)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>↑</IconButton>
-                </Tooltip>
-                <Tooltip title="下移">
-                  <IconButton size="small" disabled={i === tags.length - 1} onClick={() => handleMove(i, i + 1)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>↓</IconButton>
+                <Tooltip title="拖拽排序">
+                  <IconButton size="small" sx={{ width: 20, height: 20, fontSize: '0.75rem', cursor: 'grab' }}>⋮⋮</IconButton>
                 </Tooltip>
                 <Tooltip title="重命名">
                   <IconButton size="small" onClick={() => openEdit(tag)} sx={{ width: 20, height: 20, fontSize: '0.75rem' }}>✎</IconButton>

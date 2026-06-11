@@ -10,9 +10,17 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
+import Alert from '@mui/material/Alert';
+import Checkbox from '@mui/material/Checkbox';
+import Chip from '@mui/material/Chip';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import ListItemText from '@mui/material/ListItemText';
+import Select from '@mui/material/Select';
+import type { SelectChangeEvent } from '@mui/material/Select';
 import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
-import type { AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut, TransactionOut } from '@/lib/financeTypes';
+import type { AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut, TransactionOut, AttachmentOut } from '@/lib/financeTypes';
 
 interface TransactionFormDialogProps {
   open: boolean;
@@ -28,6 +36,18 @@ interface TransactionFormDialogProps {
 
 const QUICK_AMOUNTS = [10, 20, 50, 100, 200, 500];
 
+function flattenCategories(categories: CategoryOut[], depth = 0): Array<CategoryOut & { depth: number }> {
+  return categories.flatMap((category) => [
+    { ...category, depth },
+    ...flattenCategories(category.children || [], depth + 1),
+  ]);
+}
+
+function getAttachmentName(attachment: AttachmentOut): string {
+  const parts = attachment.url.split('/');
+  return parts[parts.length - 1] || `附件 ${attachment.id}`;
+}
+
 export default function TransactionFormDialog({
   open, onClose, onSaved, accounts, categories, tags, events, activeLedgerId, editTx,
 }: TransactionFormDialogProps) {
@@ -39,8 +59,14 @@ export default function TransactionFormDialog({
   const [categoryId, setCategoryId] = useState<number | ''>('');
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [eventId, setEventId] = useState<number | ''>('');
+  const [attachments, setAttachments] = useState<AttachmentOut[]>([]);
+  const [originalAttachmentIds, setOriginalAttachmentIds] = useState<number[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState('');
+  const flatCategories = flattenCategories(categories);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (editTx) {
       setFormType(editTx.type as 'expense' | 'income' | 'transfer');
@@ -50,16 +76,26 @@ export default function TransactionFormDialog({
       setCategoryId(editTx.category_id || '');
       setTagIds(editTx.tags?.map((t) => t.id) || []);
       setEventId(editTx.event_id || '');
+      setAttachments(editTx.attachments || []);
+      setOriginalAttachmentIds(editTx.attachments?.map((attachment) => attachment.id) || []);
     } else {
       setFormType('expense'); setAmount(''); setNote('');
-      setAccountId(accounts[0]?.id || '');
-      setCategoryId(''); setTagIds([]); setEventId('');
+      setAccountId(accounts[0]?.id || ''); setOriginalAttachmentIds([]);
+      setCategoryId(''); setTagIds([]); setEventId(''); setAttachments([]);
     }
+    setError('');
   }, [editTx, open, accounts]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
+  const handleTagChange = (event: SelectChangeEvent<number[]>) => {
+    const value = event.target.value;
+    setTagIds(typeof value === 'string' ? value.split(',').map(Number) : value);
+  };
 
   const handleSave = async () => {
     if (!amount || !accountId || !activeLedgerId) return;
     setSaving(true);
+    setError('');
     try {
       const body = {
         ledger_id: activeLedgerId,
@@ -71,14 +107,38 @@ export default function TransactionFormDialog({
         tag_ids: tagIds,
         event_id: eventId ? Number(eventId) : null,
       };
+      const nextAttachmentIds = attachments.map((attachment) => attachment.id);
+      if (nextAttachmentIds.length > 0 || originalAttachmentIds.length > 0) {
+        Object.assign(body, { attachment_ids: nextAttachmentIds });
+      }
       if (isEdit) {
         await api.updateTransaction(editTx!.id, body);
       } else {
         await api.createTransaction(body);
       }
       onSaved();
-    } catch { /* ignore */ }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '保存失败');
+    }
     finally { setSaving(false); }
+  };
+
+  const handleUploadFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setUploading(true);
+    setError('');
+    try {
+      const uploaded = await Promise.all(Array.from(files).map((file) => api.uploadFinanceAttachment(file)));
+      setAttachments((prev) => [...prev, ...uploaded]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '附件上传失败');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveAttachment = (id: number) => {
+    setAttachments((prev) => prev.filter((attachment) => attachment.id !== id));
   };
 
   const handleClose = () => {
@@ -101,6 +161,7 @@ export default function TransactionFormDialog({
       </Box>
 
       <DialogContent sx={{ pt: 2.5, pb: 0 }}>
+        {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
         {/* Type Toggle */}
         <Box sx={{ display: 'flex', gap: 0.75, mb: 2.5 }}>
           {([{ key: 'expense' as const, label: '支出', emoji: '💸' }, { key: 'income' as const, label: '收入', emoji: '💰' }, { key: 'transfer' as const, label: '转账', emoji: '🔄' }]).map((t) => (
@@ -132,16 +193,38 @@ export default function TransactionFormDialog({
           </TextField>
           <TextField select fullWidth size="small" label="分类" value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : '')}>
             <MenuItem value="">未分类</MenuItem>
-            {categories.map((c) => (
+            {flatCategories.map((c) => (
               <MenuItem key={c.id} value={c.id}>
                 <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.75 }}>
                   <MarkerIcon type={c.icon_type} value={c.icon_value} size={16} />
-                  {c.name}
+                  <Box component="span" sx={{ pl: c.depth * 1.5 }}>{c.name}</Box>
                 </Box>
               </MenuItem>
             ))}
           </TextField>
         </Box>
+
+        <FormControl fullWidth size="small" sx={{ mb: 2 }}>
+          <InputLabel id="finance-transaction-tags-label">标签</InputLabel>
+          <Select
+            labelId="finance-transaction-tags-label"
+            multiple
+            value={tagIds}
+            label="标签"
+            onChange={handleTagChange}
+            renderValue={(selected) => tags
+              .filter((tag) => selected.includes(tag.id))
+              .map((tag) => tag.name)
+              .join(', ')}
+          >
+            {tags.map((tag) => (
+              <MenuItem key={tag.id} value={tag.id}>
+                <Checkbox checked={tagIds.includes(tag.id)} size="small" />
+                <ListItemText primary={tag.name} />
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
         {/* Event */}
         <TextField select fullWidth size="small" label="关联事件" value={eventId} onChange={(e) => setEventId(e.target.value ? Number(e.target.value) : '')} sx={{ mb: 2 }}>
@@ -151,11 +234,37 @@ export default function TransactionFormDialog({
 
         {/* Note */}
         <TextField fullWidth multiline minRows={2} size="small" label="备注" value={note} onChange={(e) => setNote(e.target.value)} placeholder="添加备注..." sx={{ mb: 2 }} />
+
+        <Box sx={{ mb: 2 }}>
+          <Button
+            component="label"
+            variant="outlined"
+            size="small"
+            disabled={uploading}
+            sx={{ borderRadius: 2, textTransform: 'none', fontSize: '0.8125rem' }}
+          >
+            {uploading ? '上传中...' : '上传附件'}
+            <input hidden multiple type="file" onChange={(event) => handleUploadFiles(event.target.files)} />
+          </Button>
+          {attachments.length > 0 && (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mt: 1 }}>
+              {attachments.map((attachment) => (
+                <Chip
+                  key={attachment.id}
+                  label={getAttachmentName(attachment)}
+                  size="small"
+                  onDelete={() => handleRemoveAttachment(attachment.id)}
+                  sx={{ borderRadius: 1.5, maxWidth: '100%' }}
+                />
+              ))}
+            </Box>
+          )}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button variant="text" onClick={handleClose} sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.8125rem', textTransform: 'none' }}>取消</Button>
-        <Button variant="contained" onClick={handleSave} disabled={!amount || !accountId || saving}
+        <Button variant="contained" onClick={handleSave} disabled={!amount || !accountId || saving || uploading}
           sx={{ borderRadius: 4, px: 3, fontSize: '0.8125rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
           {isEdit ? '更新' : '保存'}
         </Button>

@@ -36,7 +36,7 @@ function getRRuleLabel(rrule: string | null): string {
 }
 
 function moveItem<T>(items: T[], from: number, to: number): T[] {
-  if (to < 0 || to >= items.length) return items;
+  if (from === to || to < 0 || to >= items.length) return items;
   const next = [...items];
   const [item] = next.splice(from, 1);
   next.splice(to, 0, item);
@@ -52,6 +52,7 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
   const [alertThreshold, setAlertThreshold] = useState(100);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [draggedBudgetId, setDraggedBudgetId] = useState<number | null>(null);
 
   const resetForm = () => {
     setEditingBudget(null);
@@ -113,6 +114,19 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
     await onRefresh();
   };
 
+  const handleDrop = async (targetId: number) => {
+    if (draggedBudgetId === null || draggedBudgetId === targetId) return;
+    const from = budgets.findIndex((budget) => budget.id === draggedBudgetId);
+    const to = budgets.findIndex((budget) => budget.id === targetId);
+    setDraggedBudgetId(null);
+    if (from < 0 || to < 0) return;
+    try {
+      await handleMove(from, to);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '排序失败');
+    }
+  };
+
   return (
     <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
@@ -134,20 +148,36 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
         </Box>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 2 }}>
-          {budgets.map((b, index) => {
+          {budgets.map((b) => {
             const used = Number(b.current_spent || 0);
             const total = Number(b.amount);
             const pct = b.progress_pct ?? (total > 0 ? Math.min((used / total) * 100, 100) : 0);
             const barColor = getProgressColor(pct);
             const remaining = total - used;
             return (
-              <Box key={b.id} sx={{ bgcolor: 'background.paper', borderRadius: 3.5, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: '#EDECF0' }}>
+              <Box
+                key={b.id}
+                draggable
+                onDragStart={() => setDraggedBudgetId(b.id)}
+                onDragEnd={() => setDraggedBudgetId(null)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => handleDrop(b.id)}
+                sx={{
+                  bgcolor: 'background.paper',
+                  borderRadius: 3.5,
+                  p: 2.5,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                  border: '1px solid',
+                  borderColor: draggedBudgetId === b.id ? 'primary.main' : '#EDECF0',
+                  cursor: 'grab',
+                  opacity: draggedBudgetId === b.id ? 0.55 : 1,
+                }}
+              >
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.25, gap: 1 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>{b.name}</Typography>
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
                     <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', bgcolor: '#F5F6FA', px: 1, py: 0.25, borderRadius: 1 }}>{getRRuleLabel(b.rrule)}</Typography>
-                    <Tooltip title="上移"><IconButton size="small" disabled={index === 0} onClick={() => handleMove(index, index - 1)} sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>↑</IconButton></Tooltip>
-                    <Tooltip title="下移"><IconButton size="small" disabled={index === budgets.length - 1} onClick={() => handleMove(index, index + 1)} sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>↓</IconButton></Tooltip>
+                    <Tooltip title="拖拽排序"><IconButton size="small" sx={{ width: 24, height: 24, fontSize: '0.75rem', cursor: 'grab' }}>⋮⋮</IconButton></Tooltip>
                     <Tooltip title="编辑"><IconButton size="small" onClick={() => openEdit(b)} sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>✎</IconButton></Tooltip>
                     <Tooltip title="删除"><IconButton size="small" onClick={() => handleDelete(b)} sx={{ width: 24, height: 24, fontSize: '0.75rem', color: '#EF4444' }}>×</IconButton></Tooltip>
                   </Box>

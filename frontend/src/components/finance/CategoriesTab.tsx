@@ -17,10 +17,22 @@ import type { CategoryOut } from '@/lib/financeTypes';
 
 function CategoryNode({
   category,
+  parentId,
+  siblings,
+  draggedCategory,
+  onDragStart,
+  onDragEnd,
+  onDrop,
   onEdit,
   onDelete,
 }: {
   category: CategoryOut;
+  parentId: number | null;
+  siblings: CategoryOut[];
+  draggedCategory: { id: number; parentId: number | null } | null;
+  onDragStart: (category: CategoryOut, parentId: number | null) => void;
+  onDragEnd: () => void;
+  onDrop: (target: CategoryOut, parentId: number | null, siblings: CategoryOut[]) => void;
   onEdit: (category: CategoryOut) => void;
   onDelete: (category: CategoryOut) => void;
 }) {
@@ -29,13 +41,39 @@ function CategoryNode({
 
   return (
     <Box>
-      <Box onClick={() => hasChildren && setExpanded(!expanded)}
-        sx={{ display: 'flex', alignItems: 'center', gap: 0.75, py: 1, px: 1, borderRadius: 1.5, cursor: hasChildren ? 'pointer' : 'default', '&:hover': { bgcolor: 'action.hover' } }}>
+      <Box
+        draggable
+        onClick={() => hasChildren && setExpanded(!expanded)}
+        onDragStart={(event) => {
+          event.stopPropagation();
+          onDragStart(category, parentId);
+        }}
+        onDragEnd={onDragEnd}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onDrop(category, parentId, siblings);
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0.75,
+          py: 1,
+          px: 1,
+          borderRadius: 1.5,
+          cursor: 'grab',
+          bgcolor: draggedCategory?.id === category.id ? 'action.selected' : 'transparent',
+          opacity: draggedCategory?.id === category.id ? 0.55 : 1,
+          '&:hover': { bgcolor: 'action.hover' },
+        }}
+      >
         <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', width: 14, textAlign: 'center' }}>{hasChildren ? (expanded ? '▼' : '▶') : ''}</Typography>
         <MarkerIcon type={category.icon_type} value={category.icon_value} size={16} />
         <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: 'text.primary', flex: 1 }}>{category.name}</Typography>
         {hasChildren && <Typography sx={{ fontSize: '0.5625rem', color: '#A5A2AD' }}>{category.children.length} 个子分类</Typography>}
         <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5 }}>
+          <Button size="small" variant="text" sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem', cursor: 'grab' }}>拖拽</Button>
           <Button size="small" variant="text" onClick={() => onEdit(category)} sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem' }}>编辑</Button>
           <Button size="small" color="error" variant="text" onClick={() => onDelete(category)} sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem' }}>删除</Button>
         </Box>
@@ -44,7 +82,18 @@ function CategoryNode({
         <Collapse in={expanded}>
           <Box sx={{ pl: 3 }}>
             {category.children.map((child) => (
-              <CategoryNode key={child.id} category={child} onEdit={onEdit} onDelete={onDelete} />
+              <CategoryNode
+                key={child.id}
+                category={child}
+                parentId={category.id}
+                siblings={category.children}
+                draggedCategory={draggedCategory}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                onDrop={onDrop}
+                onEdit={onEdit}
+                onDelete={onDelete}
+              />
             ))}
           </Box>
         </Collapse>
@@ -66,6 +115,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
   const [marker, setMarker] = useState<MarkerValue>({ type: 'emoji', value: MARKER_EMOJIS[1] });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [draggedCategory, setDraggedCategory] = useState<{ id: number; parentId: number | null } | null>(null);
 
   const resetForm = () => {
     setEditingCategory(null);
@@ -129,6 +179,30 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
     }
   };
 
+  const handleCategoryDragStart = (category: CategoryOut, parentId: number | null) => {
+    setDraggedCategory({ id: category.id, parentId });
+  };
+
+  const handleCategoryDrop = async (target: CategoryOut, parentId: number | null, siblings: CategoryOut[]) => {
+    if (!activeLedgerId || !draggedCategory || draggedCategory.parentId !== parentId || draggedCategory.id === target.id) {
+      setDraggedCategory(null);
+      return;
+    }
+    const from = siblings.findIndex((category) => category.id === draggedCategory.id);
+    const to = siblings.findIndex((category) => category.id === target.id);
+    setDraggedCategory(null);
+    if (from < 0 || to < 0) return;
+    const ordered = [...siblings];
+    const [item] = ordered.splice(from, 1);
+    ordered.splice(to, 0, item);
+    try {
+      await api.reorderCategories(activeLedgerId, ordered.map((category, index) => ({ id: category.id, sort_order: index })));
+      await onRefresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '排序失败');
+    }
+  };
+
   const handleClose = () => { setDialogOpen(false); resetForm(); };
 
   return (
@@ -136,7 +210,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>分类管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新增、编辑和删除收支分类</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新增、编辑、删除和拖拽排序收支分类</Typography>
         </Box>
         <Button variant="contained" size="small" onClick={openCreate}
           sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
@@ -152,7 +226,20 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
         </Box>
       ) : (
         <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: '#EDECF0' }}>
-          {categories.map((cat) => <CategoryNode key={cat.id} category={cat} onEdit={openEdit} onDelete={handleDelete} />)}
+          {categories.map((cat) => (
+            <CategoryNode
+              key={cat.id}
+              category={cat}
+              parentId={null}
+              siblings={categories}
+              draggedCategory={draggedCategory}
+              onDragStart={handleCategoryDragStart}
+              onDragEnd={() => setDraggedCategory(null)}
+              onDrop={handleCategoryDrop}
+              onEdit={openEdit}
+              onDelete={handleDelete}
+            />
+          ))}
         </Box>
       )}
 
