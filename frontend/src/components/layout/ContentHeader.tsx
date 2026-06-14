@@ -38,7 +38,7 @@ export default function ContentHeader({
           sx={{
             display: { xs: 'flex', md: 'none' },
             color: 'text.secondary',
-            '&:hover': { bgcolor: 'oklch(93% 0.01 275)' },
+            '&:hover': { bgcolor: 'action.hover' },
           }}
         >
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

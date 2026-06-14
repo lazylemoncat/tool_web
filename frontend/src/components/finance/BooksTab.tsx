@@ -11,6 +11,7 @@ import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
 import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import * as api from '@/lib/api';
 import type { LedgerOut } from '@/lib/financeTypes';
 
@@ -21,6 +22,14 @@ interface BooksTabProps {
   onRefresh: () => void | Promise<unknown>;
 }
 
+function moveItem<T>(items: T[], from: number, to: number): T[] {
+  if (from === to || to < 0 || to >= items.length) return items;
+  const next = [...items];
+  const [item] = next.splice(from, 1);
+  next.splice(to, 0, item);
+  return next;
+}
+
 export default function BooksTab({ ledgers, activeLedgerId, onSelect, onRefresh }: BooksTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLedger, setEditingLedger] = useState<LedgerOut | null>(null);
@@ -29,6 +38,7 @@ export default function BooksTab({ ledgers, activeLedgerId, onSelect, onRefresh 
   const [currency, setCurrency] = useState('CNY');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [draggedLedgerId, setDraggedLedgerId] = useState<number | null>(null);
 
   const resetForm = () => {
     setEditingLedger(null);
@@ -88,28 +98,35 @@ export default function BooksTab({ ledgers, activeLedgerId, onSelect, onRefresh 
     }
   };
 
-  const handleMove = async (index: number, direction: -1 | 1) => {
-    const nextIndex = index + direction;
-    if (nextIndex < 0 || nextIndex >= ledgers.length) return;
-    const next = [...ledgers];
-    [next[index], next[nextIndex]] = [next[nextIndex], next[index]];
+  const handleReorder = async (from: number, to: number) => {
+    const ordered = moveItem(ledgers, from, to);
+    if (ordered === ledgers) return;
+    await api.reorderLedgers(ordered.map((ledger, i) => ({ id: ledger.id, sort_order: i })));
+    await onRefresh();
+  };
+
+  const handleDrop = async (targetId: number) => {
+    if (draggedLedgerId === null || draggedLedgerId === targetId) return;
+    const from = ledgers.findIndex((ledger) => ledger.id === draggedLedgerId);
+    const to = ledgers.findIndex((ledger) => ledger.id === targetId);
+    setDraggedLedgerId(null);
+    if (from < 0 || to < 0) return;
     try {
-      await api.reorderLedgers(next.map((ledger, i) => ({ id: ledger.id, sort_order: i })));
-      await onRefresh();
+      await handleReorder(from, to);
     } catch (err) {
       setError(err instanceof Error ? err.message : '排序失败');
     }
   };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
+    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: 'background.default', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>账本管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新增、重命名、删除并调整账本顺序</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>新增、重命名、删除并调整账本顺序</Typography>
         </Box>
         <Button variant="contained" size="small" onClick={openCreate}
-          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
+          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
           + 新建账本
         </Button>
       </Box>
@@ -122,20 +139,39 @@ export default function BooksTab({ ledgers, activeLedgerId, onSelect, onRefresh 
         </Box>
       ) : (
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 2 }}>
-          {ledgers.map((book, index) => (
-            <Box key={book.id} onClick={() => onSelect(book.id)}
-              sx={{ bgcolor: 'background.paper', borderRadius: 3.5, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: book.id === activeLedgerId ? '2px solid' : '1px solid', borderColor: book.id === activeLedgerId ? 'primary.main' : '#EDECF0', position: 'relative', cursor: 'pointer' }}>
-              {book.id === activeLedgerId && <Typography sx={{ position: 'absolute', top: 10, right: 12, bgcolor: 'primary.main', color: '#fff', fontSize: '0.5625rem', px: 1, py: 0.25, borderRadius: 1, fontWeight: 600 }}>当前</Typography>}
+          {ledgers.map((book) => (
+            <Box
+              key={book.id}
+              draggable
+              onClick={() => onSelect(book.id)}
+              onDragStart={() => setDraggedLedgerId(book.id)}
+              onDragEnd={() => setDraggedLedgerId(null)}
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={() => handleDrop(book.id)}
+              sx={{
+                bgcolor: 'background.paper',
+                borderRadius: 3.5,
+                p: 2.5,
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                border: book.id === activeLedgerId ? '2px solid' : '1px solid',
+                borderColor: draggedLedgerId === book.id ? 'primary.main' : book.id === activeLedgerId ? 'primary.main' : 'divider',
+                position: 'relative',
+                cursor: 'grab',
+                opacity: draggedLedgerId === book.id ? 0.55 : 1,
+              }}
+            >
+              {book.id === activeLedgerId && <Typography sx={{ position: 'absolute', top: 10, right: 12, bgcolor: 'primary.main', color: 'primary.contrastText', fontSize: '0.5625rem', px: 1, py: 0.25, borderRadius: 1, fontWeight: 600 }}>当前</Typography>}
               <Typography sx={{ fontSize: '1.75rem', mb: 1.25 }}>{book.icon || '📒'}</Typography>
               <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary', mb: 0.5 }}>{book.name}</Typography>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.25 }}>
-                <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD' }}>{book.created_at?.slice(0, 10)} 创建</Typography>
+                <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary' }}>{book.created_at?.slice(0, 10)} 创建</Typography>
                 <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary' }}>{book.currency}</Typography>
               </Box>
               <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                <Tooltip title="排序手柄">
+                  <IconButton size="small" sx={{ width: 28, height: 28, cursor: 'grab', fontSize: '0.875rem' }}>⋮⋮</IconButton>
+                </Tooltip>
                 <Button size="small" variant="outlined" onClick={() => openEdit(book)} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>编辑</Button>
-                <Button size="small" variant="outlined" onClick={() => handleMove(index, -1)} disabled={index === 0} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>上移</Button>
-                <Button size="small" variant="outlined" onClick={() => handleMove(index, 1)} disabled={index === ledgers.length - 1} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>下移</Button>
                 <Button size="small" color="error" variant="text" onClick={() => handleDelete(book)} sx={{ minWidth: 0, px: 1, fontSize: '0.6875rem' }}>删除</Button>
               </Box>
             </Box>

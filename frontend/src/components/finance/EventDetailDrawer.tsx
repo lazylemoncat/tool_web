@@ -6,6 +6,7 @@ import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
+import { alpha } from '@mui/material/styles';
 import type { FinanceEventOut } from '@/lib/financeTypes';
 
 interface EventDetailDrawerProps {
@@ -19,11 +20,11 @@ export default function EventDetailDrawer({ open, onClose, event }: EventDetailD
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}
-      slotProps={{ paper: { sx: { width: 400, maxWidth: '90vw', borderRadius: 0 } } }}>
+      slotProps={{ paper: { sx: { width: 400, maxWidth: '90vw', borderRadius: 0, bgcolor: 'background.paper' } } }}>
       <Box sx={{ p: 2.5, pb: 1.5 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Box sx={{ width: 40, height: 40, borderRadius: 2.5, bgcolor: `${event.color || '#6C5CE7'}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>📅</Box>
+            <Box sx={(theme) => ({ width: 40, height: 40, borderRadius: 2.5, bgcolor: alpha(event.color || theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.22 : 0.16), display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' })}>📅</Box>
             <Box>
               <Typography sx={{ fontWeight: 600, fontSize: '0.9375rem', color: 'text.primary', mb: 0.25 }}>{event.name}</Typography>
               <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary' }}>{event.description}</Typography>
@@ -41,19 +42,19 @@ export default function EventDetailDrawer({ open, onClose, event }: EventDetailD
       <Box sx={{ flex: 1, overflowY: 'auto', px: 2.5, py: 2 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5 }}>
           <Box>
-            <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.25 }}>开始日期</Typography>
+            <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>开始日期</Typography>
             <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{event.start_at?.slice(0, 10) || '未设置'}</Typography>
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.25 }}>结束日期</Typography>
+            <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>结束日期</Typography>
             <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{event.end_at?.slice(0, 10) || '未设置'}</Typography>
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.25 }}>交易笔数</Typography>
+            <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>交易笔数</Typography>
             <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{event.transaction_count || 0} 笔</Typography>
           </Box>
           <Box>
-            <Typography sx={{ fontSize: '0.625rem', color: '#A5A2AD', mb: 0.25 }}>颜色</Typography>
+            <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>颜色</Typography>
             <Box sx={{ width: 20, height: 20, borderRadius: 1, bgcolor: event.color || '#6C5CE7' }} />
           </Box>
         </Box>

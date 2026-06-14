@@ -48,7 +48,7 @@ export default function KanbanCard({
       onDragStart={onDragStart}
       onClick={onClick}
       sx={{
-        background: '#fff', borderRadius: 2, border: '1px solid',
+        bgcolor: 'background.paper', borderRadius: 2, border: '1px solid',
         borderColor: 'divider', p: 1.5, cursor: 'pointer',
         transition: 'box-shadow 0.15s, transform 0.15s',
         '&:hover': { boxShadow: 1, transform: 'translateY(-1px)' },
@@ -75,7 +75,7 @@ export default function KanbanCard({
         {task.version && (
           <Chip label={task.version} size="small" sx={{
             height: 20, fontSize: '0.6rem', fontWeight: 500,
-            bgcolor: '#EDE7F0', fontFamily: 'monospace',
+            bgcolor: 'action.hover', fontFamily: 'monospace',
             '& .MuiChip-label': { px: 0.5 },
           }} />
         )}

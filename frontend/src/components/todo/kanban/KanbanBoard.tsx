@@ -39,15 +39,16 @@ export default function KanbanBoard({
       display: 'flex', gap: 1.5, overflowX: 'scroll', flex: 1,
       pb: 2.5, minHeight: 0,
       scrollbarWidth: 'auto',
-      scrollbarColor: '#9B93A6 #F3EEF7',
+      scrollbarColor: 'var(--mui-palette-text-disabled) var(--mui-palette-background-default)',
       '&::-webkit-scrollbar': { height: 20 },
-      '&::-webkit-scrollbar-track': { bgcolor: '#F3EEF7', borderRadius: 10 },
+      '&::-webkit-scrollbar-track': { bgcolor: 'background.default', borderRadius: 10 },
       '&::-webkit-scrollbar-thumb': {
-        bgcolor: '#9B93A6',
+        bgcolor: 'text.disabled',
         borderRadius: 10,
-        border: '4px solid #F3EEF7',
+        border: '4px solid',
+        borderColor: 'background.default',
       },
-      '&::-webkit-scrollbar-thumb:hover': { bgcolor: '#7F7789' },
+      '&::-webkit-scrollbar-thumb:hover': { bgcolor: 'text.secondary' },
     }}>
       {sorted.map((col) => (
         <KanbanColumn

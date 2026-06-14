@@ -1,5 +1,29 @@
 # changelog
 
+## 2026-06-14
+
+### feat
+
+-   记账模块交易记录支持按标签下拉筛选, `frontend/src/components/finance/Transactions/FilterBar.tsx` 新增标签筛选控件, `frontend/src/components/finance/TransactionsTab.tsx` 按标签 ID 过滤并支持关键词匹配标签名称.
+-   记账模块账本和账户管理改为拖拽排序,移除上移/下移点击排序按钮,并保留现有 reorder API 持久化.
+-   顶部导航管理改为可持久化配置,支持模块顺序,显示状态和名称调整,导航栏读取同一份配置.
+
+### fix
+
+-   修复浅深色主题切换时大部分组件仍显示浅色 surface 的问题,将 MUI 全局输入框,菜单,弹窗,列表选中态以及记账模块,工作区首页,Todo 看板和日历中性背景改为主题 token; 关联文件包括 `frontend/src/theme.ts`, `frontend/src/components/finance/*`, `frontend/src/components/todo/kanban/*`, `frontend/src/components/workspace/WorkspaceHome.tsx`, `frontend/src/components/calendar/CalendarPage.tsx`.
+-   删除记账模块排序控件中的可见拖拽文本,分类,标签和预算仅保留排序手柄和拖拽反馈.
+-   修复导航管理弹窗仅维护本地状态但不影响顶部导航的问题.
+
+### docs
+
+-   更新 `docs/finance.md` 和 `docs/theme.md`,记录交易记录标签筛选实现位置,主题 token 使用约束以及本次深浅色切换修复影响范围.
+-   在 `docs/frontend.md` 和 `docs/finance.md` 补充 Material + microinteractions 风格要求,并明确多文件夹,账本,账户,分类,标签和预算等排序需求优先使用拖拽排序.
+-   新增 `docs/README.md` 作为项目文档索引,集中整理根目录文档,模块文档,项目流程文档,历史方案,UML 和零散记录入口.
+-   更新 `README.md`,修正项目结构缩进,补充完整常用文档入口.
+-   标记 `product.md` 为历史 PRD,修正 `product2.md` 中旧 Umi/Radix/Nginx 技术栈为当前 Next.js/React/MUI/Next rewrites 描述.
+-   清理 `docs/api.md`, `docs/auth.md`, `docs/frontend.md`, `docs/finance.md`, `docs/theme.md`, `docs/todo.md`, `docs/github-actions.md`, `docs/uml/index.md` 和前端组件 UML 图中的过期标题,路径和技术栈描述.
+-   将 `todo/login.md` 与 `todo/register.md` 归档为已完成历史待办清单.
+
 ## 2026-06-12
 
 ### feat

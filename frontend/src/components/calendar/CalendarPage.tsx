@@ -60,18 +60,18 @@ const FILTER_OPTIONS: { key: keyof CalendarFilterState; label: string; color: st
 ];
 
 const surfaceTokens = {
-  background: '#F7F7FA',
-  surface: '#FFFFFF',
-  surfaceContainer: '#F5F3FF',
-  surfaceLow: '#FAFAFD',
-  surfaceHover: '#F0EEF8',
-  outline: '#EBE8F2',
-  outlineSoft: 'rgba(30,30,60,0.06)',
-  primary: '#6C5CE7',
-  primaryContainer: '#EEEAFE',
-  onPrimaryContainer: '#4B3BCF',
-  muted: '#6B7280',
-  dim: '#9CA3AF',
+  background: 'var(--mui-palette-background-default)',
+  surface: 'var(--mui-palette-background-paper)',
+  surfaceContainer: 'var(--mui-palette-action-selected)',
+  surfaceLow: 'var(--mui-palette-action-hover)',
+  surfaceHover: 'var(--mui-palette-action-selected)',
+  outline: 'var(--mui-palette-divider)',
+  outlineSoft: 'var(--mui-palette-divider)',
+  primary: 'var(--mui-palette-primary-main)',
+  primaryContainer: 'var(--mui-palette-action-selected)',
+  onPrimaryContainer: 'var(--mui-palette-primary-main)',
+  muted: 'var(--mui-palette-text-secondary)',
+  dim: 'var(--mui-palette-text-disabled)',
 };
 
 export default function CalendarPage() {

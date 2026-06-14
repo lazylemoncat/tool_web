@@ -94,7 +94,7 @@ export default function KanbanTaskDrawer({
               }} />
             )}
             {task.task_type && <Chip label={task.task_type} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />}
-            {task.version && <Chip label={task.version} size="small" sx={{ fontSize: '0.65rem', fontFamily: 'monospace', bgcolor: '#EDE7F0' }} />}
+            {task.version && <Chip label={task.version} size="small" sx={{ fontSize: '0.65rem', fontFamily: 'monospace', bgcolor: 'action.hover' }} />}
           </Box>
           {detailFields.filter((field) => field.show_in_detail && !['title', 'priority', 'task_type', 'version'].includes(field.key)).map((field) => {
             const value = getFieldValue(field);

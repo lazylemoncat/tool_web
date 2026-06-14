@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
@@ -13,50 +11,44 @@ import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
-import ListItemText from '@mui/material/ListItemText';
-import ListItemIcon from '@mui/material/ListItemIcon';
-
-interface NavItem {
-  id: string;
-  label: string;
-  icon: string;
-  visible: boolean;
-}
-
-const INITIAL_NAV: NavItem[] = [
-  { id: 'home', label: '首页', icon: '🏠', visible: true },
-  { id: 'todo', label: '任务', icon: '✅', visible: true },
-  { id: 'finance', label: '记账', icon: '💰', visible: true },
-  { id: 'calendar', label: '日历', icon: '📅', visible: false },
-  { id: 'settings', label: '设置', icon: '⚙️', visible: true },
-  { id: 'help', label: '帮助', icon: '❓', visible: true },
-];
+import Tooltip from '@mui/material/Tooltip';
+import type { NavItem } from './GlobalNav';
 
 interface NavManageDialogProps {
   open: boolean;
+  items: NavItem[];
+  onChange: (items: NavItem[]) => void;
+  onReset: () => void;
   onClose: () => void;
 }
 
-export default function NavManageDialog({ open, onClose }: NavManageDialogProps) {
-  const [items, setItems] = useState(INITIAL_NAV);
-  const [newName, setNewName] = useState('');
+export default function NavManageDialog({
+  open,
+  items,
+  onChange,
+  onReset,
+  onClose,
+}: NavManageDialogProps) {
+  const visibleCount = items.filter((item) => item.visible).length;
 
-  const toggleVisible = (id: string) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, visible: !item.visible } : item)));
+  const updateItem = (id: string, patch: Partial<Pick<NavItem, 'label' | 'visible'>>) => {
+    onChange(items.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   };
 
-  const addItem = () => {
-    if (!newName.trim()) return;
-    const id = newName.trim().toLowerCase().replace(/\s+/g, '-');
-    setItems((prev) => [...prev, { id, label: newName.trim(), icon: '📌', visible: true }]);
-    setNewName('');
+  const moveItem = (index: number, direction: -1 | 1) => {
+    const nextIndex = index + direction;
+    if (nextIndex < 0 || nextIndex >= items.length) return;
+    const next = [...items];
+    const [item] = next.splice(index, 1);
+    next.splice(nextIndex, 0, item);
+    onChange(next);
   };
 
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      maxWidth="xs"
+      maxWidth="sm"
       fullWidth
       slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}
     >
@@ -86,61 +78,84 @@ export default function NavManageDialog({ open, onClose }: NavManageDialogProps)
 
       <DialogContent sx={{ pt: 2.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8125rem' }}>
-          管理顶部导航栏的模块顺序、显示状态和名称。拖拽使用按钮调整顺序。
+          管理顶部导航栏的模块顺序,显示状态和名称. 使用箭头按钮调整顺序.
         </Typography>
 
         <List disablePadding>
-          {items.map((item) => (
+          {items.map((item, index) => (
             <ListItem
               key={item.id}
               sx={{
                 px: 1.5,
                 py: 1,
                 mb: 0.75,
+                gap: 1,
                 borderRadius: 2,
                 bgcolor: 'action.hover',
               }}
             >
-              <ListItemIcon sx={{ minWidth: 32, fontSize: '1.125rem' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.label}
-                slotProps={{
-                  primary: { sx: { fontSize: '0.875rem', fontWeight: 500 } },
-                }}
+              <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0 }}>
+                <Tooltip title="上移">
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={index === 0}
+                      onClick={() => moveItem(index, -1)}
+                      aria-label={`${item.label} 上移`}
+                    >
+                      ↑
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="下移">
+                  <span>
+                    <IconButton
+                      size="small"
+                      disabled={index === items.length - 1}
+                      onClick={() => moveItem(index, 1)}
+                      aria-label={`${item.label} 下移`}
+                    >
+                      ↓
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </Box>
+
+              <TextField
+                size="small"
+                label="名称"
+                value={item.label}
+                onChange={(event) => updateItem(item.id, { label: event.target.value })}
+                sx={{ flex: 1, minWidth: 120 }}
               />
+
               <Switch
                 checked={item.visible}
-                onChange={() => toggleVisible(item.id)}
+                onChange={() => {
+                  if (item.visible && visibleCount <= 1) return;
+                  updateItem(item.id, { visible: !item.visible });
+                }}
                 size="small"
                 color="primary"
+                slotProps={{ input: { 'aria-label': `${item.label} 显示状态` } }}
               />
             </ListItem>
           ))}
         </List>
-
-        {/* Add new nav item */}
-        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="添加新导航项"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addItem()}
-          />
-          <Button variant="contained" size="small" onClick={addItem} sx={{ borderRadius: 2, flexShrink: 0 }}>
-            添加
-          </Button>
-        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 3 }}>
+      <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>
         <Button
           variant="text"
-          onClick={onClose}
+          onClick={onReset}
           sx={{ color: 'text.secondary', fontWeight: 600, fontSize: '0.875rem' }}
+        >
+          恢复默认
+        </Button>
+        <Button
+          variant="contained"
+          onClick={onClose}
+          sx={{ borderRadius: 999, px: 3, boxShadow: 'none', fontWeight: 600, fontSize: '0.875rem' }}
         >
           完成
         </Button>

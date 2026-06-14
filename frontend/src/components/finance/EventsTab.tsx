@@ -55,14 +55,14 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
   const handleClose = () => { setDialogOpen(false); resetForm(); };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
+    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: 'background.default', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>事件管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>按时间段追踪收支</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>按时间段追踪收支</Typography>
         </Box>
         <Button variant="contained" size="small" onClick={() => setDialogOpen(true)}
-          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
+          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
           + 新建事件
         </Button>
       </Box>
@@ -76,7 +76,7 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           {events.map((event) => (
             <Box key={event.id} onClick={() => onEventClick?.(event)}
-              sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: '#EDECF0', display: 'flex', gap: 1.5, cursor: 'pointer' }}>
+              sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: 'divider', display: 'flex', gap: 1.5, cursor: 'pointer' }}>
               <Box sx={{ width: 4, bgcolor: event.color || '#6C5CE7', borderRadius: 2, flexShrink: 0 }} />
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary', mb: 0.375 }}>{event.name}</Typography>
@@ -117,7 +117,7 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
           <Box sx={{ display: 'flex', gap: 1 }}>
             {EVENT_COLORS.map((c) => (
               <Box key={c} onClick={() => setColor(c)}
-                sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: c, cursor: 'pointer', border: color === c ? '3px solid #1E1C24' : '3px solid transparent', transition: 'all 0.15s' }} />
+                sx={{ width: 32, height: 32, borderRadius: 2, bgcolor: c, cursor: 'pointer', border: '3px solid', borderColor: color === c ? 'text.primary' : 'transparent', transition: 'all 0.15s' }} />
             ))}
           </Box>
         </DialogContent>

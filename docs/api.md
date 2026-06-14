@@ -2,10 +2,10 @@
 
 Base URL: `/api/v1`
 
-## Recent Todo API Notes
+## Todo API 补充说明
 
-- `GET /api/v1/todos` accepts `due_from` and `due_to` as `YYYY-MM-DD` date query parameters. They filter `Todo.due_date` inclusively and are used by the Todo sidebar `today` and `upcoming` views.
-- `POST /api/v1/folders/reorder` accepts `{ "items": [{ "id": 1, "sort_order": 0 }] }`. All folder ids in one request must belong to the same `parent_id`; otherwise the backend returns `400`.
+- `GET /api/v1/todos` 支持 `due_from` 和 `due_to` 查询参数,格式为 `YYYY-MM-DD`,按 `Todo.due_date` 做闭区间筛选. Todo 侧边栏的今日和即将到来视图使用这两个参数.
+- `POST /api/v1/folders/reorder` 接收 `{ "items": [{ "id": 1, "sort_order": 0 }] }`. 同一次请求中的文件夹必须属于同一个 `parent_id`,否则后端返回 `400`.
 
 前端通过 Next.js 代理访问 API: 浏览器请求 `/api/v1/*`, Next 根据 `API_PROXY_TARGET` 转发到 FastAPI. 本地默认后端地址为 `http://localhost:8004`, Docker Compose 内部地址为 `http://backend:8000`.
 

@@ -626,18 +626,18 @@ services:
 
 前端 Next.js 通过 `next.config.ts` 将 `/api` 和 `/uploads` 请求代理到 `API_PROXY_TARGET`. Docker Compose 使用 `DOCKER_API_PROXY_TARGET` 注入该值, 默认是 `http://backend:8000`, 认证请求在容器网络内部完成.
 
-# Current Frontend Note
+## 当前前端说明
 
-Authentication state is owned by `frontend/src/context/AuthContext.tsx`, while the route guard and authenticated shell are mounted from `frontend/src/app/layout.tsx`. Older references in historical sections to Umi, Vite, `frontend/src/App.tsx`, or `frontend/src/main.tsx` mean pre-Next migration entries.
+认证状态由 `frontend/src/context/AuthContext.tsx` 管理,路由守卫和已登录应用壳层从 `frontend/src/app/layout.tsx` 挂载. 历史章节中若出现 Umi,Vite,`frontend/src/App.tsx` 或 `frontend/src/main.tsx`,均表示迁移到 Next.js 之前的记录.
 
-The current Next.js login page is `frontend/src/app/login/page.tsx`. It calls `frontend/src/lib/api.ts` directly, does not auto-refresh on `/api/v1/auth/login` 401 responses, and supports the `mfa_required` response by collecting a TOTP code or recovery code before calling `/api/v1/auth/mfa/verify`.
+当前 Next.js 登录页为 `frontend/src/app/login/page.tsx`. 该页面直接调用 `frontend/src/lib/api.ts`,登录接口返回 401 时不会触发自动 refresh; 当后端返回 `mfa_required` 时,页面会收集 TOTP 验证码或恢复码,再调用 `/api/v1/auth/mfa/verify`.
 
-## Current Backend Note
+## 当前后端说明
 
-Authentication is owned by the reusable module under `backend/src/auth`. The active FastAPI router is `backend/src/auth/fastapi_adapter/router.py`, mounted from `backend/src/main.py`.
+认证逻辑由 `backend/src/auth` 下的可复用模块管理. 当前 FastAPI 路由是 `backend/src/auth/fastapi_adapter/router.py`,并由 `backend/src/main.py` 挂载.
 
-Legacy auth implementation files `backend/src/routers/auth.py`, `backend/src/schemas/auth.py`, and `backend/src/utils/security.py` have been removed. Existing business routers still import `backend/src/models/user.py` and `backend/src/middleware/auth.py`; those files are compatibility exports that point to the reusable auth module.
+旧认证实现文件 `backend/src/routers/auth.py`, `backend/src/schemas/auth.py` 和 `backend/src/utils/security.py` 已移除. 现有业务路由仍可导入 `backend/src/models/user.py` 与 `backend/src/middleware/auth.py`; 这两个文件是指向可复用认证模块的兼容导出.
 
-## Backend Type Checking
+## 后端类型检查
 
-Auth ORM models in `backend/src/auth/adapters/sqlalchemy_models.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. User preferences are stored through `UserPreference` and should be accessed through `AuthStore.get_preferences()` / `AuthStore.update_preferences()` instead of a `User.preferences` attribute.
+认证 ORM 模型位于 `backend/src/auth/adapters/sqlalchemy_models.py`,使用 SQLAlchemy 2 `Mapped` 和 `mapped_column` 注解. 用户偏好通过 `UserPreference` 存储,应通过 `AuthStore.get_preferences()` / `AuthStore.update_preferences()` 访问,不要依赖 `User.preferences` 属性.

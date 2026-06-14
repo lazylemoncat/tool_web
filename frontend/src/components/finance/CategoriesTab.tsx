@@ -11,6 +11,7 @@ import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
+import Tooltip from '@mui/material/Tooltip';
 import MarkerPicker, { MARKER_EMOJIS, MarkerIcon, type MarkerValue } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
 import type { CategoryOut } from '@/lib/financeTypes';
@@ -71,9 +72,11 @@ function CategoryNode({
         <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', width: 14, textAlign: 'center' }}>{hasChildren ? (expanded ? '▼' : '▶') : ''}</Typography>
         <MarkerIcon type={category.icon_type} value={category.icon_value} size={16} />
         <Typography sx={{ fontWeight: 500, fontSize: '0.8125rem', color: 'text.primary', flex: 1 }}>{category.name}</Typography>
-        {hasChildren && <Typography sx={{ fontSize: '0.5625rem', color: '#A5A2AD' }}>{category.children.length} 个子分类</Typography>}
+        {hasChildren && <Typography sx={{ fontSize: '0.5625rem', color: 'text.secondary' }}>{category.children.length} 个子分类</Typography>}
         <Box onClick={(e) => e.stopPropagation()} sx={{ display: 'flex', gap: 0.5 }}>
-          <Button size="small" variant="text" sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem', cursor: 'grab' }}>拖拽</Button>
+          <Tooltip title="排序手柄">
+            <IconButton size="small" sx={{ width: 28, height: 28, cursor: 'grab', fontSize: '0.875rem' }}>⋮⋮</IconButton>
+          </Tooltip>
           <Button size="small" variant="text" onClick={() => onEdit(category)} sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem' }}>编辑</Button>
           <Button size="small" color="error" variant="text" onClick={() => onDelete(category)} sx={{ minWidth: 0, px: 0.75, fontSize: '0.6875rem' }}>删除</Button>
         </Box>
@@ -206,14 +209,14 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
   const handleClose = () => { setDialogOpen(false); resetForm(); };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
+    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: 'background.default', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 2 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>分类管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新增、编辑、删除和拖拽排序收支分类</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>新增、编辑、删除和调整收支分类顺序</Typography>
         </Box>
         <Button variant="contained" size="small" onClick={openCreate}
-          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
+          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
           + 新建分类
         </Button>
       </Box>
@@ -225,7 +228,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
           <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>点击“新建分类”开始</Typography>
         </Box>
       ) : (
-        <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: '#EDECF0' }}>
+        <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: 'divider' }}>
           {categories.map((cat) => (
             <CategoryNode
               key={cat.id}

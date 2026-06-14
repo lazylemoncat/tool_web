@@ -18,7 +18,7 @@ export default function StatCard({ icon, label, amount, delta, color }: StatCard
         p: 2.5,
         boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
         border: '1px solid',
-        borderColor: '#EDECF0',
+        borderColor: 'divider',
       }}
     >
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1 }}>

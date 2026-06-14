@@ -19,10 +19,10 @@ function getStatusText(used: number, pct: number): string {
 
 export default function BudgetProgress({ budgets }: BudgetProgressProps) {
   return (
-    <Box sx={{ bgcolor: 'background.paper', borderRadius: 3.5, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: '#EDECF0' }}>
+    <Box sx={{ bgcolor: 'background.paper', borderRadius: 3.5, p: 2.5, boxShadow: '0 1px 3px rgba(0,0,0,0.06)', border: '1px solid', borderColor: 'divider' }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>💰 预算使用率</Typography>
-        <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary', bgcolor: '#F5F6FA', px: 1.25, py: 0.375, borderRadius: 1.5 }}>月度预算</Typography>
+        <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary', bgcolor: 'action.hover', px: 1.25, py: 0.375, borderRadius: 1.5 }}>月度预算</Typography>
       </Box>
       {budgets.length === 0 ? (
         <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', textAlign: 'center', py: 4 }}>暂无预算数据</Typography>
@@ -39,7 +39,7 @@ export default function BudgetProgress({ budgets }: BudgetProgressProps) {
                   <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'text.primary' }}>{b.name}</Typography>
                   <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>¥{used.toLocaleString()} / ¥{total.toLocaleString()}</Typography>
                 </Box>
-                <Box sx={{ height: 8, bgcolor: '#F0EFF4', borderRadius: 4, overflow: 'hidden' }}>
+                <Box sx={{ height: 8, bgcolor: 'action.hover', borderRadius: 4, overflow: 'hidden' }}>
                   <Box sx={{ width: `${pct}%`, height: '100%', bgcolor: barColor, borderRadius: 4 }} />
                 </Box>
                 <Typography sx={{ fontSize: '0.6875rem', color: barColor, mt: 0.5 }}>{getStatusText(used, b.progress_pct ?? pct)}</Typography>

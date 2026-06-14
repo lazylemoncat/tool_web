@@ -166,7 +166,7 @@ export default function TransactionFormDialog({
         <Box sx={{ display: 'flex', gap: 0.75, mb: 2.5 }}>
           {([{ key: 'expense' as const, label: '支出', emoji: '💸' }, { key: 'income' as const, label: '收入', emoji: '💰' }, { key: 'transfer' as const, label: '转账', emoji: '🔄' }]).map((t) => (
             <Box key={t.key} onClick={() => setFormType(t.key)}
-              sx={{ flex: 1, py: 1, textAlign: 'center', borderRadius: 2, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', bgcolor: formType === t.key ? 'primary.main' : 'action.hover', color: formType === t.key ? '#fff' : 'text.secondary', transition: 'all 0.15s', '&:hover': { bgcolor: formType === t.key ? 'primary.main' : 'action.selected' } }}>
+              sx={{ flex: 1, py: 1, textAlign: 'center', borderRadius: 2, fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', bgcolor: formType === t.key ? 'primary.main' : 'action.hover', color: formType === t.key ? 'primary.contrastText' : 'text.secondary', transition: 'all 0.15s', '&:hover': { bgcolor: formType === t.key ? 'primary.main' : 'action.selected' } }}>
               {t.emoji} {t.label}
             </Box>
           ))}
@@ -180,7 +180,7 @@ export default function TransactionFormDialog({
         <Box sx={{ display: 'flex', gap: 0.75, mb: 2.5, flexWrap: 'wrap' }}>
           {QUICK_AMOUNTS.map((n) => (
             <Typography key={n} onClick={() => setAmount(String(n))}
-              sx={{ px: 1.5, py: 0.5, borderRadius: 2, fontSize: '0.6875rem', fontWeight: 600, bgcolor: amount === String(n) ? 'primary.main' : 'action.hover', color: amount === String(n) ? '#fff' : 'text.secondary', cursor: 'pointer', '&:hover': { bgcolor: amount === String(n) ? 'primary.main' : 'action.selected' } }}>
+              sx={{ px: 1.5, py: 0.5, borderRadius: 2, fontSize: '0.6875rem', fontWeight: 600, bgcolor: amount === String(n) ? 'primary.main' : 'action.hover', color: amount === String(n) ? 'primary.contrastText' : 'text.secondary', cursor: 'pointer', '&:hover': { bgcolor: amount === String(n) ? 'primary.main' : 'action.selected' } }}>
               ¥{n}
             </Typography>
           ))}

@@ -266,7 +266,7 @@ export default function WorkspaceHome() {
     <Box
       sx={{
         minHeight: 'calc(100vh - 64px)',
-        bgcolor: '#F5F6FA',
+        bgcolor: 'background.default',
         pt: 4,
       }}
     >

@@ -32,12 +32,13 @@ tool_web/
 │   ├── src/
 │   │   ├── main.py              # FastAPI 入口: CORS, 路由注册, 中间件
 │   │   ├── database.py          # 数据库连接, Alembic 迁移执行, session 管理
-│   ├── migrations/              # Alembic schema 迁移
+│   │   ├── auth/                # 可复用认证领域逻辑和 FastAPI 适配
 │   │   ├── models/              # SQLAlchemy 模型
 │   │   ├── schemas/             # Pydantic schema
-│   │   ├── routers/             # auth / todo / folder / tag / finance / theme
+│   │   ├── routers/             # todo / folder / tag / sprint / kanban / finance / theme
 │   │   ├── middleware/          # 认证和日志中间件
 │   │   └── utils/               # 安全, 限流, 错误工具
+│   ├── migrations/              # Alembic schema 迁移
 │   ├── tests/                   # pytest 测试
 │   ├── pyproject.toml
 │   ├── requirements.txt
@@ -55,12 +56,22 @@ tool_web/
 │   ├── package.json
 │   └── Dockerfile
 ├── docs/
+│   ├── README.md                # 文档索引
 │   ├── frontend.md              # 前端 Next.js 架构说明
 │   ├── api.md
 │   ├── auth.md
+│   ├── calendar.md
 │   ├── finance.md
+│   ├── github-actions.md
+│   ├── testing.md
 │   ├── theme.md
-│   └── todo.md
+│   ├── todo.md
+│   ├── uml/
+│   └── superpowers/
+├── project_flow/
+│   ├── 1_project_idea.md
+│   ├── 2_architecture.md
+│   └── sprints/
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 └── .env.example
@@ -139,13 +150,20 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 
 ## 常用文档
 
+- [文档索引](docs/README.md)
+- [当前 PRD](product2.md)
+- [项目设想](project_flow/1_project_idea.md)
+- [架构说明](project_flow/2_architecture.md)
 - [前端架构](docs/frontend.md)
-- [测试方案](docs/testing.md)
 - [API 文档](docs/api.md)
 - [认证模块](docs/auth.md)
 - [Todo 模块](docs/todo.md)
 - [Finance 模块](docs/finance.md)
+- [Calendar 模块](docs/calendar.md)
 - [主题系统](docs/theme.md)
+- [测试方案](docs/testing.md)
+- [GitHub Actions 部署](docs/github-actions.md)
+- [UML 图索引](docs/uml/index.md)
 
 ## 未来规划
 

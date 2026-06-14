@@ -97,18 +97,11 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 
 ## UI 组件配置
 
-前端已通过 `frontend/src/components/common/MuiProvider.tsx` 全局接入 MUI Material 和 MUI X Date Pickers. `frontend/src/layouts/index.tsx` 会在加载页、未登录页、开发预览页和已登录应用外层统一挂载该 Provider.
+前端通过 `frontend/src/app/layout.tsx` 挂载 `ThemeRegistry`,由该组件统一接入 MUI Material 和 MUI X Date Pickers. `ThemeRegistry` 负责提供 MUI `ThemeProvider`, `CssBaseline`, dayjs adapter 和语言环境.
 
-`MuiProvider` 负责:
+记账页面位于 `frontend/src/app/finance/page.tsx`,主要业务组件位于 `frontend/src/components/finance/`. 基础按钮、输入框、弹窗、菜单、图表和日期选择器优先使用 MUI Material / MUI X,再按业务需要做二次封装. 记账模块遵循 Material + microinteractions 风格,列表 hover,拖拽排序,按钮反馈,弹窗打开关闭和表单校验都应提供轻量即时反馈.
 
-- 通过 MUI `ThemeProvider` 为全站提供组件主题上下文.
-- 从现有 CSS 主题 token 读取主色、背景色、文本色、边框色、字体和圆角, 映射到 MUI theme token.
-- 通过 MUI X `LocalizationProvider` 为日期选择器提供 dayjs adapter 和语言环境.
-- 为弹窗、浮层和复杂输入控件提供统一的 MUI 运行时配置.
-
-后续迁移记账页面时, 基础按钮、输入框、弹窗等优先使用 `frontend/src/components/ui/` 中已封装到 MUI 的组件; 日期选择器等复杂组件优先使用 MUI X; 表格、选择器等复杂业务组件优先使用 MUI Material 再按业务需要做二次封装.
-
-Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文件嵌入本地 Umi dev server 的真实记账路由, 用于在 Open Design 中预览页面效果; 实际业务代码仍在 `frontend/src/pages/finance/` 与 `frontend/src/components/finance/`.
+同类资源排序统一使用拖拽排序,包括账本,账户,分类,标签和预算. 不使用点击式上移/下移作为主排序方式;拖拽项通过排序手柄,边框高亮,透明度变化和 `cursor: grab` 表达排序状态,页面不额外展示 "拖拽排序" 文本.
 
 ### Dashboard (仪表盘)
 
@@ -127,6 +120,7 @@ Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文�
 交易记录列表, 支持:
 
 - 按账户/分类/标签/事件/类型筛选 (可折叠筛选栏)
+- 标签筛选已在 `frontend/src/components/finance/Transactions/FilterBar.tsx` 中提供下拉选择, `frontend/src/components/finance/TransactionsTab.tsx` 按 `TransactionOut.tags[].id` 过滤交易, 并在关键词搜索中匹配标签名称.
 - 按日期范围查询
 - 关键词搜索
 - 无限滚动加载 (每页 50 条, 滚动到底自动加载更多)
@@ -135,11 +129,13 @@ Open Design 预览入口位于 `frontend/public/open-design/`. 这些 HTML 文�
 - 详情中可直接编辑或删除交易
 - 点击 "记一笔" 打开记账表单
 
+交易列表, 筛选条, 交易行, 详情抽屉和记账模块管理页使用 MUI `background`, `divider`, `text`, `action` 与语义色 token 渲染中性背景, 边框, hover 和 chip 状态, 避免浅深色主题切换后残留固定浅色 surface.
+
 ### Budgets (预算)
 
 预算列表, 每条显示: 名称、进度条、花费/预算数值. 支持新建/编辑 (Modal)、删除和拖拽排序.
 
-预算列表支持拖拽排序, 顺序写入 `Budget.sort_order`. 账本、账户、分类、标签和预算均支持通过后端 reorder API 持久化顺序.
+账本,账户,分类,标签和预算均支持拖拽排序,并通过后端 reorder API 持久化顺序. 预算顺序写入 `Budget.sort_order`.
 
 预算字段: 名称、金额、币种、RRULE 重复规则、筛选条件 (分类/标签/事件)、结转、提醒阈值.
 
@@ -276,18 +272,20 @@ backend/src/
 └── routers/finance.py       # API 路由 (36+ endpoints)
 
 frontend/src/
-├── pages/finance/FinanceLayout.tsx # Finance 主页面容器和 Outlet context
-├── hooks/finance/                # React 数据 hooks
+├── app/finance/page.tsx          # Finance 页面入口
 └── components/finance/
-    ├── FinanceDashboard.tsx  # 仪表盘组件
-    ├── FinanceCharts.tsx     # 图表 (饼图 + 趋势)
-    ├── TransactionForm.tsx   # 记账表单
-    ├── TransactionDetail.tsx # 交易详情 Modal
-    ├── BudgetForm.tsx        # 预算创建/编辑
-    ├── EventForm.tsx         # 事件创建/编辑
-    ├── CategoryManager.tsx   # 分类树管理
-    ├── TagManager.tsx        # 标签管理
-    └── TxFilterBar.tsx       # 交易筛选栏
+    ├── DashboardTab.tsx              # 仪表盘 tab
+    ├── TransactionsTab.tsx           # 交易列表 tab
+    ├── TransactionFormDialog.tsx     # 记账表单弹窗
+    ├── TransactionDetailDrawer.tsx   # 交易详情抽屉
+    ├── BudgetsTab.tsx                # 预算管理 tab
+    ├── EventsTab.tsx                 # 事件管理 tab
+    ├── AccountsTab.tsx               # 账户管理 tab
+    ├── CategoriesTab.tsx             # 分类树管理 tab
+    ├── TagsTab.tsx                   # 标签管理 tab
+    ├── FinanceSidebar.tsx            # 账本和模块导航侧边栏
+    ├── Dashboard/                    # 统计卡片,分类占比,趋势图,最近交易
+    └── Transactions/                 # 筛选栏,交易行和子交易组件
 ```
 
 附件上传目录: `backend/uploads/`, 通过 `/uploads/` 路由提供静态文件服务.
@@ -303,16 +301,16 @@ frontend/src/
 7. Dashboard 查看汇总与图表, Transactions 筛选与无限滚动浏览
 8. 点击交易行查看详情, 支持编辑/删除
 
-# Current Frontend Note
+## 当前前端说明
 
-Finance is now routed by Umi through `frontend/.umirc.ts`. The shared finance container remains `frontend/src/pages/finance/FinanceLayout.tsx`, with child pages under `frontend/src/pages/finance/`. Route hooks should be imported from `umi`, not `react-router-dom`.
+Finance 当前通过 Next.js App Router 暴露 `/finance`,页面入口为 `frontend/src/app/finance/page.tsx`,组件集中在 `frontend/src/components/finance/`,请求统一通过 `frontend/src/lib/api.ts`.
 
-## Backend Type Checking
+## 后端类型检查
 
-Finance ORM models in `backend/src/models/finance.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Numeric money fields are typed as `Decimal`, and stats responses should be built with `CategoryStatsItem` / `TrendStatsItem` schema objects rather than untyped dictionaries.
+Finance ORM 模型位于 `backend/src/models/finance.py`,使用 SQLAlchemy 2 `Mapped` 和 `mapped_column` 注解. 金额字段使用 `Decimal` 类型,统计响应应构造 `CategoryStatsItem` / `TrendStatsItem` schema 对象,不要返回未类型化字典.
 
-## Category Marker Update
+## 分类标识更新
 
-Finance categories now use `icon_type` (`color` or `emoji`) and `icon_value` instead of the legacy free-text `icon` API field. Category creation in `frontend/src/components/finance/CategoriesTab.tsx` uses the shared `MarkerPicker`, with emoji values selected from presets rather than typed manually.
+Finance 分类现在使用 `icon_type` (`color` 或 `emoji`) 和 `icon_value`,不再使用旧的自由文本 `icon` API 字段. `frontend/src/components/finance/CategoriesTab.tsx` 创建分类时复用共享 `MarkerPicker`,emoji 值从预设项选择,不手动输入.
 
-Stats category data includes `category_icon_type` alongside `category_icon` so `frontend/src/components/finance/Dashboard/CategoryDonut.tsx` can render either a color marker or an emoji marker in the legend.
+分类统计数据同时返回 `category_icon_type` 和 `category_icon`,因此 `frontend/src/components/finance/Dashboard/CategoryDonut.tsx` 可以在图例中渲染颜色标识或 emoji 标识.

@@ -117,7 +117,7 @@
 - 手机
 - 平板
 
-当前前端基于 React + Umi，前端静态产物由 Nginx 托管。
+当前前端基于 Next.js 16 + React 19 + MUI,通过 Next App Router 提供页面和布局,并由 Next rewrites 代理 `/api/*` 与 `/uploads/*` 到 FastAPI 后端.
 
 ## 2.2 API-first
 
@@ -139,7 +139,7 @@ API-first 的目的：
 
 - Docker
 - Docker Compose
-- Nginx 托管前端静态构建产物
+- Next.js 前端服务托管页面和 rewrites
 - 后端容器运行 FastAPI 服务
 - `deploy.sh` 自动构建、推送镜像并通过 SSH 部署到远端
 
@@ -223,18 +223,16 @@ API-first 的目的：
 | -------- | ------------------------------------------------------------ |
 | UI 框架  | React 19                                                     |
 | 语言     | TypeScript                                                   |
-| 应用框架 | Umi 4                                                        |
-| 请求库   | Axios                                                        |
-| 图表     | Recharts                                                     |
-| Markdown | React Markdown + remark-gfm                                  |
-| UI 组件  | Radix UI dialog / dropdown-menu / popover / select / tabs / toast / tooltip |
-| 拖拽     | dnd-kit                                                      |
-| 多语言   | zh / en                                                      |
+| 应用框架 | Next.js 16 App Router                                        |
+| 请求层   | `fetch` + `frontend/src/lib/api.ts`                          |
+| UI 组件  | MUI Material, MUI Icons, MUI X Charts, MUI X Date Pickers     |
+| 日期处理 | dayjs                                                        |
+| 多语言   | `zh-CN` / `en-US` TypeScript 词典                             |
 
 说明：
 
-- 历史上的 Vite 相关配置已经被移除。
-- 当前以前端 Umi 脚本为主。
+- 历史上的 Vite, Umi, Radix UI 和 Axios 方案已经被 Next.js + MUI 实现替代.
+- 前端入口位于 `frontend/src/app`,全局 Provider 位于 `frontend/src/app/layout.tsx`.
 
 ## 3.3 部署方式
 
@@ -242,7 +240,7 @@ API-first 的目的：
 
 - Docker
 - Docker Compose
-- Nginx 托管前端静态构建产物
+- Next.js 前端容器托管页面,静态资源和 rewrites
 - `deploy.sh` 构建 backend / frontend 镜像
 - 镜像推送 Docker Hub
 - 通过 SSH 到远端执行 compose 部署
@@ -822,7 +820,7 @@ Theme 与未来 Dashboard / Widget / Plugin UI 可以形成统一的个性化体
 - 表单错误提示
 - 移动端触控体验
 
-Radix UI 组件应继续作为可访问性基础。
+MUI 组件应继续作为可访问性基础,对话框,菜单,日期选择器和表单控件优先复用 MUI / MUI X 能力.
 
 ---
 
@@ -876,7 +874,7 @@ Radix UI 组件应继续作为可访问性基础。
 
 - 保持 Docker 部署能力
 - 保持 Docker Compose 部署能力
-- 保持 Nginx 静态前端部署方式
+- 保持 Next.js 前端容器部署方式
 - 生产配置通过环境变量管理
 - SQLite 数据文件路径可配置
 - 未来支持 PostgreSQL 连接配置
@@ -899,7 +897,7 @@ Radix UI 组件应继续作为可访问性基础。
 - 基础测试
 - SQLite 默认数据库
 - FastAPI + SQLAlchemy 后端
-- React + Umi 前端
+- Next.js + React + MUI 前端
 
 ## 15.2 近期目标
 

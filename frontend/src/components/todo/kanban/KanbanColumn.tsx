@@ -31,9 +31,9 @@ export default function KanbanColumn({
     <Box sx={{
       minWidth: 280, maxWidth: 300,
       display: 'flex', flexDirection: 'column',
-      bgcolor: '#F7F2FA', borderRadius: 2,
+      bgcolor: 'background.paper', borderRadius: 2,
       borderTop: 3, borderColor: column.color || '#6750A4',
-      ...(dragOver ? { bgcolor: '#EDE7F0' } : {}),
+      ...(dragOver ? { bgcolor: 'action.selected' } : {}),
     }}
       onDragOver={column.id !== -1 ? (e) => { e.preventDefault(); setDragOver(true); } : undefined}
       onDragLeave={column.id !== -1 ? () => setDragOver(false) : undefined}

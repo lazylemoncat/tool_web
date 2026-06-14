@@ -18,22 +18,31 @@ import { usePathname } from 'next/navigation';
 interface GlobalNavProps {
   onOpenSettings: () => void;
   onOpenNavManage?: () => void;
+  navItems?: NavItem[];
 }
 
-const NAV_ITEMS = [
-  { href: '/', label: '首页' },
-  { href: '/todo', label: '任务' },
-  { href: '/calendar', label: '日历' },
-  { href: '/finance', label: '记账' },
-] as const;
+export interface NavItem {
+  id: string;
+  href: string;
+  label: string;
+  visible: boolean;
+}
 
-export default function GlobalNav({ onOpenSettings, onOpenNavManage }: GlobalNavProps) {
+export const DEFAULT_NAV_ITEMS: NavItem[] = [
+  { id: 'home', href: '/', label: '首页', visible: true },
+  { id: 'todo', href: '/todo', label: '任务', visible: true },
+  { id: 'calendar', href: '/calendar', label: '日历', visible: true },
+  { id: 'finance', href: '/finance', label: '记账', visible: true },
+];
+
+export default function GlobalNav({ onOpenSettings, onOpenNavManage, navItems = DEFAULT_NAV_ITEMS }: GlobalNavProps) {
   const { mode, toggle } = useThemeCtx();
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null);
   const [helpAnchor, setHelpAnchor] = useState<null | HTMLElement>(null);
   const [mobileNavAnchor, setMobileNavAnchor] = useState<null | HTMLElement>(null);
+  const visibleNavItems = navItems.filter((item) => item.visible);
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/';
@@ -109,7 +118,7 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage }: GlobalNav
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
         sx={{ display: { xs: 'block', md: 'none' } }}
       >
-        {NAV_ITEMS.map((item) => {
+        {visibleNavItems.map((item) => {
           const active = isActive(item.href);
           return (
             <MenuItem
@@ -127,7 +136,7 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage }: GlobalNav
       </Menu>
 
       <Box sx={{ display: { xs: 'none', md: 'flex' }, alignItems: 'center', gap: 0.5, mr: 'auto' }}>
-        {NAV_ITEMS.map((item) => (
+        {visibleNavItems.map((item) => (
           <NavLink key={item.href} href={item.href} label={item.label} active={isActive(item.href)} />
         ))}
       </Box>

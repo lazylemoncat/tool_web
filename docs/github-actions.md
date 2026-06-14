@@ -1,71 +1,81 @@
-# GitHub Actions Deployment
+# GitHub Actions 部署文档
 
-This document describes the CI deployment workflows for Docker-based environments.
+本文档说明当前 Docker 测试环境和发布环境的 CI 部署 workflow.
 
 ## Workflows
 
-- `.github/workflows/release-build-run.yml` runs on pushes to `release_*` branches. It runs backend quality checks first, then mirrors `deploy.sh`: build production images, push `latest` tags to Docker Hub, copy `docker-compose.prod.yml` and the generated `.env` file to the release server, then run `docker compose up -d`.
-- `.github/workflows/dev-test-deploy.yml` runs on pushes to `dev`. It runs backend quality checks first, then builds and pushes `:dev` images, writes a separate `docker-compose.test.yml`, and starts an isolated test Compose project with configurable host ports.
+- `.github/workflows/release-build-run.yml`: push 到 `release_*` 分支时触发. Workflow 先执行后端和前端质量检查,再按 `deploy.sh` 的生产发布方式构建镜像,推送 Docker Hub `latest` tag,复制 `docker-compose.prod.yml` 和生成的 `.env` 到发布服务器,最后执行 `docker compose up -d`.
+- `.github/workflows/dev-test-deploy.yml`: push 到 `dev` 分支时触发. Workflow 先执行后端和前端质量检查,再构建并推送 `:dev` 测试镜像,写入独立 `docker-compose.test.yml`,并使用可配置宿主机端口启动隔离的测试 Compose project.
 
 ## Quality Checks
 
-Both workflows run the same backend checks before deployment:
+两个 workflow 在部署前都会执行后端和前端检查.
+
+后端检查:
 
 - `uv sync --frozen --extra dev`
 - `uv run --with ruff ruff check src tests`
 - `uv run --with mypy mypy --ignore-missing-imports src tests`
+- `uv run python -m pytest tests -q`
 
-Ruff reads `backend/pyproject.toml` and enables `E`, `W`, `N`, `I`, `F`, and `UP`.
+前端检查:
+
+- `npm ci`
+- `npm run lint` (当前在 workflow 中为非阻塞,待 lint baseline 清理后应改为阻塞)
+- `npm run test`
+- `npm run build`
+
+Ruff 读取 `backend/pyproject.toml`,当前启用 `E`, `W`, `N`, `I`, `F`, `UP`.
 
 ## Required Secrets
 
-Common Docker Hub secrets:
+通用 Docker Hub secrets:
 
 - `DOCKERHUB_USERNAME`
 - `DOCKERHUB_TOKEN`
 
-Release deployment secrets:
+发布环境 secrets:
 
 - `RELEASE_SSH_HOST`
 - `RELEASE_SSH_PRIVATE_KEY`
 - `RELEASE_JWT_SECRET`
 
-Test deployment secrets:
+测试环境 secrets:
 
 - `TEST_SSH_HOST`
 - `TEST_SSH_PRIVATE_KEY`
 - `TEST_JWT_SECRET`
 
-Optional secrets:
+可选 secrets:
 
-- `RELEASE_SSH_USER`, default `root`
-- `RELEASE_ADMIN_PASSWORD`, empty by default
-- `TEST_SSH_USER`, default `root`
-- `TEST_ADMIN_PASSWORD`, empty by default
+- `RELEASE_SSH_USER`,默认 `root`
+- `RELEASE_ADMIN_PASSWORD`,默认空
+- `TEST_SSH_USER`,默认 `root`
+- `TEST_ADMIN_PASSWORD`,默认空
 
 ## SSH Authentication
 
-The deployment workflows write `*_SSH_PRIVATE_KEY` to a dedicated key file and force public-key authentication with `IdentitiesOnly yes`. `*_SSH_USER` defaults to `root`; when `Permission denied (publickey)` appears, compare the printed `ssh-keygen -lf` fingerprint with the public key in `/root/.ssh/authorized_keys` or the configured user's `~/.ssh/authorized_keys`.
+部署 workflow 会将 `*_SSH_PRIVATE_KEY` 写入专用 key 文件,并通过 `IdentitiesOnly yes` 强制使用该 key 做公钥认证. `*_SSH_USER` 默认是 `root`; 若出现 `Permission denied (publickey)`,应比对 workflow 打印的 `ssh-keygen -lf` 指纹与 `/root/.ssh/authorized_keys` 或配置用户 `~/.ssh/authorized_keys` 中的公钥.
 
 ## Optional Variables
 
-Release variables:
+发布环境 variables:
 
-- `RELEASE_REMOTE_PATH`, default `/opt/tool_web`
-- `RELEASE_SSH_PORT`, default `22`
-- `RELEASE_ALLOWED_ORIGINS`, default `http://localhost:8003,http://localhost:3000`
-- `RELEASE_DOCKER_API_PROXY_TARGET`, default `http://backend:8000`
-- `RELEASE_RESET_AUTH_SCHEMA`, default `0`
+- `RELEASE_REMOTE_PATH`,默认 `/opt/tool_web`
+- `RELEASE_SSH_PORT`,默认 `22`
+- `RELEASE_ALLOWED_ORIGINS`,默认 `http://localhost:8003,http://localhost:3000`
+- `RELEASE_DOCKER_API_PROXY_TARGET`,默认 `http://backend:8000`
+- `RELEASE_RESET_AUTH_SCHEMA`,默认 `0`
 
-Test variables:
+测试环境 variables:
 
-- `TEST_REMOTE_PATH`, default `/opt/tool_web_test`
-- `TEST_SSH_PORT`, default `22`
-- `TEST_FRONTEND_PORT`, default `18003`
-- `TEST_BACKEND_PORT`, default `18004`
-- `TEST_ALLOWED_ORIGINS`, default `http://localhost:${TEST_FRONTEND_PORT}`
-- `TEST_DOCKER_API_PROXY_TARGET`, default `http://backend:8000`
-- `TEST_COMPOSE_PROJECT`, default `tool-web-test`
-- `TEST_RESET_AUTH_SCHEMA`, default `0`
+- `TEST_REMOTE_PATH`,默认 `/opt/tool_web_test`
+- `TEST_SSH_PORT`,默认 `22`
+- `TEST_FRONTEND_PORT`,默认 `18003`
+- `TEST_BACKEND_PORT`,默认 `18004`
+- `TEST_ALLOWED_ORIGINS`,默认 `http://localhost:${TEST_FRONTEND_PORT}`
+- `TEST_DOCKER_API_PROXY_TARGET`,默认 `http://backend:8000`
+- `TEST_COMPOSE_PROJECT`,默认 `tool-web-test`
+- `TEST_RESET_AUTH_SCHEMA`,默认 `0`
 
-The test workflow uses `./backend/test-data` on the remote host so it does not share the production SQLite data directory.
+测试 workflow 在远端使用 `./backend/test-data`,因此不会共享生产 SQLite 数据目录.

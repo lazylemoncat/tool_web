@@ -1,71 +1,59 @@
-# Theme System
+# Tool Web 主题系统文档
 
-Tool Web 主题系统由两个独立子系统组成:
+## 功能概述
 
-- **Mode**: light / dark / system 三选, 切换 `<html data-theme>`. 由 `frontend/src/theme.ts` 管理.
-- **Custom Theme**: 用户上传的 JSON 主题文件, 可覆盖 CSS 变量 / 注册自定义按钮 / 注入脚本. 由 `frontend/src/themeEngine.ts` 管理.
+当前主题系统基于 Next.js,React,MUI 和本地偏好状态实现. 前端支持 `system`, `light`, `dark` 三种主题偏好; 实际渲染模式为 `light` 或 `dark`. 登录页右上角提供主题切换入口,全局 `ThemeRegistry` 为 MUI 组件和 MUI X DatePicker 提供主题上下文.
 
-## 文件清单
+后端仍保留 `/api/v1/themes` CRUD,用于保存用户自定义主题配置 JSON. 当前前端主流程尚未重新接入旧版自定义主题引擎,因此主题偏好文档和自定义主题 API 需要分开理解.
 
-| 文件 | 作用 |
-|------|------|
-| `frontend/src/theme.ts` | mode 切换 (`applyTheme`/`saveTheme`/`initTheme`/`exportCurrentTheme`) |
-| `frontend/src/themeEngine.ts` | 自定义主题运行时: 解析 schema, 注入 token, 注册按钮, 执行脚本 |
-| `frontend/src/runtime/themeBridge.ts` | `window.toolweb` 桥, 提供 `ui`/`i18n`/`api`/`events`/`theme`/`scripts` 给主题脚本 |
-| `frontend/src/styles/tokens/atoms.css` | 原子 token (灰阶 / accent 阶 / 间距 / 阴影 / z-index) |
-| `frontend/src/styles/tokens/semantic.css` | 语义 token (light/dark), 组件级一律引用此层 |
-| `frontend/src/styles/tokens/typography.css` | 字体族 / 字号 / 字重 / 行高 |
-| `frontend/src/styles/tokens/breakpoints.css` | 响应式断点 (`--bp-*`, JS 读取用) |
-| `frontend/src/components/common/CustomButtons.tsx` | 渲染主题文件注册的按钮, 按 `position` slot 过滤 |
-| `frontend/src/components/settings/ThemeManager.tsx` | 设置页主题上传 / 列表 / 删除 UI |
-| `frontend/public/theme-template.json` | 主题文件示例 (可下载) |
-| `frontend/public/help/theme-schema.md` | 用户向 schema 文档 |
-
-## 后端
+## 前端文件清单
 
 | 文件 | 作用 |
 |------|------|
-| `backend/src/models/theme.py` | `UserTheme` ORM (用户 id, 名称, `config_json` 文本) |
-| `backend/src/schemas/theme.py` | Pydantic schema |
+| `frontend/src/theme.ts` | `createAppTheme(mode)`,定义 light/dark 的 MUI palette,typography,shape 和组件覆写 |
+| `frontend/src/components/theme/ThemeRegistry.tsx` | 主题偏好存储,系统主题监听,MUI `ThemeProvider`,MUI X `LocalizationProvider` |
+| `frontend/src/app/layout.tsx` | 挂载 `I18nProvider`, `ThemeRegistry`, `AuthProvider`, `AuthGuard` 和全局应用壳层 |
+| `frontend/src/app/login/page.tsx` | 登录页主题和语言 Preference Chips |
+| `frontend/src/context/I18nContext.tsx` | 当前语言状态,`html lang` 同步和 `localStorage` 持久化 |
+| `frontend/src/i18n/messages.ts` | `zh-CN` 与 `en-US` 文案词典,主题偏好文案也在这里维护 |
+| `frontend/src/lib/dateFormats.ts` | DatePicker 显示格式共享常量 |
+
+## 主题偏好流程
+
+1. `ThemeRegistry` 从 `localStorage` 的 `toolweb-theme` 读取主题偏好.
+2. 偏好为 `system` 时,通过 `(prefers-color-scheme: dark)` 监听系统主题并派生实际模式.
+3. 偏好为 `light` 或 `dark` 时,直接使用对应模式.
+4. `createAppTheme(mode)` 生成 MUI theme.
+5. `ThemeProvider` 和 `CssBaseline` 将 theme 注入全站.
+6. 登录页调用 `useThemeCtx().setMode(nextPreference)` 更新偏好,并通过 `toolweb-theme-change` 事件通知同页订阅者刷新.
+
+## 深浅色样式约束
+
+`frontend/src/theme.ts` 的 MUI 全局覆盖必须优先使用 `theme.palette.background`, `theme.palette.text`, `theme.palette.divider`, `theme.palette.action` 和语义色, 不再在输入框, 菜单, 弹窗, 列表选中态中写死浅色边框或背景. 业务组件新增 surface, hover, chip, badge, page background 时也应优先使用 `background.default`, `background.paper`, `action.hover`, `action.selected`, `divider`, `text.secondary` 等 token.
+
+2026-06-14 起, 记账模块页面, 工作区首页, Todo 看板和日历中性 surface 已改为主题感知样式. 日历事件分类色等业务色可保留固定色值, 但容器背景和文字/边框应继续走 MUI theme 或 CSS 变量.
+
+## 语言与 DatePicker
+
+`ThemeRegistry` 同时读取 `I18nContext` 的当前语言,并将其映射到 MUI X DatePicker 的 dayjs adapter locale:
+
+| 语言 | dayjs locale |
+|------|--------------|
+| `zh-CN` | `zh-cn` |
+| `en-US` | `en` |
+
+前端日期选择控件必须使用 MUI X `DatePicker`,输入框显示格式通过 `format={DATE_PICKER_DISPLAY_FORMAT}` 控制,共享常量位于 `frontend/src/lib/dateFormats.ts`.
+
+## 后端主题 API
+
+| 文件 | 作用 |
+|------|------|
+| `backend/src/models/theme.py` | `UserTheme` ORM,保存用户 id,名称和 `config_json` 文本 |
+| `backend/src/schemas/theme.py` | 主题请求和响应 Pydantic schema |
 | `backend/src/routers/theme.py` | `/api/v1/themes` CRUD |
 
-后端不解析 `config_json` 内容, 仅作为字符串存取. 全部 schema 验证在前端.
+后端不解析 `config_json`,只负责按用户隔离存取. 如果后续恢复自定义主题运行时,前端需要重新定义 JSON schema,校验流程和注入边界,并同步更新本文档.
 
-## Schema 概览
+## 类型检查
 
-详见 `frontend/public/help/theme-schema.md`. 顶层结构:
-
-```jsonc
-{
-  "name": "...",
-  "version": "1.0",
-  "tokens": { "light": {...}, "dark": {...} },
-  "pages": { "<pageName>": { "light": {...}, "dark": {...} } },
-  "buttons": [ { "id", "label", "position", "action", ... } ],
-  "scripts": "// JS string, run once with `toolweb` arg"
-}
-```
-
-## 加载流程
-
-1. 用户登录, `AppContent` 读 `preferences.custom_theme_id`
-2. 调 `/api/v1/themes/:id` 取 `config_json`
-3. `JSON.parse` 后 `applyThemeConfig(cfg, currentPage)`
-4. CSS 变量注入到 `<style id="theme-custom">`
-5. `scripts` 字段执行一次, `toolweb.scripts.<name>` 注册函数可被按钮触发
-
-## Position Slot 扩展
-
-新增 slot 时:
-
-1. 在 `themeEngine.ts` `ButtonPosition` 联合类型添加
-2. 在对应 React 组件位置插 `<CustomButtons position="新名" />`
-3. 文档 `frontend/public/help/theme-schema.md` 加一行
-
-# Current Frontend Note
-
-The theme runtime is initialized from the Umi runtime entry `frontend/src/app.tsx`. Page-level custom-theme switching is synchronized by `frontend/src/layouts/index.tsx` through `themeEngine.switchPage()`, using route-to-page keys from `frontend/src/utils/pageTheme.ts`.
-
-## Backend Type Checking
-
-The `UserTheme` ORM model in `backend/src/models/theme.py` uses SQLAlchemy 2 `Mapped` and `mapped_column` annotations. `config_json` remains a stored text payload; schema validation still belongs to the frontend theme schema.
+`UserTheme` ORM 使用 SQLAlchemy 2 `Mapped` 和 `mapped_column` 注解. `config_json` 仍是文本载荷,自定义主题 schema 校验不应放入后端模型层.

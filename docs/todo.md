@@ -483,37 +483,25 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `frontend/src/components/todo/kanban/KanbanColumn.tsx` | Kanban 列组件: 显示列容量/任务数, 第一列提供新建入口 |
 | `frontend/src/components/todo/kanban/KanbanCard.tsx` | Kanban 卡片组件: 展示模板配置的卡片字段和确认流转按钮 |
 | `frontend/src/components/todo/kanban/KanbanTaskDrawer.tsx` | Kanban 任务详情 Drawer: 展示模板详情字段, 支持切换列和删除 |
-| `frontend/src/pages/TodoPage.tsx` | Todo 页面: 管理筛选状态 (含默认筛选回退), URL 同步筛选参数, 递归文件夹查找, 标签按文件夹过滤, 键盘快捷键 (N, /, Esc) |
-| `frontend/.umirc.ts` | Umi 路由配置: 注册 `/todo` 页面和其他模块路由 |
-| `frontend/src/layouts/index.tsx` | 全局布局: 鉴权守卫, i18n, 主题加载, 顶部栏, 页面级主题上下文 |
+| `frontend/src/app/todo/page.tsx` | Todo 页面: 管理筛选状态,URL 同步筛选参数,递归文件夹查找,标签按文件夹过滤,普通 Todo 与 Kanban 模式切换 |
+| `frontend/src/app/layout.tsx` | 全局布局: I18n,主题,认证 Provider,鉴权守卫和应用壳层 |
+| `frontend/src/components/layout/LayoutClient.tsx` | 已登录应用壳层和导航挂载 |
+| `frontend/src/components/layout/GlobalNav.tsx` | 桌面和移动端共享导航 |
+| `frontend/src/components/layout/TodoSidebar.tsx` | Todo 侧边栏: 内置视图,文件夹树,拖拽排序,视图管理 |
 | `frontend/src/components/todo/TodoForm.tsx` | 任务创建/编辑弹窗: 文件夹选择, 优先级, 日期, 标签, 重复规则 |
-| `frontend/src/components/todo/TodoList.tsx` | 任务列表: dnd-kit 拖拽容器, 渲染 SortableTodoItem, 批量选择模式 |
-| `frontend/src/components/todo/TodoItem.tsx` | 任务卡片: 复选框, 标题, 优先级标签, 日期, 标签徽章, 操作按钮, 移动端滑动, 详情触发 ("?" 图标), 删除确认弹窗 |
-| `frontend/src/components/todo/SubTaskList.tsx` | 子任务列表: 可折叠, 递归渲染嵌套子任务 |
-| `frontend/src/components/todo/TagInput.tsx` | 标签输入组件: 芯片式多选, 自动补全, 即时创建 |
-| `frontend/src/components/todo/TaskDetail.tsx` | 任务详情弹窗: 只读展示任务所有字段信息 |
-| `frontend/src/components/layout/Sidebar.tsx` | 侧边栏: 文件夹列表, dnd-kit 拖拽排序, 嵌套文件夹, 新建/编辑/删除 |
-| `frontend/src/components/layout/Header.tsx` | 移动端顶栏: 汉堡菜单, 页面标题 |
-| `frontend/src/components/common/PriorityTag.tsx` | 优先级标签: 高/中/低, 彩色显示 |
-| `frontend/src/components/common/SearchBar.tsx` | 搜索栏: 300ms 防抖输入 |
-| `frontend/src/components/common/CustomButtons.tsx` | 自定义按钮渲染: 主题引擎注入的操作按钮 |
-| `frontend/src/components/settings/ThemeManager.tsx` | 主题管理: 切换/下载模板/上传/预览/删除 |
-| `frontend/src/components/settings/SettingsPage.tsx` | 设置页面: 默认筛选/主题/语言/账户管理 |
-| `frontend/src/hooks/useTodos.ts` | 任务数据 hook: CRUD, toggle (乐观更新), reorder (乐观更新) |
-| `frontend/src/hooks/useFolders.ts` | 文件夹数据 hook: CRUD, reorder |
-| `frontend/src/hooks/useTags.ts` | 标签数据 hook: 列表 (支持 folder_id 过滤)/创建/删除 |
-| `frontend/src/hooks/useThemes.ts` | 主题数据 hook: CRUD |
-| `frontend/src/themeEngine.ts` | 主题引擎: CSS 注入, 自定义按钮动作执行 |
-| `frontend/src/theme.ts` | 基础主题: 亮/暗切换, CSS 变量导出 |
-| `frontend/src/api/client.ts` | Axios 实例: cookie 认证, 自动刷新, 响应解包 |
-| `frontend/src/styles/index.css` | 全局样式: 所有 Todo/Folder/Tag 组件 CSS 类 |
-| `frontend/src/locales/zh.json` | 中文翻译: `todo.*`, `sidebar.*`, `priority.*`, `tag.*`, `date.*` 等键 |
-| `frontend/src/locales/en.json` | 英文翻译: 同上 |
+| `frontend/src/components/todo/TaskList.tsx` | 根任务列表: 拖拽排序,批量选择和任务项渲染 |
+| `frontend/src/components/todo/TaskDetail.tsx` | 任务详情 Drawer: 字段展示,子任务,子任务排序和编辑入口 |
+| `frontend/src/components/shared/MarkerPicker.tsx` | 文件夹标识选择器: 纯色或预设 emoji |
+| `frontend/src/components/shared/MarkerIcon.tsx` | 文件夹和分类标识渲染 |
+| `frontend/src/theme.ts` | MUI 基础主题: light/dark palette 和组件覆写 |
+| `frontend/src/components/theme/ThemeRegistry.tsx` | 主题偏好,系统主题监听,MUI Provider 和 DatePicker 本地化 |
+| `frontend/src/lib/api.ts` | fetch API client: cookie 认证,CSRF,401 refresh retry,响应解包 |
+| `frontend/src/i18n/messages.ts` | 中文/英文翻译词典 |
 
 ### 前端数据流
 
 ```
-TodoApp (状态中心)
+Todo page (状态中心)
   ├── filters: { folder_id, search, priority, status, tag_id }
   │     ↓ 变化时触发
   ├── useTodos(filters)
@@ -538,7 +526,7 @@ TodoApp (状态中心)
 
 渲染树:
   Sidebar ← 文件夹列表 + 选择
-  Header ← 移动端标题
+  GlobalNav ← 桌面和移动端导航
   Toolbar ← 搜索 + 筛选 + 新建按钮
   TodoList ← 根级任务 (dnd-kit sortable)
     └── TodoItem ← 任务卡片
@@ -608,7 +596,7 @@ TodoApp (状态中心)
 
 ---
 
-## 记账系统 (Finance)
+## 关联模块: Finance
 
 **概述**: 基于 Finance.md 设计文档实现的个人财务管理系统, 与 Todo 模块共享用户认证和 UI 框架.
 
@@ -618,72 +606,47 @@ TodoApp (状态中心)
 
 **API 端点** (`/api/v1/finance`): 34 个端点覆盖全部 CRUD + Dashboard 汇总 + Stats 图表数据.
 
-**技术栈**: FastAPI + SQLAlchemy (后端), React + TypeScript + Recharts (前端), 与现有项目完全统一.
+**技术栈**: FastAPI + SQLAlchemy (后端), Next.js + React + TypeScript + MUI / MUI X (前端),与现有项目统一.
 
 **数据库表**: `ledgers`, `accounts`, `finance_categories`, `finance_tags`, `transaction_tags`, `transactions`, `split_items`, `events`, `budgets`, `attachments`, `transaction_attachments`, `resource_relations`.
 
 **相关文件**:
 | 文件 | 作用 |
 |------|------|
-| `Finance.md` | 产品设计文档 |
+| `docs/finance.md` | Finance 模块文档 |
 | `backend/src/models/finance.py` | 数据模型 (10 表 + 2 关联表) |
 | `backend/src/schemas/finance.py` | Pydantic schemas |
 | `backend/src/routers/finance.py` | API 路由 (34 端点) |
-| `frontend/src/hooks/finance/` | Finance 前端数据 hooks |
-| `frontend/src/pages/finance/FinanceLayout.tsx` | Finance 主页面容器 |
+| `frontend/src/app/finance/page.tsx` | Finance 页面入口 |
 | `frontend/src/components/finance/` | 组件目录 |
 
 ---
 
-## 自定义主题系统
+## 关联模块: 主题系统
 
-**主题配置结构**:
-```json
-{
-  "global": {
-    "--bg-primary": "#faf8f5",
-    "--accent": "#4a7c59"
-  },
-  "pages": {
-    "todo": { "--accent": "#e07050" }
-  },
-  "buttons": [
-    {
-      "position": "toolbar",
-      "label": "一键完成",
-      "action": "api",
-      "url": "/api/v1/todos/reorder"
-    }
-  ],
-  "scripts": ["console.log('theme loaded')"]
-}
-```
+当前主题偏好由 `frontend/src/components/theme/ThemeRegistry.tsx` 管理,支持 `system`, `light`, `dark`. Todo 页面使用 MUI theme token 和组件覆写,日期字段必须使用 MUI X `DatePicker` 和 `DATE_PICKER_DISPLAY_FORMAT`.
 
-**应用方式**: `applyThemeConfig()` 在 `<head>` 中注入 `<style>` 标签, 通过 `new Function()` 执行内联脚本.
+后端仍保留 `/api/v1/themes` CRUD 保存用户主题 JSON,但旧版自定义按钮和脚本注入流程当前不是 Next.js 主路径. 主题系统细节以 `docs/theme.md` 为准.
 
-**按钮位置**: `toolbar` (工具栏), `sidebar` (侧边栏), `todoItem` (任务卡片右侧).
+## 当前前端说明
 
-**按钮动作**: `api` (HTTP 调用), `navigate` (页面跳转), `script` (自定义 JS), `toggleFilter` (切换筛选).
+Todo 页面当前位于 `frontend/src/app/todo/page.tsx`. 鉴权,语言,主题加载和共享应用壳层由 `frontend/src/app/layout.tsx` 挂载,导航组件位于 `frontend/src/components/layout/`.
 
-# Current Frontend Note
+## 后端类型检查
 
-The Todo page now lives at `frontend/src/pages/TodoPage.tsx`. The Umi route is configured in `frontend/.umirc.ts`, while authentication, i18n, theme loading, and the shared app shell live in `frontend/src/layouts/index.tsx`. Older references in historical sections to `frontend/src/App.tsx` mean the pre-Umi app root.
+Todo,folder,recurrence 和 tag ORM 模型位于 `backend/src/models/todo.py` 与 `backend/src/models/tag.py`,使用 SQLAlchemy 2 `Mapped` 和 `mapped_column` 注解. 关系字段按列表或可空父对象标注类型,避免 mypy 将实例属性误判为 `Column` 对象.
 
-## Backend Type Checking
+## Todo 侧边栏与 Kanban 更新
 
-Todo, folder, recurrence, and tag ORM models in `backend/src/models/todo.py` and `backend/src/models/tag.py` use SQLAlchemy 2 `Mapped` and `mapped_column` annotations. Relationship fields are typed as lists or nullable parent objects so mypy can validate router code without treating instance attributes as `Column` objects.
-
-## Todo Sidebar And Kanban Updates
-
-- Todo sidebar views are user-configurable in `frontend/src/components/layout/TodoSidebar.tsx`. The visible built-in views are saved in `localStorage` under `tool_web.todo.sidebar_views`; users can hide views such as `completed`, add hidden views back, reset, and reorder the visible view list.
-- Sidebar view selection is converted to explicit Todo query params in `frontend/src/app/todo/page.tsx`: `completed` forces `status=completed`, `today` forces active tasks with `due_from=due_to=today`, and `upcoming` forces active tasks with `due_from=tomorrow`. Selecting a sidebar view also syncs the toolbar status filter so switching between views such as `completed` and `all` does not reuse a stale status filter.
-- Folder drag sorting in the sidebar only works among siblings with the same `parent_id`. The frontend calls `POST /api/v1/folders/reorder` with contiguous `sort_order` values, and the backend rejects reorder requests containing folders from different parent groups.
-- Folder creation and subfolder creation use the shared `MarkerPicker` in `frontend/src/components/shared/MarkerPicker.tsx`. Folder API payloads now include `icon_type` (`color` or `emoji`) and `icon_value`; sidebar folder rows render the marker through `MarkerIcon`.
-- Todo task drag sorting is handled in `frontend/src/components/todo/TaskList.tsx` and `frontend/src/components/todo/TaskDetail.tsx`. Root tasks and expanded child tasks can only be reordered within the same `parent_id` group, and the page persists the order through `POST /api/v1/todos/reorder`.
-- Kanban new task creation no longer exposes a sprint selector. New cards are bound to the currently active sprint and the column from which the create action was opened.
-- `KanbanBoard` uses a thicker horizontal scrollbar so users can drag it more easily on wide boards.
-- Subfolder creation now exposes the same `todo` / `kanban` mode choice as root folder creation, and the selected mode is sent in the folder create payload.
-- `MarkerPicker` renders emoji choices in a fixed-height grid menu instead of a long select dropdown.
-- The existing active Sprint goal display is moved directly under the Kanban folder title and enlarged without adding an emphasized color panel.
-- Kanban task templates can add fields, delete non-title fields, move field order, and edit type, required, card visibility, and detail visibility settings.
-- Kanban task subtasks are edited in the task drawer and stored under `kanban_tasks.custom_fields.__subtasks`.
+- Todo 侧边栏内置视图可由用户配置,实现文件为 `frontend/src/components/layout/TodoSidebar.tsx`. 可见视图保存在 `localStorage` 的 `tool_web.todo.sidebar_views`; 用户可隐藏 `completed` 等视图,恢复隐藏视图,重置和调整显示顺序.
+- 侧边栏视图选择会在 `frontend/src/app/todo/page.tsx` 中转换为明确查询参数: `completed` 强制 `status=completed`, `today` 强制 active 任务且 `due_from=due_to=today`, `upcoming` 强制 active 任务且 `due_from=tomorrow`. 选择侧边栏视图时也会同步工具栏状态筛选,避免在 `completed` 和 `all` 等视图之间切换时复用旧状态.
+- 侧边栏文件夹拖拽排序只允许同一 `parent_id` 下的兄弟文件夹. 前端调用 `POST /api/v1/folders/reorder` 并提交连续 `sort_order`,后端会拒绝包含不同父级文件夹的 reorder 请求.
+- 文件夹和子文件夹创建都复用 `frontend/src/components/shared/MarkerPicker.tsx`. 文件夹 API payload 包含 `icon_type` (`color` 或 `emoji`) 和 `icon_value`; 侧边栏文件夹行通过 `MarkerIcon` 渲染标识.
+- Todo 任务拖拽排序由 `frontend/src/components/todo/TaskList.tsx` 和 `frontend/src/components/todo/TaskDetail.tsx` 处理. 根任务和展开的子任务只能在同一 `parent_id` 组内排序,页面通过 `POST /api/v1/todos/reorder` 持久化顺序.
+- Kanban 新建任务不再暴露 Sprint 选择器. 新卡片绑定当前 active Sprint 和触发创建的列.
+- `KanbanBoard` 使用更粗的水平滚动条,便于在宽看板上拖动.
+- 子文件夹创建现在暴露与根文件夹一致的 `todo` / `kanban` 模式选择,并将选中模式写入文件夹创建 payload.
+- `MarkerPicker` 使用固定高度网格菜单渲染 emoji 选项,不再使用长 select 下拉.
+- active Sprint 目标展示移动到 Kanban 文件夹标题下方,并放大显示,不额外增加高强调色面板.
+- Kanban 任务模板支持新增字段,删除非标题字段,移动字段顺序,以及编辑类型,必填,卡片可见性和详情可见性.
+- Kanban 任务子任务在任务抽屉中编辑,并存储在 `kanban_tasks.custom_fields.__subtasks`.

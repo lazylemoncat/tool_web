@@ -128,14 +128,14 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
   };
 
   return (
-    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: '#F5F6FA', px: { xs: 2, sm: 3 }, py: 3 }}>
+    <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: 'background.default', px: { xs: 2, sm: 3 }, py: 3 }}>
       <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 3 }}>
         <Box>
           <Typography sx={{ fontWeight: 700, fontSize: '1.625rem', color: 'text.primary', letterSpacing: '-0.5px', mb: 0.5 }}>预算管理</Typography>
-          <Typography sx={{ fontSize: '0.8125rem', color: '#4B5563' }}>新建、编辑、删除和排序预算</Typography>
+          <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>新建、编辑、删除和排序预算</Typography>
         </Box>
         <Button variant="contained" size="small" onClick={openCreate}
-          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none', bgcolor: '#6D5DFC', '&:hover': { bgcolor: '#5A4DE0' } }}>
+          sx={{ borderRadius: 2, px: 2, py: 0.75, fontSize: '0.75rem', fontWeight: 600, textTransform: 'none', boxShadow: 'none' }}>
           + 新建预算
         </Button>
       </Box>
@@ -168,7 +168,7 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
                   p: 2.5,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
                   border: '1px solid',
-                  borderColor: draggedBudgetId === b.id ? 'primary.main' : '#EDECF0',
+                  borderColor: draggedBudgetId === b.id ? 'primary.main' : 'divider',
                   cursor: 'grab',
                   opacity: draggedBudgetId === b.id ? 0.55 : 1,
                 }}
@@ -176,8 +176,8 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1.25, gap: 1 }}>
                   <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary' }}>{b.name}</Typography>
                   <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                    <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', bgcolor: '#F5F6FA', px: 1, py: 0.25, borderRadius: 1 }}>{getRRuleLabel(b.rrule)}</Typography>
-                    <Tooltip title="拖拽排序"><IconButton size="small" sx={{ width: 24, height: 24, fontSize: '0.75rem', cursor: 'grab' }}>⋮⋮</IconButton></Tooltip>
+                    <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', bgcolor: 'action.hover', px: 1, py: 0.25, borderRadius: 1 }}>{getRRuleLabel(b.rrule)}</Typography>
+                    <Tooltip title="排序手柄"><IconButton size="small" sx={{ width: 24, height: 24, fontSize: '0.75rem', cursor: 'grab' }}>⋮⋮</IconButton></Tooltip>
                     <Tooltip title="编辑"><IconButton size="small" onClick={() => openEdit(b)} sx={{ width: 24, height: 24, fontSize: '0.75rem' }}>✎</IconButton></Tooltip>
                     <Tooltip title="删除"><IconButton size="small" onClick={() => handleDelete(b)} sx={{ width: 24, height: 24, fontSize: '0.75rem', color: '#EF4444' }}>×</IconButton></Tooltip>
                   </Box>
@@ -186,7 +186,7 @@ export default function BudgetsTab({ budgets, activeLedgerId, onRefresh }: Budge
                   <Typography sx={{ fontSize: '1.125rem', fontWeight: 700, color: barColor }}>¥{used.toLocaleString()}</Typography>
                   <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary', mt: 0.5 }}>预算 ¥{total.toLocaleString()}</Typography>
                 </Box>
-                <Box sx={{ height: 7, bgcolor: '#F0EFF4', borderRadius: 4, overflow: 'hidden', mb: 0.5 }}>
+                <Box sx={{ height: 7, bgcolor: 'action.hover', borderRadius: 4, overflow: 'hidden', mb: 0.5 }}>
                   <Box sx={{ width: `${Math.min(pct, 100)}%`, height: '100%', bgcolor: barColor, borderRadius: 4 }} />
                 </Box>
                 <Typography sx={{ fontSize: '0.625rem', color: barColor }}>
