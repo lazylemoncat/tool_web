@@ -55,7 +55,7 @@ export default function SprintListEditor({ sprints, onSave }: SprintListEditorPr
       {local.map((s, i) => (
         <Box key={s.id || i} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, border: 1, borderColor: 'divider', borderRadius: 1, mb: 0.5 }}>
           <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+            <Typography variant="body2" component="span" sx={{ fontWeight: 600 }}>
               {s.name}
               <Chip label={statusLabel[s.status] || s.status} size="small" color={statusColor[s.status] || 'default'} sx={{ ml: 1, height: 18, fontSize: '0.65rem' }} />
             </Typography>
