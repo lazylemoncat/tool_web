@@ -31,13 +31,13 @@ import {
   listTodos, createTodo, updateTodo, deleteTodo, toggleTodo, bulkAction,
   reorderTodos,
   listFolders, createFolder, deleteFolder as apiDeleteFolder, updateFolder, reorderFolders,
-  listTags, createTag, ApiError,
+  listTags, ApiError,
 } from '@/lib/api';
 import {
   listSprints,
   createSprint, updateSprint, deleteSprint,
   listKanbanColumns,
-  createKanbanColumn, updateKanbanColumn, deleteKanbanColumn,
+  updateKanbanColumn, deleteKanbanColumn,
 } from '@/lib/api';
 import dayjs from 'dayjs';
 import {
@@ -229,7 +229,6 @@ export default function TodoPage() {
   const [folders, setFolders] = useState<FolderOut[]>([]);
   const [tags, setTags] = useState<APITag[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Dialog State
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
@@ -247,9 +246,6 @@ export default function TodoPage() {
   const [kanbanColumns, setKanbanColumns] = useState<KanbanColumnData[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerTask, setDrawerTask] = useState<KanbanTaskOut | null>(null);
-  const [sprintDialogOpen, setSprintDialogOpen] = useState(false);
-  const [editingSprint, setEditingSprint] = useState<Sprint | null>(null);
-  const [deleteSprintTarget, setDeleteSprintTarget] = useState<Sprint | null>(null);
   const [capacityExceededOpen, setCapacityExceededOpen] = useState(false);
   const [capacityMessage, setCapacityMessage] = useState('');
 
@@ -278,7 +274,6 @@ export default function TodoPage() {
   // ===== Data Fetching =====
   const fetchAllData = useCallback(async (params?: TodoQueryParams) => {
     try {
-      setFetchError(null);
       const [todoRes, countRes, folderRes, tagRes] = await Promise.all([
         listTodos(params),
         listTodos({ limit: 500 }),
@@ -291,7 +286,6 @@ export default function TodoPage() {
       setTags(tagRes);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '加载数据失败';
-      setFetchError(msg);
       showSnackbar(msg, 'error');
     } finally {
       setIsLoading(false);
@@ -299,7 +293,11 @@ export default function TodoPage() {
   }, []);
 
   // Initial load
-  useEffect(() => { fetchAllData(); }, [fetchAllData]);
+  useEffect(() => {
+    // Initial client load hydrates task, folder, and tag state from the backend.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAllData();
+  }, [fetchAllData]);
 
   const currentFolder = useMemo(() => {
     if (activeFolder === null) return undefined;
@@ -321,7 +319,7 @@ export default function TodoPage() {
         setKanbanColumns([]);
         setKanbanTasks([]);
       }
-    } catch (err) {
+    } catch {
       showSnackbar('加载 Sprint 失败', 'error');
     }
   }, []);
@@ -330,7 +328,7 @@ export default function TodoPage() {
     try {
       const cols = await listKanbanColumns(sprintId);
       setKanbanColumns(cols);
-    } catch (err) {
+    } catch {
       showSnackbar('加载看板列失败', 'error');
     }
   }, []);
@@ -356,6 +354,8 @@ export default function TodoPage() {
   useEffect(() => {
     if (isLoading) return;
     if (currentFolder?.mode === 'kanban') return;
+    // Filter changes intentionally refresh the server-backed task list.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchAllData(buildTodoQueryParams({
       activeFolder,
       activeView,
@@ -364,6 +364,8 @@ export default function TodoPage() {
       statusFilter,
       tagFilter,
     }));
+  // Keep searchQuery out of this dependency list so text input remains debounced.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeFolder,
     activeView,
@@ -372,7 +374,7 @@ export default function TodoPage() {
     tagFilter,
     statusFilter,
     isLoading,
-  ]); // eslint-disable-line react-hooks/exhaustive-deps
+  ]);
 
   // Debounced search
   useEffect(() => {
@@ -395,6 +397,8 @@ export default function TodoPage() {
   // Load kanban data when entering a kanban folder
   useEffect(() => {
     if (currentFolder?.mode === 'kanban' && activeFolder !== null) {
+      // Entering a kanban folder resets the board before loading its sprints.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setActiveSprintId(null);
       setKanbanColumns([]);
       setKanbanTasks([]);
@@ -409,6 +413,8 @@ export default function TodoPage() {
   useEffect(() => {
     if (currentFolder?.mode !== 'kanban' || activeFolder === null) return;
     if (activeSprintId) {
+      // Sprint changes refresh columns and cards for the selected board.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       refreshKanbanBoard(activeFolder, activeSprintId);
     } else {
       setKanbanColumns([]);
@@ -433,7 +439,7 @@ export default function TodoPage() {
       setTodos((prev) => prev.map((t) => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t));
       setViewCountTodos((prev) => prev.map((t) => t.id === taskId ? { ...t, is_completed: !t.is_completed } : t));
       showSnackbar(todo.is_completed ? '已取消完成' : '✅ 已标记为完成', todo.is_completed ? 'info' : 'success');
-    } catch (err) {
+    } catch {
       showSnackbar('操作失败', 'error');
     }
   }, [todos]);
@@ -610,7 +616,7 @@ export default function TodoPage() {
       setDeleteDialogOpen(false);
       setDeleteTaskTarget(null);
       showSnackbar('🗑️ 任务已删除', 'error');
-    } catch (err) {
+    } catch {
       showSnackbar('删除失败', 'error');
     }
   }, [deleteTaskTarget]);
@@ -649,7 +655,7 @@ export default function TodoPage() {
       setSelectedTasks(new Set());
       showSnackbar(`✅ 已完成 ${ids.length} 个任务`, 'success');
       fetchAllData();
-    } catch (err) {
+    } catch {
       showSnackbar('批量操作失败', 'error');
     }
   }, [selectedTasks, fetchAllData]);
@@ -667,7 +673,7 @@ export default function TodoPage() {
       setSelectedTasks(new Set());
       showSnackbar(`已删除 ${ids.length} 个任务`, 'error');
       fetchAllData();
-    } catch (err) {
+    } catch {
       showSnackbar('批量删除失败', 'error');
     }
   }, [selectedTasks, fetchAllData]);
@@ -678,7 +684,6 @@ export default function TodoPage() {
   }, []);
 
   const handleBatchMove = useCallback(async () => {
-    const ids = Array.from(selectedTasks);
     // For now, show snackbar. TODO: add folder picker dialog
     showSnackbar('请选择目标文件夹', 'info');
   }, []);
@@ -724,7 +729,7 @@ export default function TodoPage() {
       setFolderDeleteTarget(null);
       showSnackbar('文件夹已删除', 'info');
       fetchAllData();
-    } catch (err) {
+    } catch {
       showSnackbar('删除文件夹失败', 'error');
     }
   }, [folderDeleteTarget, fetchAllData]);
@@ -734,7 +739,7 @@ export default function TodoPage() {
       await updateFolder(folderId, { name: newName });
       showSnackbar('文件夹已重命名', 'success');
       fetchAllData();
-    } catch (err) {
+    } catch {
       showSnackbar('重命名失败', 'error');
     }
   }, [fetchAllData]);
@@ -825,7 +830,7 @@ export default function TodoPage() {
       if (activeFolder !== null && activeSprintId !== null) {
         await refreshKanbanBoard(activeFolder, activeSprintId);
       }
-    } catch (err) {
+    } catch {
       showSnackbar('删除失败', 'error');
     }
   }, [activeFolder, activeSprintId, refreshKanbanBoard]);
@@ -976,8 +981,13 @@ export default function TodoPage() {
   const isSingleDeleteDialog = deleteDialogOpen && deleteTaskTarget !== null;
 
   // Keep refs in sync for kanban settings persistence
-  kanbanColsRef.current = kanbanColumns;
-  sprintsRef.current = sprints;
+  useEffect(() => {
+    kanbanColsRef.current = kanbanColumns;
+  }, [kanbanColumns]);
+
+  useEffect(() => {
+    sprintsRef.current = sprints;
+  }, [sprints]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -1017,7 +1027,7 @@ export default function TodoPage() {
   }, [kanbanColumns, kanbanTasks, currentFolder?.mode, activeSprintId]);
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', height: 'calc(100dvh - 64px)', overflow: 'hidden' }}>
       <TodoSidebar
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
@@ -1147,7 +1157,7 @@ export default function TodoPage() {
       <ConfirmDialog
         open={isSingleDeleteDialog}
         title="确认删除"
-        message={<>确定要删除任务 <strong>"{deleteTaskTarget?.title}"</strong> 吗？此操作不可撤销。</>}
+        message={<>确定要删除任务 <strong>{deleteTaskTarget?.title}</strong> 吗？此操作不可撤销。</>}
         confirmLabel="删除" confirmColor="error"
         onConfirm={handleConfirmDeleteTask}
         onCancel={() => { setDeleteDialogOpen(false); setDeleteTaskTarget(null); }}

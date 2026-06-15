@@ -7,7 +7,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import FilterBar, { ALL_TAG_FILTER_VALUE } from './Transactions/FilterBar';
 import TransactionRow from './Transactions/TransactionRow';
-import type { TransactionOut, AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut } from '@/lib/financeTypes';
+import type { TransactionOut, AccountOut, CategoryOut, FinanceTagOut } from '@/lib/financeTypes';
 
 interface TransactionsTabProps {
   transactions: TransactionOut[];
@@ -15,16 +15,12 @@ interface TransactionsTabProps {
   accounts: AccountOut[];
   categories: CategoryOut[];
   tags: FinanceTagOut[];
-  events: FinanceEventOut[];
-  activeLedgerId: number | null;
   onNewTransaction?: () => void;
   onRowClick?: (tx: TransactionOut) => void;
-  onRefresh?: () => void;
 }
 
 export default function TransactionsTab({
-  transactions, total, accounts, categories, tags, events,
-  activeLedgerId, onNewTransaction, onRowClick, onRefresh,
+  transactions, total, accounts, categories, tags, onNewTransaction, onRowClick,
 }: TransactionsTabProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('全部');
@@ -89,7 +85,7 @@ export default function TransactionsTab({
         <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, p: 8, textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: 'divider' }}>
           <Typography sx={{ fontSize: '2rem', mb: 1 }}>💳</Typography>
           <Typography sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>暂无交易记录</Typography>
-          <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 2 }}>点击"记一笔"开始记录</Typography>
+          <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mb: 2 }}>点击“记一笔”开始记录</Typography>
           <Button variant="contained" size="small" onClick={onNewTransaction} sx={{ borderRadius: 2 }}>记一笔</Button>
         </Box>
       ) : (

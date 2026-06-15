@@ -1,5 +1,29 @@
 # changelog
 
+## 2026-06-15
+
+### fix
+
+-   删除工作台偏好设置中的紧凑模式和未接入的占位配置,仅保留已生效的深色模式切换; 关联文件: `frontend/src/components/layout/SettingsDialog.tsx`.
+-   修复 Finance 账本,账户,分类,标签和预算删除流程依赖原生 `window.confirm` 的问题,统一改为共享确认弹窗; 关联文件: `frontend/src/components/finance/AccountsTab.tsx`, `frontend/src/components/finance/BooksTab.tsx`, `frontend/src/components/finance/CategoriesTab.tsx`, `frontend/src/components/finance/TagsTab.tsx`, `frontend/src/components/finance/BudgetsTab.tsx`, `frontend/src/components/shared/ConfirmDialog.tsx`.
+-   修复 Kanban Sprint 弹窗仍使用原生日期输入的问题,改为 MUI X `DatePicker` 和共享日期格式; 关联文件: `frontend/src/components/todo/kanban/SprintDialog.tsx`.
+-   清理前端 lint baseline,补齐可访问性标签,移除未使用代码并修正 hook 依赖; 关联文件: `frontend/src/app/todo/page.tsx`, `frontend/src/components/layout/GlobalNav.tsx`, `frontend/src/components/workspace/CardGrid.tsx`, `frontend/src/components/todo/kanban/*`.
+
+### refactor
+
+-   新增共享 `DialogHeader`,统一 Finance,Todo,导航管理和偏好设置弹窗标题区,移除多处重复渐变标题实现; 关联文件: `frontend/src/components/shared/DialogHeader.tsx`, `frontend/src/components/finance/*`, `frontend/src/components/todo/*`, `frontend/src/components/layout/*`.
+-   将 Finance 交易筛选栏改为 MUI `TextField`, `ToggleButtonGroup` 和 `MenuItem` 控件组合,提升主题一致性和键盘可用性; 关联文件: `frontend/src/components/finance/Transactions/FilterBar.tsx`.
+-   Finance 和工作台首页初始加载改为结构化骨架屏,应用壳层和满屏业务页高度改用 `100dvh`; 关联文件: `frontend/src/components/finance/FinancePageSkeleton.tsx`, `frontend/src/components/workspace/WorkspaceSkeleton.tsx`, `frontend/src/app/finance/page.tsx`, `frontend/src/components/workspace/WorkspaceHome.tsx`, `frontend/src/theme.ts`.
+-   全局字体改用 Next.js `next/font/google` 加载 `Plus Jakarta Sans`,避免在 layout 中手写外部字体链接; 关联文件: `frontend/src/app/layout.tsx`, `frontend/src/theme.ts`.
+
+### chore
+
+-   前端 ESLint 忽略构建和原型产物目录,并将 GitHub Actions 中 `npm run lint` 恢复为阻塞质量检查; 关联文件: `frontend/eslint.config.mjs`, `.github/workflows/dev-test-deploy.yml`, `.github/workflows/release-build-run.yml`.
+
+### docs
+
+-   更新前端,记账,测试,GitHub Actions 和 README 文档,记录紧凑模式移除,共享弹窗规范,骨架屏加载,`100dvh` 页面高度以及 lint baseline 已清理; 关联文件: `README.md`, `docs/frontend.md`, `docs/finance.md`, `docs/testing.md`, `docs/github-actions.md`.
+
 ## 2026-06-14
 
 ### feat

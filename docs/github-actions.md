@@ -21,7 +21,7 @@
 前端检查:
 
 - `npm ci`
-- `npm run lint` (当前在 workflow 中为非阻塞,待 lint baseline 清理后应改为阻塞)
+- `npm run lint`
 - `npm run test`
 - `npm run build`
 

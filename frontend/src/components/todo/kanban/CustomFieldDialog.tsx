@@ -35,6 +35,7 @@ export default function CustomFieldDialog({ open, field, onSave, onClose }: Cust
   const [showOnCard, setShowOnCard] = useState(true);
   const [showInDetail, setShowInDetail] = useState(true);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (field) {
       setLabel(field.label);
@@ -52,6 +53,7 @@ export default function CustomFieldDialog({ open, field, onSave, onClose }: Cust
       setShowInDetail(true);
     }
   }, [field, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = () => {
     if (!label.trim()) return;

@@ -12,6 +12,8 @@ import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import { alpha } from '@mui/material/styles';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import DialogHeader from '@/components/shared/DialogHeader';
 import * as api from '@/lib/api';
 import type { FinanceTagOut } from '@/lib/financeTypes';
 
@@ -38,6 +40,7 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [draggedTagId, setDraggedTagId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<FinanceTagOut | null>(null);
 
   const resetForm = () => { setEditingTag(null); setName(''); setError(''); };
 
@@ -66,10 +69,15 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
     }
   };
 
-  const handleDelete = async (tag: FinanceTagOut) => {
-    if (!window.confirm(`确定删除标签「${tag.name}」吗？`)) return;
+  const handleDelete = (tag: FinanceTagOut) => {
+    setDeleteTarget(tag);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.deleteFinanceTag(tag.id);
+      await api.deleteFinanceTag(deleteTarget.id);
+      setDeleteTarget(null);
       await onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : '删除失败');
@@ -159,10 +167,7 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
       )}
 
       <Dialog open={dialogOpen} onClose={handleClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
-        <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{editingTag ? '重命名标签' : '新建标签'}</Typography>
-          <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)' }}>✕</IconButton>
-        </Box>
+        <DialogHeader title={editingTag ? '重命名标签' : '新建标签'} onClose={handleClose} />
         <DialogContent sx={{ pt: 2.5 }}>
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
           <TextField fullWidth label="名称" size="small" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
@@ -172,6 +177,16 @@ export default function TagsTab({ tags, activeLedgerId, onRefresh }: TagsTabProp
           <Button variant="contained" onClick={handleSave} disabled={!name.trim() || saving} sx={{ borderRadius: 4, px: 3, boxShadow: 'none', textTransform: 'none' }}>保存</Button>
         </DialogActions>
       </Dialog>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除标签"
+        message={deleteTarget ? `确定删除标签「${deleteTarget.name}」吗？` : ''}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Box>
   );
 }

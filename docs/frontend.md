@@ -10,6 +10,10 @@
 - Microinteractions 是默认交互要求,按钮,菜单,弹窗,列表项,拖拽项和表单控件都应提供克制的状态反馈,避免无响应或突兀跳变.
 - 多个同类资源存在排序需求时,优先使用拖拽排序,例如文件夹,账本,账户,分类,标签和预算. 不使用点击式上移/下移作为主排序方式.
 - 拖拽排序应通过视觉状态表达可拖动和落点,例如 `cursor: grab`,边框高亮,透明度变化或短过渡; 页面上不额外展示冗余的 "拖拽排序" 文本.
+- 偏好设置只保留真实接入且会立即生效的选项. 未接入布局状态的 "紧凑模式" 不再展示,避免用户以为设置已生效.
+- 弹窗标题区优先复用 `frontend/src/components/shared/DialogHeader.tsx`,删除确认流使用 `frontend/src/components/shared/ConfirmDialog.tsx`,避免业务组件重复实现不一致的渐变标题或原生 `window.confirm`.
+- 页面初始加载优先使用页面结构骨架屏,例如 `FinancePageSkeleton` 和 `WorkspaceSkeleton`,避免用单个居中 spinner 造成布局跳变.
+- 应用壳层和满屏业务页高度使用 `100dvh`,移动端 Drawer 也使用 `dvh` 高度,减少移动浏览器地址栏变化导致的裁切.
 
 ## 目录结构
 
@@ -49,7 +53,7 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - 顶部导航: `GlobalNav` 通过当前 pathname 计算 active 状态, 首页精确匹配 `/`, Todo 匹配 `/todo` 及子路径, Calendar 匹配 `/calendar` 及子路径, Finance 匹配 `/finance` 及子路径, 避免进入其他模块时任务入口被错误强调.
 - MUI 样式传参: `Typography` 和 `slotProps` 中的子组件样式统一通过 `sx` 传入, 例如 `ListItemText.slotProps.primary.sx`, 避免把 `fontWeight`, `fontSize` 等样式字段直接作为组件 prop 导致 Next build 类型检查失败.
 - MUI 主题覆写: `frontend/src/theme.ts` 中组件变体样式使用 `components.Mui*.variants`, 不把 `containedPrimary` 等旧 class key 写入 `styleOverrides`, 以匹配当前 MUI 类型.
-- `/`: Material/MUI 工作台, 对齐 `index.html`; 支持 Todo/记账入口, 月度记账摘要, 最近任务, 管理模式, 添加/移除卡片, 导航管理和偏好设置弹窗, 并在标题区显示当前项目版本. 顶部导航管理由 `frontend/src/components/layout/NavManageDialog.tsx` 控制,支持模块名称,显示状态和顺序配置,顺序通过箭头按钮调整并持久化到 `localStorage`.
+- `/`: Material/MUI 工作台, 对齐 `index.html`; 支持 Todo/记账入口, 月度记账摘要, 最近任务, 管理模式, 添加/移除卡片, 导航管理和偏好设置弹窗, 并在标题区显示当前项目版本. 顶部导航管理由 `frontend/src/components/layout/NavManageDialog.tsx` 控制,支持模块名称,显示状态和顺序配置,顺序通过箭头按钮调整并持久化到 `localStorage`. 偏好设置当前仅保留已接入的深色模式切换,不展示紧凑模式等未生效选项.
 - `/todo`: Material/MUI TODO 页面, 对齐 `todo.html`; 调用 folders, tags 和 todos 接口, 支持读取, 搜索, 状态/优先级/文件夹/标签筛选, 新建, 编辑, 删除, 切换完成, 多选批量完成/移动/删除, 文件夹新建/编辑/删除, 以及 `kanban` 模式文件夹的看板视图切换.
 - `/calendar`: Material/MUI 日历模块, 位于 `frontend/src/components/calendar/`; 月视图按原型还原为连续月份滚动, sticky 月份工具条,大号日期格,农历/节假日标签,事件色条和右侧详情/筛选抽屉.周视图还原为周概览,周统计和选中日期日程三卡片.日视图使用全天分区和带时间列/圆点/连接线的时间轴.日程视图按日期分组展示未来事件.支持来源筛选,关键词搜索,订阅同步 stub,以及手动日程/账单提醒的前端内存 CRUD.新建/编辑弹窗日期字段使用 MUI X `DatePicker` 和共享 `DATE_PICKER_DISPLAY_FORMAT`.
 - TODO 侧边栏: 文件夹按后端返回的 `children` 递归渲染, 箭头向右表示收起, 向下表示展开; `mode: "kanban"` 的文件夹名称右侧显示看板图标; 新建子文件夹弹窗使用点击位置作为固定锚点, 避免输入时因行内按钮重排导致弹窗漂移.
@@ -57,6 +61,7 @@ Next.js 代理规则在 `frontend/next.config.ts`:
 - TODO Kanban 新建任务: 第一列的新增按钮复用任务弹窗, 并通过隐藏字段提交当前 `sprint_id` 和目标 `column_id`, 保存后按当前 sprint 刷新, 确保新任务立即出现在对应列.
 - 日期选择: 前端日期选择器统一使用 MUI X `DatePicker`, 输入框显示格式通过 `format={DATE_PICKER_DISPLAY_FORMAT}` 控制, 共享常量位于 `frontend/src/lib/dateFormats.ts`.
 - `/finance`: Material/MUI 记账页面, 对齐 `accounting.html`; 调用 ledgers, accounts, categories, tags, budgets, events, dashboard, stats, transactions, attachments 接口, 支持仪表盘, 交易筛选, 记一笔, 编辑/删除交易, 拆分交易, 上传附件, 关联待办, 账本/账户/分类/标签/预算/事件管理. 账本,账户,分类,标签和预算排序均使用拖拽排序并通过 reorder API 持久化.
+- Finance 交易筛选栏使用 MUI `TextField`, `ToggleButtonGroup` 和 `MenuItem` 组合实现搜索,类型,账户,分类和标签筛选,并保留标签名称参与关键词匹配.
 - Finance 仪表盘分类支出占比卡片: `CategoryDonut` 使用 MUI X `PieChart` 的 donut 模式并关闭内置图例, 仅保留右侧自绘图例; 图表容器固定 120px, 移动端改为上下排列, 避免默认图例挤压导致样式错乱.
 - Finance 初始加载: `/api/v1/finance/ledgers` 失败时展示错误, 返回空数组时自动进入账本管理并结束 loading, 避免无账本用户无法创建第一个账本.
 
@@ -96,6 +101,6 @@ node node_modules\eslint\bin\eslint.js src
 node node_modules\next\dist\bin\next build
 ```
 
-当前前端测试使用 Vitest, React Testing Library, jsdom 和 user-event. `npm run lint` 仍存在重构遗留 baseline 错误, 目前 CI 中作为非阻塞输出, 详见 `docs/testing.md`.
+当前前端测试使用 Vitest, React Testing Library, jsdom 和 user-event. `npm run lint` 已作为本地和 CI 的阻塞质量检查, 详见 `docs/testing.md`.
 
 认证页面受 `AuthGuard` 保护. 未登录浏览器访问 `/`, `/todo`, `/finance` 会进入登录流程; 对目标页面做视觉验收时需要先启动后端并使用有效账号登录.

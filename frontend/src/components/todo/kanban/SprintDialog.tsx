@@ -8,8 +8,10 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import type { Sprint } from '@/lib/types';
 import { createSprint, updateSprint } from '@/lib/api';
+import { DATE_PICKER_DISPLAY_FORMAT } from '@/lib/dateFormats';
 import dayjs from 'dayjs';
 
 interface SprintDialogProps {
@@ -27,6 +29,7 @@ export default function SprintDialog({ open, sprint, folderId, onClose, onSave }
   const [endDate, setEndDate] = useState('');
   const [saving, setSaving] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (sprint) {
       setName(sprint.name);
@@ -40,6 +43,7 @@ export default function SprintDialog({ open, sprint, folderId, onClose, onSave }
       setEndDate(dayjs().add(14, 'day').format('YYYY-MM-DD'));
     }
   }, [sprint, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = async () => {
     if (!name.trim()) return;
@@ -79,10 +83,20 @@ export default function SprintDialog({ open, sprint, folderId, onClose, onSave }
         <TextField label="Sprint 名称" value={name} onChange={(e) => setName(e.target.value)} fullWidth size="small" required />
         <TextField label="目标（可选）" value={goal} onChange={(e) => setGoal(e.target.value)} fullWidth size="small" multiline rows={2} />
         <Box sx={{ display: 'flex', gap: 2 }}>
-          <TextField label="开始日期" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} size="small"
-            slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
-          <TextField label="结束日期" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} size="small"
-            slotProps={{ inputLabel: { shrink: true } }} sx={{ flex: 1 }} />
+          <DatePicker
+            label="开始日期"
+            value={startDate ? dayjs(startDate) : null}
+            onChange={(date) => setStartDate(date ? date.format('YYYY-MM-DD') : '')}
+            format={DATE_PICKER_DISPLAY_FORMAT}
+            slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
+          />
+          <DatePicker
+            label="结束日期"
+            value={endDate ? dayjs(endDate) : null}
+            onChange={(date) => setEndDate(date ? date.format('YYYY-MM-DD') : '')}
+            format={DATE_PICKER_DISPLAY_FORMAT}
+            slotProps={{ textField: { size: 'small', sx: { flex: 1 } } }}
+          />
         </Box>
       </DialogContent>
       <DialogActions sx={{ px: 3, pb: 3, gap: 1 }}>

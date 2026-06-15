@@ -6,11 +6,11 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import ToggleButton from '@mui/material/ToggleButton';
+import DialogHeader from '@/components/shared/DialogHeader';
 import MarkerPicker, { MARKER_COLORS, type MarkerValue } from '@/components/shared/MarkerPicker';
 
 interface FolderDialogProps {
@@ -37,17 +37,7 @@ export default function FolderDialog({ open, onClose, onSave }: FolderDialogProp
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
-      <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box component="span" sx={{ fontSize: '1.25rem' }}>📁</Box>
-          <Typography variant="h2" sx={{ color: '#fff', fontSize: '1.25rem' }}>新建文件夹</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose} sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </IconButton>
-      </Box>
+      <DialogHeader title="新建文件夹" icon="+" onClose={onClose} />
       <DialogContent sx={{ pt: 2.5 }}>
         <Box sx={{ mb: 2.25 }}>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>文件夹名称</Typography>

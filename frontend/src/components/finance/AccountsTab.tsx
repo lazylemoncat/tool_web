@@ -13,6 +13,8 @@ import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
 import { alpha } from '@mui/material/styles';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import DialogHeader from '@/components/shared/DialogHeader';
 import * as api from '@/lib/api';
 import { ApiError } from '@/lib/api';
 import type { AccountOut } from '@/lib/financeTypes';
@@ -51,6 +53,7 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [draggedAccountId, setDraggedAccountId] = useState<number | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AccountOut | null>(null);
 
   const resetForm = () => {
     setEditingAccount(null);
@@ -118,10 +121,15 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
     resetForm();
   };
 
-  const handleDelete = async (account: AccountOut) => {
-    if (!window.confirm(`确定删除账户“${account.name}”？相关流水会受数据库级联规则影响。`)) return;
+  const handleDelete = (account: AccountOut) => {
+    setDeleteTarget(account);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.deleteAccount(account.id);
+      await api.deleteAccount(deleteTarget.id);
+      setDeleteTarget(null);
       await onRefresh();
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : '删除账户失败';
@@ -223,10 +231,7 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
 
       <Dialog open={dialogOpen} onClose={handleClose} maxWidth="xs" fullWidth
         slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
-        <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{editingAccount ? '编辑账户' : '新建账户'}</Typography>
-          <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)' }}>✕</IconButton>
-        </Box>
+        <DialogHeader title={editingAccount ? '编辑账户' : '新建账户'} onClose={handleClose} />
         <DialogContent sx={{ pt: 2.5 }}>
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
           <TextField fullWidth label="名称" size="small" value={name} onChange={(e) => { setName(e.target.value); setError(''); }}
@@ -252,6 +257,16 @@ export default function AccountsTab({ accounts, activeLedgerId, onRefresh }: Acc
           </Button>
         </DialogActions>
       </Dialog>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除账户"
+        message={deleteTarget ? `确定删除账户“${deleteTarget.name}”？相关流水会受数据库级联规则影响。` : ''}
+        confirmLabel="删除"
+        cancelLabel="取消"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Box>
   );
 }

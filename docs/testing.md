@@ -34,12 +34,13 @@ JWT_SECRET=test-secret-key-test-secret-key-1234 uv run python -m pytest tests -q
 ```bash
 cd frontend
 npm ci
+npm run lint
 npm run test
 npm run test:watch
 npm run build
 ```
 
-当前 `npm run lint` 仍存在前端重构遗留的 baseline 错误, CI 中暂时保留为非阻塞输出. 在 lint baseline 清理后, 应将 CI lint 步骤改为阻塞.
+当前前端 lint baseline 已清理, `npm run lint` 应作为本地和 CI 的阻塞质量检查执行.
 
 重点覆盖:
 
@@ -69,6 +70,6 @@ npm run build
 `.github/workflows/dev-test-deploy.yml` 和 `.github/workflows/release-build-run.yml` 执行:
 
 - 后端: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`, `pytest tests -q`.
-- 前端: `npm ci`, `npm run lint` (当前非阻塞), `npm run test`, `npm run build`.
+- 前端: `npm ci`, `npm run lint`, `npm run test`, `npm run build`.
 
 E2E smoke 目前未启用. 如果后续需要加入 Playwright, 建议单独 job 运行登录, Todo 创建/编辑/删除和 Finance 创建/统计展示, 避免拖慢单元测试反馈.

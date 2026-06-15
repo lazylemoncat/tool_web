@@ -11,6 +11,7 @@ import MenuItem from '@mui/material/MenuItem';
 import Divider from '@mui/material/Divider';
 import Tooltip from '@mui/material/Tooltip';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import { alpha } from '@mui/material/styles';
 import { useThemeCtx } from '@/components/theme/ThemeRegistry';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
@@ -144,17 +145,30 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage, navItems = 
       <Box sx={{ flex: 1, display: { md: 'none' } }} />
 
       <Tooltip title={mode === 'light' ? '切换深色模式' : '切换浅色模式'}>
-        <IconButton size="small" onClick={toggle} sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+        <IconButton
+          size="small"
+          onClick={toggle}
+          aria-label={mode === 'light' ? '切换深色模式' : '切换浅色模式'}
+          sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+        >
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </IconButton>
       </Tooltip>
 
       <Tooltip title="帮助">
-        <IconButton size="small" onClick={(e) => setHelpAnchor(e.currentTarget)} sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+        <IconButton
+          size="small"
+          onClick={(e) => setHelpAnchor(e.currentTarget)}
+          aria-label="打开帮助菜单"
+          aria-controls={helpAnchor ? 'help-menu' : undefined}
+          aria-haspopup="true"
+          aria-expanded={helpAnchor ? 'true' : undefined}
+          sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+        >
           <HelpIcon />
         </IconButton>
       </Tooltip>
-      <Menu anchorEl={helpAnchor} open={Boolean(helpAnchor)} onClose={() => setHelpAnchor(null)}
+      <Menu id="help-menu" anchorEl={helpAnchor} open={Boolean(helpAnchor)} onClose={() => setHelpAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <MenuItem onClick={() => setHelpAnchor(null)}>功能介绍</MenuItem>
         <MenuItem onClick={() => setHelpAnchor(null)}>快捷键参考</MenuItem>
@@ -162,24 +176,45 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage, navItems = 
       </Menu>
 
       <Tooltip title="设置">
-        <IconButton size="small" onClick={() => onOpenSettings()} sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+        <IconButton
+          size="small"
+          onClick={() => onOpenSettings()}
+          aria-label="打开偏好设置"
+          sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+        >
           <SettingsIcon />
         </IconButton>
       </Tooltip>
 
       {onOpenNavManage && (
         <Tooltip title="导航管理">
-          <IconButton size="small" onClick={() => onOpenNavManage()} sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}>
+          <IconButton
+            size="small"
+            onClick={() => onOpenNavManage()}
+            aria-label="打开导航管理"
+            sx={{ width: 36, height: 36, color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+          >
             <ManageNavIcon />
           </IconButton>
         </Tooltip>
       )}
 
-      <Avatar onClick={(e) => setUserMenuAnchor(e.currentTarget)}
-        sx={{ width: 32, height: 32, bgcolor: 'primary.main', color: '#fff', fontSize: '0.8125rem', fontWeight: 700, cursor: 'pointer', ml: 0.5 }}>
-        {user?.username?.charAt(0)?.toUpperCase() || '?'}
-      </Avatar>
-      <Menu anchorEl={userMenuAnchor} open={Boolean(userMenuAnchor)} onClose={() => setUserMenuAnchor(null)}
+      <IconButton
+        size="small"
+        onClick={(e) => setUserMenuAnchor(e.currentTarget)}
+        aria-label="打开用户菜单"
+        aria-controls={userMenuAnchor ? 'user-menu' : undefined}
+        aria-haspopup="true"
+        aria-expanded={userMenuAnchor ? 'true' : undefined}
+        sx={{ p: 0.25, ml: 0.5 }}
+      >
+        <Avatar
+          sx={{ width: 32, height: 32, bgcolor: 'primary.main', color: '#fff', fontSize: '0.8125rem', fontWeight: 700 }}
+        >
+          {user?.username?.charAt(0)?.toUpperCase() || '?'}
+        </Avatar>
+      </IconButton>
+      <Menu id="user-menu" anchorEl={userMenuAnchor} open={Boolean(userMenuAnchor)} onClose={() => setUserMenuAnchor(null)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'right' }}>
         <MenuItem disabled sx={{ opacity: 1, fontWeight: 600, fontSize: '0.875rem' }}>
           {user?.username || '未登录'}
@@ -198,7 +233,7 @@ export default function GlobalNav({ onOpenSettings, onOpenNavManage, navItems = 
 
 function NavLink({ href, label, active }: { href: string; label: string; active?: boolean }) {
   return (
-    <Box component="a" href={href} aria-current={active ? 'page' : undefined} sx={{ px: 1.5, py: 0.75, borderRadius: 2, fontSize: '0.875rem', fontWeight: active ? 600 : 500, color: active ? 'primary.main' : 'text.secondary', bgcolor: active ? 'rgba(108,92,231,0.08)' : 'transparent', textDecoration: 'none', transition: 'all 0.15s', '&:hover': { bgcolor: active ? 'rgba(108,92,231,0.08)' : 'action.hover', color: active ? 'primary.main' : 'text.primary' } }}>
+    <Box component="a" href={href} aria-current={active ? 'page' : undefined} sx={(theme) => ({ px: 1.5, py: 0.75, borderRadius: 2, fontSize: '0.875rem', fontWeight: active ? 600 : 500, color: active ? 'primary.main' : 'text.secondary', bgcolor: active ? alpha(theme.palette.primary.main, 0.08) : 'transparent', textDecoration: 'none', transition: 'background-color 0.2s ease, color 0.2s ease', '&:hover': { bgcolor: active ? alpha(theme.palette.primary.main, 0.08) : 'action.hover', color: active ? 'primary.main' : 'text.primary' } })}>
       {label}
     </Box>
   );

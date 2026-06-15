@@ -103,6 +103,10 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 
 同类资源排序统一使用拖拽排序,包括账本,账户,分类,标签和预算. 不使用点击式上移/下移作为主排序方式;拖拽项通过排序手柄,边框高亮,透明度变化和 `cursor: grab` 表达排序状态,页面不额外展示 "拖拽排序" 文本.
 
+管理类弹窗标题区统一复用 `frontend/src/components/shared/DialogHeader.tsx`,删除确认统一使用 `frontend/src/components/shared/ConfirmDialog.tsx`. 账本,账户,分类,标签和预算删除不再使用原生 `window.confirm`,以保持焦点管理,键盘操作和视觉层级一致.
+
+Finance 页面首次加载使用 `frontend/src/components/finance/FinancePageSkeleton.tsx` 呈现仪表盘结构骨架,不使用居中 spinner. 页面容器高度使用 `100dvh`,保证移动端浏览器地址栏变化时侧边栏和内容区仍可完整滚动.
+
 ### Dashboard (仪表盘)
 
 四张汇总卡片: 总资产、本月收入、本月支出、预算使用率.
@@ -121,6 +125,7 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 
 - 按账户/分类/标签/事件/类型筛选 (可折叠筛选栏)
 - 标签筛选已在 `frontend/src/components/finance/Transactions/FilterBar.tsx` 中提供下拉选择, `frontend/src/components/finance/TransactionsTab.tsx` 按 `TransactionOut.tags[].id` 过滤交易, 并在关键词搜索中匹配标签名称.
+- 筛选栏控件统一使用 MUI `TextField`, `ToggleButtonGroup` 和 `MenuItem`,不使用裸 `input` 或 `select`,确保键盘焦点,辅助标签和主题样式一致.
 - 按日期范围查询
 - 关键词搜索
 - 无限滚动加载 (每页 50 条, 滚动到底自动加载更多)

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import Typography from '@mui/material/Typography';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
@@ -19,6 +18,7 @@ import EventsTab from '@/components/finance/EventsTab';
 import TransactionFormDialog from '@/components/finance/TransactionFormDialog';
 import TransactionDetailDrawer from '@/components/finance/TransactionDetailDrawer';
 import EventDetailDrawer from '@/components/finance/EventDetailDrawer';
+import FinancePageSkeleton from '@/components/finance/FinancePageSkeleton';
 import * as api from '@/lib/api';
 import { ApiError } from '@/lib/api';
 import type {
@@ -188,7 +188,7 @@ export default function FinancePage() {
   const activeLedger = ledgers.find((l) => l.id === activeLedgerId) || null;
 
   return (
-    <Box sx={{ display: 'flex', height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+    <Box sx={{ display: 'flex', height: 'calc(100dvh - 64px)', overflow: 'hidden' }}>
       <FinanceSidebar
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -209,9 +209,7 @@ export default function FinancePage() {
 
         <Box sx={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {loading ? (
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1 }}>
-              <CircularProgress />
-            </Box>
+            <FinancePageSkeleton />
           ) : fetchError ? (
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, p: 4 }}>
               <Typography color="error">{fetchError}</Typography>
@@ -233,11 +231,8 @@ export default function FinancePage() {
                   accounts={accounts}
                   categories={categories}
                   tags={tags}
-                  events={events}
-                  activeLedgerId={activeLedgerId}
                   onNewTransaction={handleNewTransaction}
                   onRowClick={handleTransactionRowClick}
-                  onRefresh={refreshData}
                 />
               )}
               {activeTab === 'books' && (

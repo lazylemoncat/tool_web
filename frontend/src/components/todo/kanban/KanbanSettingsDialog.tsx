@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
-import Box from '@mui/material/Box';
 import CloseIcon from '@mui/icons-material/Close';
 import type { Sprint, KanbanColumnData, FieldDef, KanbanConfig } from '@/lib/types';
 import ColumnListEditor from './ColumnListEditor';
@@ -31,7 +30,7 @@ interface KanbanSettingsDialogProps {
 }
 
 export default function KanbanSettingsDialog({
-  open, onClose, columns, sprints, fields, kanbanConfig,
+  open, onClose, columns, sprints, fields,
   onSaveColumns, onSaveFields, onSaveSprints, onSavePreferences,
 }: KanbanSettingsDialogProps) {
   const [tab, setTab] = useState(0);

@@ -20,7 +20,7 @@ export default function TrendChart({ data }: TrendChartProps) {
     );
   }
 
-  const dataset = data.map((d, i) => ({
+  const dataset = data.map((d) => ({
     month: d.month,
     income: Number(d.income),
     expense: Number(d.expense),

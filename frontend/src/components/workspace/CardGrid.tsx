@@ -52,6 +52,7 @@ export default function CardGrid({
           <Box
             key={cardId}
             draggable={isManageMode}
+            aria-grabbed={isManageMode ? isDragging : undefined}
             onDragStart={(e) => onDragStart(e, cardId)}
             onDragOver={(e) => onDragOver(e, cardId)}
             onDrop={(e) => { e.preventDefault(); onDragEnd(); }}
@@ -86,6 +87,7 @@ export default function CardGrid({
                   zIndex: 2,
                   '&:hover': { color: 'primary.main', bgcolor: 'rgba(108,92,231,0.08)' },
                 }}
+                aria-hidden
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                   <line x1="8" y1="6" x2="16" y2="6" />
@@ -100,6 +102,7 @@ export default function CardGrid({
               <IconButton
                 size="small"
                 onClick={() => onDeleteCard(cardId)}
+                aria-label={`移除${CARD_DEFINITIONS[cardId]?.label ?? '卡片'}`}
                 sx={{
                   position: 'absolute',
                   right: 6,

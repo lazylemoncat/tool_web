@@ -16,7 +16,7 @@ export default function KanbanPreferences({ onSave }: KanbanPreferencesProps) {
 
   useEffect(() => {
     onSave({ show_archived: showArchived, allow_drag: allowDrag, remember_view: rememberView });
-  }, [showArchived, allowDrag, rememberView]);
+  }, [showArchived, allowDrag, rememberView, onSave]);
 
   return (
     <Box>

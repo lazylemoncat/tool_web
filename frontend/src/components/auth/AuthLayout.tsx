@@ -19,7 +19,7 @@ export default function AuthLayout({
         display: 'flex',
         alignItems: { xs: showDecorations ? 'flex-start' : 'center', sm: 'center' },
         justifyContent: 'center',
-        minHeight: '100vh',
+        minHeight: '100dvh',
         position: 'relative',
         overflow: 'hidden',
         bgcolor: 'background.default',

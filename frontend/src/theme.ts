@@ -7,11 +7,11 @@ const shared: ThemeOptions = {
   spacing: 6,
   shape: { borderRadius: 8 },
   typography: {
-    fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
+    fontFamily: 'var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif',
     fontSize: 14,
-    h1: { fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' },
-    h2: { fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em' },
-    h3: { fontFamily: '"Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.125rem', fontWeight: 700 },
+    h1: { fontFamily: 'var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.5rem', fontWeight: 700, letterSpacing: '-0.02em' },
+    h2: { fontFamily: 'var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.25rem', fontWeight: 700, letterSpacing: '-0.01em' },
+    h3: { fontFamily: 'var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif', fontSize: '1.125rem', fontWeight: 700 },
     body1: { fontSize: '0.875rem' },
     body2: { fontSize: '0.8125rem' },
     button: { textTransform: 'none', fontWeight: 600 },
@@ -19,8 +19,9 @@ const shared: ThemeOptions = {
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        html: { backgroundColor: 'var(--mui-palette-background-default)' },
+        html: { backgroundColor: 'var(--mui-palette-background-default)', scrollBehavior: 'smooth' },
         body: {
+          minHeight: '100dvh',
           backgroundColor: 'var(--mui-palette-background-default)',
           color: 'var(--mui-palette-text-primary)',
           transition: 'background-color 0.3s, color 0.3s',

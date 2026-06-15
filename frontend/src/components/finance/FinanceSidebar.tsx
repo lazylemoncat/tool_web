@@ -142,7 +142,7 @@ export default function FinanceSidebar({
 
   return (
     <>
-      <Box component="aside" sx={{ width: 240, flexShrink: 0, display: { xs: 'none', md: 'block' }, height: 'calc(100vh - 64px)', overflowY: 'auto' }}>
+      <Box component="aside" sx={{ width: 240, flexShrink: 0, display: { xs: 'none', md: 'block' }, height: 'calc(100dvh - 64px)', overflowY: 'auto' }}>
         {sidebarContent}
       </Box>
       <SwipeableDrawer anchor="left" open={open} onClose={onClose} onOpen={() => {}} disableSwipeToOpen

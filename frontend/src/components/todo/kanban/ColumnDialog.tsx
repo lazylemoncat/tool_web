@@ -27,6 +27,7 @@ export default function ColumnDialog({ open, column, sprintId, onClose, onSave }
   const [capacity, setCapacity] = useState('');
   const [saving, setSaving] = useState(false);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (column) {
       setName(column.name);
@@ -38,6 +39,7 @@ export default function ColumnDialog({ open, column, sprintId, onClose, onSave }
       setCapacity('');
     }
   }, [column, open]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = async () => {
     if (!name.trim()) return;

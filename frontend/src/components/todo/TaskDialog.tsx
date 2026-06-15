@@ -8,7 +8,6 @@ import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
@@ -16,6 +15,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import { DATE_PICKER_DISPLAY_FORMAT } from '@/lib/dateFormats';
+import DialogHeader from '@/components/shared/DialogHeader';
 import type { APITag } from '@/lib/types';
 
 interface TaskDialogProps {
@@ -125,15 +125,7 @@ export default function TaskDialog({
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth
       slotProps={{ paper: { sx: { maxWidth: 560, borderRadius: 4, maxHeight: '90vh', overflow: 'hidden' } } }}>
-      <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box component="span" sx={{ fontSize: '1.25rem' }}>📝</Box>
-          <Typography variant="h2" sx={{ color: '#fff', fontSize: '1.25rem' }}>{mode === 'create' ? '新建任务' : '编辑任务'}</Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose} sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-        </IconButton>
-      </Box>
+      <DialogHeader title={mode === 'create' ? '新建任务' : '编辑任务'} icon="+" onClose={onClose} />
       <DialogContent sx={{ pt: 2.5, pb: 1 }}>
         {/* Title */}
         <Box sx={{ mb: 2.25 }}>

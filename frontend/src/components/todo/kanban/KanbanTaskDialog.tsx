@@ -60,6 +60,7 @@ export default function KanbanTaskDialog({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formFields = useMemo(() => resolveKanbanFields(fields), [fields]);
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     if (open) {
       if (editTask) {
@@ -102,6 +103,7 @@ export default function KanbanTaskDialog({
       setErrors({});
     }
   }, [open, editTask, defaultSprintId, formFields]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const customFieldDefs = formFields.filter(f => !f.system);
   const sortedFields = [...formFields].sort((a, b) => a.order - b.order);

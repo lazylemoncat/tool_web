@@ -3,11 +3,11 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import Snackbar from '@mui/material/Snackbar';
 import Alert from '@mui/material/Alert';
 
 import WorkspaceHeader from './WorkspaceHeader';
+import WorkspaceSkeleton from './WorkspaceSkeleton';
 import ManagementToolbar from './ManagementToolbar';
 import CardGrid from './CardGrid';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
@@ -255,17 +255,13 @@ export default function WorkspaceHome() {
 
   // 加载中状态
   if (loading) {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 64px)' }}>
-        <CircularProgress size={40} />
-      </Box>
-    );
+    return <WorkspaceSkeleton />;
   }
 
   return (
     <Box
       sx={{
-        minHeight: 'calc(100vh - 64px)',
+        minHeight: 'calc(100dvh - 64px)',
         bgcolor: 'background.default',
         pt: 4,
       }}

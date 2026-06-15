@@ -12,6 +12,8 @@ import TextField from '@mui/material/TextField';
 import IconButton from '@mui/material/IconButton';
 import Alert from '@mui/material/Alert';
 import Tooltip from '@mui/material/Tooltip';
+import ConfirmDialog from '@/components/shared/ConfirmDialog';
+import DialogHeader from '@/components/shared/DialogHeader';
 import MarkerPicker, { MARKER_EMOJIS, MarkerIcon, type MarkerValue } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
 import type { CategoryOut } from '@/lib/financeTypes';
@@ -119,6 +121,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [draggedCategory, setDraggedCategory] = useState<{ id: number; parentId: number | null } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryOut | null>(null);
 
   const resetForm = () => {
     setEditingCategory(null);
@@ -171,11 +174,15 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
     }
   };
 
-  const handleDelete = async (category: CategoryOut) => {
-    const childText = category.children?.length ? '，其子分类也会被删除' : '';
-    if (!window.confirm(`确定删除分类“${category.name}”${childText}？`)) return;
+  const handleDelete = (category: CategoryOut) => {
+    setDeleteTarget(category);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
     try {
-      await api.deleteCategory(category.id);
+      await api.deleteCategory(deleteTarget.id);
+      setDeleteTarget(null);
       await onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : '删除失败');
@@ -247,10 +254,7 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
       )}
 
       <Dialog open={dialogOpen} onClose={handleClose} maxWidth="xs" fullWidth slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
-        <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{editingCategory ? '编辑分类' : '新建分类'}</Typography>
-          <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)' }}>✕</IconButton>
-        </Box>
+        <DialogHeader title={editingCategory ? '编辑分类' : '新建分类'} onClose={handleClose} />
         <DialogContent sx={{ pt: 2.5 }}>
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
           <TextField fullWidth label="名称" size="small" value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} autoFocus />
@@ -261,6 +265,20 @@ export default function CategoriesTab({ categories, activeLedgerId, onRefresh }:
           <Button variant="contained" onClick={handleSave} disabled={!name.trim() || saving} sx={{ borderRadius: 4, px: 3, boxShadow: 'none', textTransform: 'none' }}>{saving ? '保存中...' : '保存'}</Button>
         </DialogActions>
       </Dialog>
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="删除分类"
+        message={
+          deleteTarget
+            ? `确定删除分类“${deleteTarget.name}”${deleteTarget.children?.length ? '，其子分类也会被删除' : ''}？`
+            : ''
+        }
+        confirmLabel="删除"
+        cancelLabel="取消"
+        confirmColor="error"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </Box>
   );
 }

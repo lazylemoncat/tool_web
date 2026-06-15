@@ -159,7 +159,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 64px)', bgcolor: surfaceTokens.background, color: '#1A1A2E' }}>
+    <Box sx={{ minHeight: 'calc(100dvh - 64px)', bgcolor: surfaceTokens.background, color: '#1A1A2E' }}>
       <Box sx={{ maxWidth: 1240, mx: 'auto', px: { xs: 1.5, sm: 2, md: 4.5 }, pb: 14 }}>
         <CalendarToolbar
           view={view}
@@ -951,7 +951,7 @@ function DrawerFrame({ open, width, onClose, children }: { open: boolean; width:
             ml: 'auto',
             width: { xs: '100vw', sm: width },
             maxWidth: { xs: '100vw', sm: '90vw' },
-            height: { xs: '85vh', sm: '100vh' },
+            height: { xs: '85dvh', sm: '100dvh' },
             mt: { xs: '15vh', sm: 0 },
             borderRadius: { xs: '16px 16px 0 0', sm: '24px 0 0 24px' },
             boxShadow: '-8px 0 40px rgba(0,0,0,0.10)',

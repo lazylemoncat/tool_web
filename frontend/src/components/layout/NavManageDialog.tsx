@@ -12,6 +12,10 @@ import TextField from '@mui/material/TextField';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import Tooltip from '@mui/material/Tooltip';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import KeyboardArrowUpRoundedIcon from '@mui/icons-material/KeyboardArrowUpRounded';
+import ReorderRoundedIcon from '@mui/icons-material/ReorderRounded';
+import DialogHeader from '@/components/shared/DialogHeader';
 import type { NavItem } from './GlobalNav';
 
 interface NavManageDialogProps {
@@ -52,33 +56,11 @@ export default function NavManageDialog({
       fullWidth
       slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}
     >
-      <Box
-        sx={{
-          background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)',
-          color: '#fff',
-          px: 3,
-          py: 2.5,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box component="span" sx={{ fontSize: '1.25rem' }}>📋</Box>
-          <Typography variant="h2" sx={{ color: '#fff', fontSize: '1.25rem' }}>
-            导航管理
-          </Typography>
-        </Box>
-        <IconButton size="small" onClick={onClose} sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </IconButton>
-      </Box>
+      <DialogHeader title="导航管理" icon={<ReorderRoundedIcon fontSize="small" />} onClose={onClose} />
 
       <DialogContent sx={{ pt: 2.5 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: '0.8125rem' }}>
-          管理顶部导航栏的模块顺序,显示状态和名称. 使用箭头按钮调整顺序.
+          管理顶部导航栏的模块顺序, 显示状态和名称.
         </Typography>
 
         <List disablePadding>
@@ -103,7 +85,7 @@ export default function NavManageDialog({
                       onClick={() => moveItem(index, -1)}
                       aria-label={`${item.label} 上移`}
                     >
-                      ↑
+                      <KeyboardArrowUpRoundedIcon fontSize="small" />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -115,7 +97,7 @@ export default function NavManageDialog({
                       onClick={() => moveItem(index, 1)}
                       aria-label={`${item.label} 下移`}
                     >
-                      ↓
+                      <KeyboardArrowDownRoundedIcon fontSize="small" />
                     </IconButton>
                   </span>
                 </Tooltip>
@@ -155,7 +137,7 @@ export default function NavManageDialog({
         <Button
           variant="contained"
           onClick={onClose}
-          sx={{ borderRadius: 999, px: 3, boxShadow: 'none', fontWeight: 600, fontSize: '0.875rem' }}
+          sx={{ px: 3, boxShadow: 'none', fontWeight: 600, fontSize: '0.875rem' }}
         >
           完成
         </Button>

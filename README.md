@@ -139,7 +139,7 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 ```
 
 > 如果本地 `node_modules` 仍是旧依赖, 请先执行 `npm install` 或 `npm ci` 以刷新依赖和 `package-lock.json`.
-> 当前前端 `npm run lint` 仍有重构遗留的 baseline 错误, CI 暂时将 lint 作为非阻塞输出, 详见 `docs/testing.md`.
+> 当前前端 lint baseline 已清理, CI 会将 `npm run lint` 作为阻塞质量检查执行, 详见 `docs/testing.md`.
 
 ## 前端开发约定
 
@@ -179,7 +179,7 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 
 项目包含两个 Docker 部署 workflow:
 
-- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`, `pytest tests -q`; 同时执行前端质量检查: `npm ci`, `npm run lint` (当前非阻塞), `npm run test`, `npm run build`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
+- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`, `pytest tests -q`; 同时执行前端质量检查: `npm ci`, `npm run lint`, `npm run test`, `npm run build`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
 - `.github/workflows/dev-test-deploy.yml`: 当代码 push 到 `dev` 分支时触发. 先执行同样的后端和前端质量检查. 检查通过后,构建并推送 `:dev` 测试镜像,在测试服务器写入独立的 `docker-compose.test.yml`,使用独立 Compose project 和测试数据目录运行测试环境. 默认测试端口为前端 `18003`,后端 `18004`,可通过 GitHub Variables 调整.
 
 Ruff 配置位于 `backend/pyproject.toml`,当前启用规则前缀为 `E`, `W`, `N`, `I`, `F`, `UP`.

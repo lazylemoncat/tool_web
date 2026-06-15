@@ -5,7 +5,6 @@ import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
@@ -18,6 +17,7 @@ import InputLabel from '@mui/material/InputLabel';
 import ListItemText from '@mui/material/ListItemText';
 import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
+import DialogHeader from '@/components/shared/DialogHeader';
 import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
 import type { AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut, TransactionOut, AttachmentOut } from '@/lib/financeTypes';
@@ -148,17 +148,7 @@ export default function TransactionFormDialog({
   return (
     <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth
       slotProps={{ paper: { sx: { borderRadius: 4, overflow: 'hidden' } } }}>
-      <Box sx={{ background: 'linear-gradient(135deg, #6C5CE7, #A78BFA)', color: '#fff', px: 3, py: 2.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Typography sx={{ fontSize: '1.25rem' }}>💰</Typography>
-          <Typography sx={{ fontSize: '1.125rem', fontWeight: 700 }}>{isEdit ? '编辑交易' : '记一笔'}</Typography>
-        </Box>
-        <IconButton size="small" onClick={handleClose} sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { bgcolor: 'rgba(255,255,255,0.15)' } }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </IconButton>
-      </Box>
+      <DialogHeader title={isEdit ? '编辑交易' : '记一笔'} icon="¥" onClose={handleClose} />
 
       <DialogContent sx={{ pt: 2.5, pb: 0 }}>
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}

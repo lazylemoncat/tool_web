@@ -50,7 +50,7 @@ export function getKanbanSubtasks(task: KanbanTaskOut): KanbanSubtask[] {
 }
 
 export default function KanbanTaskDrawer({
-  open, task, columns, fields, onClose, onMove, onDelete, onEdit, onAddSubtask, onToggleSubtask,
+  open, task, fields, onClose, onDelete, onEdit, onAddSubtask, onToggleSubtask,
 }: KanbanTaskDrawerProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
   if (!task) return null;

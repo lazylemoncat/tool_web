@@ -72,7 +72,7 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
           onOpenNavManage={() => setNavManageOpen(true)}
         />
       )}
-      <Box sx={{ pt: isAuthPage ? 0 : '64px', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ pt: isAuthPage ? 0 : '64px', minHeight: '100dvh', display: 'flex', flexDirection: 'column' }}>
         {children}
       </Box>
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
