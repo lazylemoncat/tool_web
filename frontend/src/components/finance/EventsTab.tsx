@@ -25,17 +25,41 @@ interface EventsTabProps {
 
 const EVENT_COLORS = ['#6C5CE7', '#10B981', '#F59E0B', '#EF4444', '#3B82F6', '#8B5CF6'];
 
+function buildEventDateTime(dateValue: string, timeValue: string): string | null {
+  if (!dateValue) return null;
+  return timeValue ? `${dateValue}T${timeValue}:00` : dateValue;
+}
+
+function formatEventDateTime(value?: string | null): string {
+  if (!value) return '';
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return value;
+  const timeLabel = parsed.format('HH:mm');
+  return timeLabel === '00:00' ? parsed.format('YYYY-MM-DD') : parsed.format('YYYY-MM-DD HH:mm');
+}
+
 export default function EventsTab({ events, activeLedgerId, onEventClick, onRefresh }: EventsTabProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [startAt, setStartAt] = useState('');
+  const [startTime, setStartTime] = useState('');
   const [endAt, setEndAt] = useState('');
+  const [endTime, setEndTime] = useState('');
   const [color, setColor] = useState('#6C5CE7');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const resetForm = () => { setName(''); setDescription(''); setStartAt(''); setEndAt(''); setColor('#6C5CE7'); setError(''); };
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setStartAt('');
+    setStartTime('');
+    setEndAt('');
+    setEndTime('');
+    setColor('#6C5CE7');
+    setError('');
+  };
 
   const handleCreate = async () => {
     setError('');
@@ -43,7 +67,14 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
     if (!activeLedgerId) { setError('未选择账本'); return; }
     setSaving(true);
     try {
-      await api.createEvent({ ledger_id: activeLedgerId, name: name.trim(), description: description || null, start_at: startAt || null, end_at: endAt || null, color });
+      await api.createEvent({
+        ledger_id: activeLedgerId,
+        name: name.trim(),
+        description: description || null,
+        start_at: buildEventDateTime(startAt, startTime),
+        end_at: buildEventDateTime(endAt, endTime),
+        color,
+      });
       setDialogOpen(false); resetForm(); onRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : '创建失败');
@@ -82,7 +113,7 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
                 <Typography sx={{ fontWeight: 600, fontSize: '0.875rem', color: 'text.primary', mb: 0.375 }}>{event.name}</Typography>
                 {event.description && <Typography sx={{ fontSize: '0.6875rem', color: 'text.secondary', mb: 1 }}>{event.description}</Typography>}
                 <Box sx={{ display: 'flex', gap: 1.75, fontSize: '0.625rem', color: 'text.secondary' }}>
-                  {event.start_at && <Typography sx={{ fontSize: '0.625rem' }}>📅 {event.start_at.slice(0, 10)} ~ {event.end_at?.slice(0, 10) || ''}</Typography>}
+                  {event.start_at && <Typography sx={{ fontSize: '0.625rem' }}>📅 {formatEventDateTime(event.start_at)} ~ {formatEventDateTime(event.end_at)}</Typography>}
                   {(event.transaction_count ?? 0) > 0 && <Typography sx={{ fontSize: '0.625rem' }}>{event.transaction_count} 笔交易</Typography>}
                 </Box>
               </Box>
@@ -100,20 +131,52 @@ export default function EventsTab({ events, activeLedgerId, onEventClick, onRefr
           {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: '0.75rem' }} onClose={() => setError('')}>{error}</Alert>}
           <TextField fullWidth label="名称" size="small" value={name} onChange={(e) => setName(e.target.value)} sx={{ mb: 2 }} autoFocus />
           <TextField fullWidth label="描述" size="small" value={description} onChange={(e) => setDescription(e.target.value)} sx={{ mb: 2 }} multiline minRows={2} />
-          <DatePicker
-            label="开始日期"
-            value={startAt ? dayjs(startAt) : null}
-            onChange={(date) => setStartAt(date ? date.format('YYYY-MM-DD') : '')}
-            format={DATE_PICKER_DISPLAY_FORMAT}
-            slotProps={{ textField: { fullWidth: true, size: 'small', sx: { mb: 2 } } }}
-          />
-          <DatePicker
-            label="结束日期"
-            value={endAt ? dayjs(endAt) : null}
-            onChange={(date) => setEndAt(date ? date.format('YYYY-MM-DD') : '')}
-            format={DATE_PICKER_DISPLAY_FORMAT}
-            slotProps={{ textField: { fullWidth: true, size: 'small', sx: { mb: 2 } } }}
-          />
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+            <DatePicker
+              label="开始日期"
+              value={startAt ? dayjs(startAt) : null}
+              onChange={(date) => {
+                const nextDate = date ? date.format('YYYY-MM-DD') : '';
+                setStartAt(nextDate);
+                if (!nextDate) setStartTime('');
+              }}
+              format={DATE_PICKER_DISPLAY_FORMAT}
+              slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="开始时间"
+              type="time"
+              value={startTime}
+              onChange={(event) => setStartTime(event.target.value)}
+              disabled={!startAt}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+            <DatePicker
+              label="结束日期"
+              value={endAt ? dayjs(endAt) : null}
+              onChange={(date) => {
+                const nextDate = date ? date.format('YYYY-MM-DD') : '';
+                setEndAt(nextDate);
+                if (!nextDate) setEndTime('');
+              }}
+              format={DATE_PICKER_DISPLAY_FORMAT}
+              slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+            />
+            <TextField
+              fullWidth
+              size="small"
+              label="结束时间"
+              type="time"
+              value={endTime}
+              onChange={(event) => setEndTime(event.target.value)}
+              disabled={!endAt}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+          </Box>
           <Box sx={{ display: 'flex', gap: 1 }}>
             {EVENT_COLORS.map((c) => (
               <Box key={c} onClick={() => setColor(c)}

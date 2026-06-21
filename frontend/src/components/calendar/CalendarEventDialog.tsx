@@ -38,8 +38,8 @@ interface CalendarEventDialogProps {
   selectedDate: string;
   sources: CalendarSource[];
   onClose: () => void;
-  onDelete: (eventId: string) => void;
-  onSave: (data: CalendarEventFormData) => void;
+  onDelete: (eventId: string) => void | Promise<void>;
+  onSave: (data: CalendarEventFormData) => void | Promise<void>;
 }
 
 export default function CalendarEventDialog({

@@ -7,12 +7,21 @@ import IconButton from '@mui/material/IconButton';
 import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import { alpha } from '@mui/material/styles';
+import dayjs from 'dayjs';
 import type { FinanceEventOut } from '@/lib/financeTypes';
 
 interface EventDetailDrawerProps {
   open: boolean;
   onClose: () => void;
   event: FinanceEventOut | null;
+}
+
+function formatDateTime(value?: string | null): string {
+  if (!value) return '未设置';
+  const parsed = dayjs(value);
+  if (!parsed.isValid()) return value;
+  const timeLabel = parsed.format('HH:mm');
+  return timeLabel === '00:00' ? parsed.format('YYYY-MM-DD') : parsed.format('YYYY-MM-DD HH:mm');
 }
 
 export default function EventDetailDrawer({ open, onClose, event }: EventDetailDrawerProps) {
@@ -43,11 +52,11 @@ export default function EventDetailDrawer({ open, onClose, event }: EventDetailD
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5 }}>
           <Box>
             <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>开始日期</Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{event.start_at?.slice(0, 10) || '未设置'}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{formatDateTime(event.start_at)}</Typography>
           </Box>
           <Box>
             <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>结束日期</Typography>
-            <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{event.end_at?.slice(0, 10) || '未设置'}</Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{formatDateTime(event.end_at)}</Typography>
           </Box>
           <Box>
             <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>交易笔数</Typography>

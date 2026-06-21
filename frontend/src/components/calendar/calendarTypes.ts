@@ -5,6 +5,7 @@ export type SourceType =
   | 'todo'
   | 'finance_income'
   | 'finance_expense'
+  | 'finance_event'
   | 'bill'
   | 'holiday'
   | 'subscription';

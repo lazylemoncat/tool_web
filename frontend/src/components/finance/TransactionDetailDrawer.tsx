@@ -9,6 +9,7 @@ import Divider from '@mui/material/Divider';
 import { alpha } from '@mui/material/styles';
 import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { TransactionOut } from '@/lib/financeTypes';
+import dayjs from 'dayjs';
 
 interface TransactionDetailDrawerProps {
   open: boolean;
@@ -26,6 +27,7 @@ export default function TransactionDetailDrawer({ open, onClose, transaction, on
   const amountPrefix = isIncome ? '+' : '-';
   const hasSubs = transaction.split_items && transaction.split_items.length > 0;
   const attachments = transaction.attachments || [];
+  const occurredAt = transaction.occurred_at ? dayjs(transaction.occurred_at).format('YYYY-MM-DD HH:mm') : '';
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose}
@@ -59,7 +61,7 @@ export default function TransactionDetailDrawer({ open, onClose, transaction, on
       <Divider />
       <Box sx={{ flex: 1, overflowY: 'auto', px: 2.5, py: 2 }}>
         <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5, mb: 2.5 }}>
-          {[{ label: '日期', value: transaction.occurred_at?.slice(0, 16) || '' }, { label: '账户', value: transaction.account?.name || '' }, { label: '分类', value: transaction.category?.name || '未分类' }, { label: '类型', value: transaction.type === 'income' ? '收入' : transaction.type === 'expense' ? '支出' : '转账' }].map((row) => (
+          {[{ label: '日期', value: occurredAt }, { label: '账户', value: transaction.account?.name || '' }, { label: '分类', value: transaction.category?.name || '未分类' }, { label: '类型', value: transaction.type === 'income' ? '收入' : transaction.type === 'expense' ? '支出' : '转账' }].map((row) => (
             <Box key={row.label}>
               <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary', mb: 0.25 }}>{row.label}</Typography>
               <Typography sx={{ fontSize: '0.75rem', color: 'text.primary', fontWeight: 500 }}>{row.value}</Typography>

@@ -43,6 +43,20 @@ function RoundCheckbox({ checked, onChange }: { checked: boolean; onChange: () =
   );
 }
 
+function formatTodoDue(task: TodoOut): string {
+  if (!task.due_date) return '';
+  const dueTime = task.due_time ? task.due_time.slice(0, 5) : '';
+  return dueTime ? `${task.due_date} ${dueTime}` : task.due_date;
+}
+
+function isTodoOverdue(task: TodoOut): boolean {
+  if (!task.due_date || task.is_completed) return false;
+  if (task.due_time) {
+    return dayjs(`${task.due_date}T${task.due_time}`).isBefore(dayjs());
+  }
+  return dayjs(task.due_date).isBefore(dayjs(), 'day');
+}
+
 export default function TaskItem({
   task, isSelected, isExpanded, multiSelectMode,
   onToggleComplete, onToggleSelect, onExpand, onClick,
@@ -50,7 +64,8 @@ export default function TaskItem({
   dragOverPosition = null, onDragStart, onDragOver, onDrop, onDragEnd,
 }: TaskItemProps) {
   const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const isOverdue = task.due_date ? dayjs(task.due_date).isBefore(dayjs(), 'day') && !task.is_completed : false;
+  const isOverdue = isTodoOverdue(task);
+  const dueLabel = formatTodoDue(task);
   const childCount = task.children?.length ?? 0;
   const doneChildCount = task.children?.filter(c => c.is_completed).length ?? 0;
   const recurrenceLabel = getRecurrenceLabel(task.recurrence_rules?.[0]?.rrule_string);
@@ -101,7 +116,7 @@ export default function TaskItem({
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'wrap' }}>
             {task.due_date && (
-              <Chip label={task.due_date} size="small"
+              <Chip label={dueLabel} size="small"
                 sx={{ fontSize: '0.6875rem', fontWeight: 500, borderRadius: '999px', bgcolor: isOverdue ? 'oklch(95% 0.08 25)' : 'action.hover', color: isOverdue ? 'oklch(30% 0.12 25)' : 'text.secondary', height: 22 }} />
             )}
             {hasRecurrence && (

@@ -466,6 +466,8 @@ export async function listTransactions(ledgerId: number, params?: {
   category_id?: number;
   tag_id?: number;
   event_id?: number;
+  start_date?: string;
+  end_date?: string;
   search?: string;
   skip?: number;
   limit?: number;
@@ -477,6 +479,8 @@ export async function listTransactions(ledgerId: number, params?: {
   if (params?.category_id) query.set('category_id', String(params.category_id));
   if (params?.tag_id) query.set('tag_id', String(params.tag_id));
   if (params?.event_id) query.set('event_id', String(params.event_id));
+  if (params?.start_date) query.set('start_date', params.start_date);
+  if (params?.end_date) query.set('end_date', params.end_date);
   if (params?.search) query.set('search', params.search);
   if (params?.skip) query.set('skip', String(params.skip));
   if (params?.limit) query.set('limit', String(params.limit));

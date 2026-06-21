@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from typing import TYPE_CHECKING
 
 from sqlalchemy import (
@@ -16,6 +16,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
 )
 from sqlalchemy.dialects.sqlite import JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -131,6 +132,7 @@ class Todo(Base):
         Integer, default=2, nullable=True
     )  # 1=高 2=中 3=低
     due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_time: Mapped[time | None] = mapped_column(Time, nullable=True)
     is_completed: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=True
     )

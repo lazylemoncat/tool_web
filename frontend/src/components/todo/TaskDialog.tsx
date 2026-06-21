@@ -34,6 +34,7 @@ export interface TaskFormData {
   note: string;
   priority: number;
   due_date: string;
+  due_time: string;
   folder_id: number | null;
   tag_ids: number[];
   recurrence: string;
@@ -46,6 +47,10 @@ export interface TaskFormData {
 const RECUR_OPTIONS = ['不重复', '每天', '每周', '每月', '每年'];
 const CUSTOM_RECUR_OPTION = 'RRULE';
 
+function toTimeInputValue(value?: string | null): string {
+  return value ? value.slice(0, 5) : '';
+}
+
 export default function TaskDialog({
   open, mode, onClose, onSave, onSaveAndNew, initialData,
   allTags = [],
@@ -54,6 +59,7 @@ export default function TaskDialog({
   const [note, setNote] = useState('');
   const [priority, setPriority] = useState<number>(2);
   const [dueDate, setDueDate] = useState('');
+  const [dueTime, setDueTime] = useState('');
   const [folderId, setFolderId] = useState<number | null>(null);
   const [tagIds, setTagIds] = useState<number[]>([]);
   const [recurrence, setRecurrence] = useState('不重复');
@@ -69,6 +75,7 @@ export default function TaskDialog({
       setNote(initialData?.note || '');
       setPriority(initialData?.priority || 2);
       setDueDate(initialData?.due_date || '');
+      setDueTime(toTimeInputValue(initialData?.due_time));
       setFolderId(initialData?.folder_id ?? null);
       setTagIds(initialData?.tag_ids || []);
       const initialRecurrence = initialData?.recurrence || '不重复';
@@ -96,6 +103,7 @@ export default function TaskDialog({
 
   const getFormData = (): TaskFormData => ({
     title: title.trim(), note, priority, due_date: dueDate,
+    due_time: dueDate ? dueTime : '',
     folder_id: folderId, tag_ids: tagIds,
     recurrence: recurrence === CUSTOM_RECUR_OPTION ? customRrule.trim() : recurrence,
     ...(initialData?.id ? { id: initialData.id } : {}),
@@ -114,7 +122,7 @@ export default function TaskDialog({
     if (!validate()) return;
     if (onSaveAndNew) {
       onSaveAndNew(getFormData());
-      setTitle(''); setNote(''); setTagIds([]); setDueDate(''); setRecurrence('不重复'); setCustomRrule('');
+      setTitle(''); setNote(''); setTagIds([]); setDueDate(''); setDueTime(''); setRecurrence('不重复'); setCustomRrule('');
     }
   };
 
@@ -146,8 +154,8 @@ export default function TaskDialog({
           <TextField fullWidth multiline minRows={3} placeholder="添加备注（支持 Markdown 格式）" value={note} onChange={(e) => setNote(e.target.value)} variant="outlined" size="small" />
         </Box>
         {/* Priority + Due Date */}
-        <Box sx={{ display: 'flex', gap: 1.5, mb: 2.25 }}>
-          <Box sx={{ flex: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 2.25, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+          <Box sx={{ flex: 1, minWidth: 150 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>优先级</Typography>
             <Select fullWidth value={priority} onChange={(e) => setPriority(e.target.value as number)} size="small">
               <MenuItem value={1}>🔴 高优先级</MenuItem>
@@ -155,9 +163,30 @@ export default function TaskDialog({
               <MenuItem value={3}>⚪ 低优先级</MenuItem>
             </Select>
           </Box>
-          <Box sx={{ flex: 1 }}>
+          <Box sx={{ flex: 1, minWidth: 150 }}>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>截止日期</Typography>
-            <DatePicker value={dueDate ? dayjs(dueDate) : null} onChange={(date) => setDueDate(date ? date.format('YYYY-MM-DD') : '')} format={DATE_PICKER_DISPLAY_FORMAT} slotProps={{ textField: { size: 'small', fullWidth: true } }} />
+            <DatePicker
+              value={dueDate ? dayjs(dueDate) : null}
+              onChange={(date) => {
+                const nextDate = date ? date.format('YYYY-MM-DD') : '';
+                setDueDate(nextDate);
+                if (!nextDate) setDueTime('');
+              }}
+              format={DATE_PICKER_DISPLAY_FORMAT}
+              slotProps={{ textField: { size: 'small', fullWidth: true } }}
+            />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 130 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 0.75, fontWeight: 600 }}>截止时间</Typography>
+            <TextField
+              fullWidth
+              size="small"
+              type="time"
+              value={dueTime}
+              onChange={(e) => setDueTime(e.target.value)}
+              disabled={!dueDate}
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
           </Box>
         </Box>
         {/* Tags */}

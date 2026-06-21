@@ -72,6 +72,7 @@ export interface TodoOut {
   note: string | null;
   priority: number; // 1=high, 2=medium, 3=low
   due_date: string | null;
+  due_time: string | null;
   is_completed: boolean;
   completed_at: string | null;
   sort_order: number;
@@ -91,6 +92,7 @@ export interface TodoCreate {
   note?: string | null;
   priority?: number;
   due_date?: string | null;
+  due_time?: string | null;
   sort_order?: number;
   tag_ids?: number[];
   recurrence_rules?: string[];
@@ -105,6 +107,7 @@ export interface TodoUpdate {
   note?: string | null;
   priority?: number;
   due_date?: string | null;
+  due_time?: string | null;
   is_completed?: boolean;
   sort_order?: number;
   tag_ids?: number[];

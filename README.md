@@ -102,6 +102,14 @@ cp .env.example .env
 
 ### 本地开发
 
+Windows 本地开发可在项目根目录一键启动前后端:
+
+```bat
+start-local-dev.bat
+```
+
+脚本会检查 `uv` 和 `npm`,分别打开 `Tool Web Backend` 和 `Tool Web Frontend` 两个命令行窗口. 后端会先执行 `uv sync`,再启动 FastAPI `http://localhost:8004`; 前端会在缺少 `node_modules` 时执行 `npm install`,再启动 Next.js dev server `http://localhost:3000`. 如需仅检查目录和命令依赖,可执行 `start-local-dev.bat --check`.
+
 启动后端:
 
 ```bash

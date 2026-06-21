@@ -15,6 +15,7 @@ from sqlalchemy.orm import sessionmaker
 
 from .auth.adapters.stores import AuthStore
 from .auth.core.password import PasswordHasher
+from .models.calendar import CalendarEvent as CalendarEventModel  # noqa: F401
 from .models.finance import (  # noqa: F401
     Account,
     Attachment,

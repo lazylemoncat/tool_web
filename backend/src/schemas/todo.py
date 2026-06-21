@@ -2,7 +2,7 @@
 Pydantic schemas: 请求/响应数据验证.
 """
 
-from datetime import date, datetime
+from datetime import date, datetime, time
 from enum import StrEnum
 
 from dateutil.rrule import rrulestr
@@ -87,13 +87,14 @@ class TodoCreate(BaseModel):
     note: str | None = Field(None, max_length=10000)
     priority: int = Field(default=2, ge=1, le=3)
     due_date: date | None = None
+    due_time: time | None = None
     sort_order: int = 0
     tag_ids: list[int] = []
     recurrence_rules: list[str] = []
 
-    @field_validator("due_date", mode="before")
+    @field_validator("due_date", "due_time", mode="before")
     @classmethod
-    def empty_due_date_to_none(cls, v):
+    def empty_due_value_to_none(cls, v):
         return None if v == "" else v
 
     @field_validator("recurrence_rules")
@@ -116,14 +117,15 @@ class TodoUpdate(BaseModel):
     note: str | None = None
     priority: int | None = Field(None, ge=1, le=3)
     due_date: date | None = None
+    due_time: time | None = None
     is_completed: bool | None = None
     sort_order: int | None = None
     tag_ids: list[int] | None = None
     recurrence_rules: list[str] | None = None
 
-    @field_validator("due_date", mode="before")
+    @field_validator("due_date", "due_time", mode="before")
     @classmethod
-    def empty_due_date_to_none(cls, v):
+    def empty_due_value_to_none(cls, v):
         return None if v == "" else v
 
     @field_validator("recurrence_rules")
@@ -160,6 +162,7 @@ class TodoOut(BaseModel):
     note: str | None = None
     priority: int
     due_date: date | None = None
+    due_time: time | None = None
     is_completed: bool
     completed_at: datetime | None = None
     sort_order: int

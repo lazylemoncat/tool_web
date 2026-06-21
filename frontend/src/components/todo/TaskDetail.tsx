@@ -16,6 +16,12 @@ interface TaskDetailProps {
 
 type TaskDropPosition = 'before' | 'after';
 
+function formatTodoDue(task: TodoOut): string {
+  if (!task.due_date) return '未设置';
+  const dueTime = task.due_time ? task.due_time.slice(0, 5) : '';
+  return dueTime ? `${task.due_date} ${dueTime}` : task.due_date;
+}
+
 function moveTaskId(ids: number[], draggedId: number, targetId: number, position: TaskDropPosition): number[] {
   const withoutDragged = ids.filter((id) => id !== draggedId);
   const targetIndex = withoutDragged.indexOf(targetId);
@@ -30,6 +36,7 @@ export default function TaskDetail({ task, folders, onEdit, onDelete, onReorderT
   const [draggingChildId, setDraggingChildId] = useState<number | null>(null);
   const [dragOverChild, setDragOverChild] = useState<{ id: number; position: TaskDropPosition } | null>(null);
   const folderName = folders?.find((f) => f.id === task.folder_id)?.name || (task.folder_id ? '未命名' : '无');
+  const dueAt = formatTodoDue(task);
   const createdAt = task.created_at ? dayjs(task.created_at).format('YYYY-MM-DD HH:mm') : '-';
   const updatedAt = task.updated_at ? dayjs(task.updated_at).format('YYYY-MM-DD HH:mm') : '-';
 
@@ -79,6 +86,10 @@ export default function TaskDetail({ task, folders, onEdit, onDelete, onReorderT
         <Box sx={{ minWidth: 140 }}>
           <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>所属文件夹</Typography>
           <Typography variant="body2">{folderName}</Typography>
+        </Box>
+        <Box sx={{ minWidth: 140 }}>
+          <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>截止时间</Typography>
+          <Typography variant="body2">{dueAt}</Typography>
         </Box>
       </Box>
 

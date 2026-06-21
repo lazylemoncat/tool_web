@@ -1,5 +1,41 @@
 # changelog
 
+## 2026-06-21
+
+### chore
+
+-   新增 Windows 本地开发一键启动脚本 `start-local-dev.bat`,可分别打开后端 FastAPI 和前端 Next.js dev server 命令行窗口,并支持 `--check` 进行启动前依赖检查.影响范围:本地开发启动流程.关联文件: `start-local-dev.bat`, `README.md`.
+
+### docs
+
+-   更新本地开发说明,记录 Windows 一键启动脚本的入口,前后端端口和依赖检查行为.影响范围:开发文档.关联文件: `README.md`, `changelog.md`.
+
+## 2026-06-18
+
+### feat
+
+-   任务模块新增可选截止时间字段 `due_time`,前端任务弹窗支持在截止日期外选择时间,后端持久化后在日历中按全天/非全天事件同步展示.
+-   记账模块交易表单新增发生日期和发生时间选择,交易列表筛选新增开始/结束日期 DatePicker,记账事件新增开始/结束时间选择并随日历来源展示.
+
+### fix
+
+-   修复日历模块深色主题下日期数字使用硬编码深色导致可读性过低的问题,改为复用 MUI 主题文本 token;同时移除月视图和周视图中周末日期的额外淡化显示.关联文件: `frontend/src/components/calendar/CalendarPage.tsx`, `docs/calendar.md`.
+
+## 2026-06-17
+
+### feat
+
+-   日历模块移除前端 mock 数据,新增 `/api/v1/calendar/*` 后端 API 和 `calendar_events` 持久化表,手动日历事件支持按用户隔离创建,编辑,删除和刷新后保留.
+-   日历事件列表改为聚合真实 Todo 到期日,Finance 收支交易和 Finance 记账事件,并保留这些来源在日历中的只读展示边界.
+
+### fix
+
+-   删除日历页面中的硬编码节假日和伪农历标签,节假日仅在后端提供真实事件时展示.
+
+### docs
+
+-   更新 `docs/calendar.md` 和 `docs/api.md`,记录日历真实数据来源,持久化模型,API 端点和只读来源规则.
+
 ## 2026-06-14
 
 ### feat

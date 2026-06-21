@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -24,6 +24,7 @@ import CalendarEventDialog, { type CalendarEventFormData } from './CalendarEvent
 import {
   createEvent,
   deleteEvent,
+  filterEventsForRange,
   getDefaultFilter,
   getEventsForRange,
   getSources,
@@ -40,7 +41,7 @@ import {
   getWeekDays,
   todayStr,
 } from './dateUtils';
-import type { CalendarEvent, CalendarFilterState, CalendarSource, CalendarView } from './calendarTypes';
+import type { CalendarEvent, CalendarFilterState, CalendarSource, CalendarSubscription, CalendarView } from './calendarTypes';
 
 dayjs.locale(dayjsZhCn);
 
@@ -70,6 +71,7 @@ const surfaceTokens = {
   primary: 'var(--mui-palette-primary-main)',
   primaryContainer: 'var(--mui-palette-action-selected)',
   onPrimaryContainer: 'var(--mui-palette-primary-main)',
+  text: 'var(--mui-palette-text-primary)',
   muted: 'var(--mui-palette-text-secondary)',
   dim: 'var(--mui-palette-text-disabled)',
 };
@@ -78,8 +80,11 @@ export default function CalendarPage() {
   const [view, setView] = useState<CalendarView>('month');
   const [selectedDate, setSelectedDate] = useState(todayStr());
   const [filter, setFilter] = useState<CalendarFilterState>(getDefaultFilter);
-  const [sources, setSources] = useState<CalendarSource[]>(getSources);
-  const [, setEventsVersion] = useState(0);
+  const [sources, setSources] = useState<CalendarSource[]>([]);
+  const [subscriptions, setSubscriptions] = useState<CalendarSubscription[]>([]);
+  const [rawEvents, setRawEvents] = useState<CalendarEvent[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -99,9 +104,49 @@ export default function CalendarPage() {
     }
     return getRangeForView(view, selectedDate);
   }, [monthSections, selectedDate, view]);
-  const events = getEventsForRange(range.start, range.end, filter);
-  const selectedEvents = getEventsForRange(selectedDate, selectedDate, filter);
-  const subscriptions = getSubscriptions();
+  const events = useMemo(
+    () => filterEventsForRange(rawEvents, range.start, range.end, filter, sources),
+    [filter, range.end, range.start, rawEvents, sources],
+  );
+  const selectedEvents = useMemo(
+    () => filterEventsForRange(rawEvents, selectedDate, selectedDate, filter, sources),
+    [filter, rawEvents, selectedDate, sources],
+  );
+
+  const loadEvents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      setRawEvents(await getEventsForRange(range.start, range.end));
+    } catch (loadError) {
+      setError(getErrorMessage(loadError, '日历数据加载失败'));
+    } finally {
+      setLoading(false);
+    }
+  }, [range.end, range.start]);
+
+  useEffect(() => {
+    void loadEvents();
+  }, [loadEvents]);
+
+  useEffect(() => {
+    let ignore = false;
+    async function loadSources() {
+      try {
+        const [sourceData, subscriptionData] = await Promise.all([getSources(), getSubscriptions()]);
+        if (!ignore) {
+          setSources(sourceData);
+          setSubscriptions(subscriptionData);
+        }
+      } catch (loadError) {
+        if (!ignore) setError(getErrorMessage(loadError, '日历来源加载失败'));
+      }
+    }
+    void loadSources();
+    return () => {
+      ignore = true;
+    };
+  }, []);
 
   const move = (direction: -1 | 1) => {
     const unit = view === 'month' || view === 'agenda' ? 'month' : view === 'week' ? 'week' : 'day';
@@ -124,8 +169,8 @@ export default function CalendarPage() {
     setEventDialogOpen(true);
   };
 
-  const handleSaveEvent = (data: CalendarEventFormData) => {
-    const startAt = data.allDay ? data.date : dayjs(`${data.date}T${data.time || '09:00'}`).toISOString();
+  const handleSaveEvent = async (data: CalendarEventFormData) => {
+    const startAt = data.allDay ? `${data.date}T00:00:00` : `${data.date}T${data.time || '09:00'}:00`;
     const payload = {
       title: data.title,
       startAt,
@@ -136,30 +181,42 @@ export default function CalendarPage() {
       description: data.description || undefined,
       location: data.location || undefined,
     };
-    if (data.id) updateEvent({ id: data.id, ...payload });
-    else createEvent(payload);
-    setEventsVersion((value) => value + 1);
-    setEventDialogOpen(false);
+    try {
+      if (data.id) await updateEvent({ id: data.id, ...payload });
+      else await createEvent(payload);
+      await loadEvents();
+      setEventDialogOpen(false);
+    } catch (saveError) {
+      setError(getErrorMessage(saveError, '日历事件保存失败'));
+    }
   };
 
-  const handleDeleteEvent = (eventId: string) => {
-    deleteEvent(eventId);
-    setEventsVersion((value) => value + 1);
-    setEventDialogOpen(false);
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await deleteEvent(eventId);
+      await loadEvents();
+      setEventDialogOpen(false);
+    } catch (deleteError) {
+      setError(getErrorMessage(deleteError, '日历事件删除失败'));
+    }
   };
 
   const handleToggleSource = (sourceId: string) => {
-    toggleSourceVisibility(sourceId);
-    setSources(getSources());
+    setSources((current) => toggleSourceVisibility(current, sourceId));
   };
 
-  const handleSync = (subscriptionId: string) => {
-    syncSubscription(subscriptionId);
-    setEventsVersion((value) => value + 1);
+  const handleSync = async (subscriptionId: string) => {
+    try {
+      await syncSubscription(subscriptionId);
+      setSubscriptions(await getSubscriptions());
+      await loadEvents();
+    } catch (syncError) {
+      setError(getErrorMessage(syncError, '订阅同步失败'));
+    }
   };
 
   return (
-    <Box sx={{ minHeight: 'calc(100vh - 64px)', bgcolor: surfaceTokens.background, color: '#1A1A2E' }}>
+    <Box sx={{ minHeight: 'calc(100vh - 64px)', bgcolor: surfaceTokens.background, color: surfaceTokens.text }}>
       <Box sx={{ maxWidth: 1240, mx: 'auto', px: { xs: 1.5, sm: 2, md: 4.5 }, pb: 14 }}>
         <CalendarToolbar
           view={view}
@@ -174,6 +231,19 @@ export default function CalendarPage() {
           onCreate={() => openCreateDialog()}
         />
 
+        {loading && (
+          <CalendarSurface sx={{ mb: 2, px: 2.5, py: 1.5 }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: surfaceTokens.muted }}>正在加载日历数据</Typography>
+          </CalendarSurface>
+        )}
+
+        {error && (
+          <CalendarSurface sx={{ mb: 2, px: 2.5, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1.5, flexWrap: 'wrap' }}>
+            <Typography sx={{ fontSize: '0.8125rem', color: '#DC2626', fontWeight: 700 }}>{error}</Typography>
+            <Button onClick={() => void loadEvents()} sx={outlinePillSx}>重试</Button>
+          </CalendarSurface>
+        )}
+
         {view === 'month' && (
           <Box>
             {monthSections.map((month) => (
@@ -182,10 +252,12 @@ export default function CalendarPage() {
                 year={month.year()}
                 month={month.month()}
                 selectedDate={selectedDate}
-                events={getEventsForRange(
+                events={filterEventsForRange(
+                  rawEvents,
                   month.startOf('month').format('YYYY-MM-DD'),
                   month.endOf('month').format('YYYY-MM-DD'),
                   filter,
+                  sources,
                 )}
                 onSelectDate={openDateDetail}
                 onCreate={openCreateDialog}
@@ -417,7 +489,7 @@ function MonthSection({
 
       <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', mb: 0.25 }}>
         {WEEKDAY_LABELS.map((label, index) => (
-          <Typography key={label} sx={{ py: 1, textAlign: 'center', fontSize: '0.6875rem', fontWeight: 800, color: index >= 5 ? surfaceTokens.dim : surfaceTokens.muted, letterSpacing: '0.06em' }}>
+          <Typography key={label} sx={{ py: 1, textAlign: 'center', fontSize: '0.6875rem', fontWeight: 800, color: surfaceTokens.muted, letterSpacing: '0.06em' }}>
             {label}
           </Typography>
         ))}
@@ -455,7 +527,7 @@ function MonthSection({
                     alignItems: 'center',
                     justifyContent: 'center',
                     mb: 0.125,
-                    color: day.isToday ? '#fff' : day.isWeekend ? surfaceTokens.dim : '#1A1A2E',
+                    color: day.isToday ? '#fff' : surfaceTokens.text,
                     bgcolor: day.isToday ? surfaceTokens.primary : 'transparent',
                     fontSize: day.isToday ? '1.5rem' : '1.375rem',
                     fontWeight: day.isToday ? 800 : 700,
@@ -466,10 +538,7 @@ function MonthSection({
                 </Box>
                 {day.isCurrentMonth && (
                   <>
-                    <Typography sx={{ px: 0.25, mb: 0.25, maxWidth: 54, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.625rem', color: surfaceTokens.dim, lineHeight: 1.2 }}>
-                      {getLunarLabel(day.date)}
-                    </Typography>
-                    <HolidayLabel date={day.date} events={dayEvents} />
+                    <HolidayLabel events={dayEvents} />
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: '3px', mt: 0.25, minHeight: 4 }}>
                       {dayEvents.slice(0, 2).map((event) => (
                         <Box key={event.id} sx={{ height: 4, borderRadius: '2px', maxWidth: 'calc(100% - 8px)', bgcolor: event.color }} />
@@ -491,10 +560,9 @@ function MonthSection({
   );
 }
 
-function HolidayLabel({ date, events }: { date: string; events: CalendarEvent[] }) {
+function HolidayLabel({ events }: { events: CalendarEvent[] }) {
   const holiday = events.find((event) => event.sourceType === 'holiday');
-  const festival = date === '2026-06-19' ? '端午节' : date === '2026-10-04' ? '中秋节' : undefined;
-  const label = holiday?.title || festival;
+  const label = holiday?.title;
   if (!label) return null;
   return (
     <Typography sx={{ px: 0.25, maxWidth: 64, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.625rem', color: '#EF4444', fontWeight: 800, lineHeight: 1.2 }}>
@@ -566,7 +634,7 @@ function WeekView({
                   '&:hover': { bgcolor: selected ? surfaceTokens.primaryContainer : surfaceTokens.surfaceLow },
                 }}
               >
-                <Typography sx={{ mb: 0.25, fontSize: '0.625rem', fontWeight: 800, color: index >= 5 ? surfaceTokens.dim : surfaceTokens.dim, letterSpacing: '0.05em' }}>
+                <Typography sx={{ mb: 0.25, fontSize: '0.625rem', fontWeight: 800, color: surfaceTokens.dim, letterSpacing: '0.05em' }}>
                   {WEEKDAY_LABELS[index]}
                 </Typography>
                 <Box
@@ -578,16 +646,13 @@ function WeekView({
                     placeItems: 'center',
                     fontSize: day.isToday ? '1.25rem' : '1.125rem',
                     fontWeight: day.isToday ? 800 : 700,
-                    color: day.isToday ? '#fff' : index >= 5 ? surfaceTokens.dim : '#1A1A2E',
+                    color: day.isToday ? '#fff' : surfaceTokens.text,
                     bgcolor: day.isToday ? surfaceTokens.primary : 'transparent',
                   }}
                 >
                   {day.day}
                 </Box>
-                <Typography sx={{ maxWidth: 52, mb: 0.125, fontSize: '0.5625rem', color: surfaceTokens.dim, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {getLunarLabel(day.date)}
-                </Typography>
-                <HolidayLabel date={day.date} events={dayEvents} />
+                <HolidayLabel events={dayEvents} />
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px', width: '100%', mt: 0.25, minHeight: 3 }}>
                   {dayEvents.slice(0, 3).map((event) => (
                     <Box key={event.id} sx={{ width: 28, maxWidth: 'calc(100% - 12px)', height: 3, borderRadius: 2, bgcolor: event.color }} />
@@ -614,7 +679,7 @@ function WeekStatsCard({ stats }: { stats: WeekStats }) {
     { label: `任务 (${stats.todoPending} 待完成)`, value: stats.todo, color: '#3B82F6', bg: 'rgba(59,130,246,0.10)', icon: '✓' },
     { label: `收入 (${stats.incomeCount} 笔)`, value: `+¥${stats.income.toLocaleString()}`, color: '#10B981', bg: 'rgba(16,185,129,0.10)', icon: '入' },
     { label: `支出 (${stats.expenseCount} 笔)`, value: `-¥${stats.expense.toLocaleString()}`, color: '#EF4444', bg: 'rgba(239,68,68,0.10)', icon: '出' },
-    { label: '账单', value: stats.bill, color: '#F59E0B', bg: 'rgba(245,158,11,0.10)', icon: '账' },
+    { label: '记账事件', value: stats.bill, color: '#F59E0B', bg: 'rgba(245,158,11,0.10)', icon: '账' },
     { label: '节假日', value: stats.holiday, color: '#EF4444', bg: 'rgba(239,68,68,0.10)', icon: '休' },
   ];
 
@@ -675,7 +740,7 @@ function SelectedDayCard({
             {selected.month() + 1}月{selected.date()}日{selectedDate === todayStr() ? ' · 今天' : ''}
           </Typography>
           <Typography sx={{ mt: 0.25, fontSize: '0.75rem', color: surfaceTokens.muted }}>
-            {selected.format('dddd')} · 农历{getLunarLabel(selectedDate)}{holiday ? ` · ${holiday.title}` : ''}
+            {selected.format('dddd')}{holiday ? ` · ${holiday.title}` : ''}
           </Typography>
           <Box sx={{ display: 'flex', gap: 0.75, mt: 0.75 }}>
             {selectedDate === todayStr() && <Badge label="今天" tone="today" />}
@@ -782,7 +847,7 @@ function getWeekStats(events: CalendarEvent[]): WeekStats {
         stats.expense += event.amount ?? 0;
         stats.expenseCount += 1;
       }
-      if (event.sourceType === 'bill') stats.bill += 1;
+      if (event.sourceType === 'finance_event' || event.sourceType === 'bill') stats.bill += 1;
       if (event.sourceType === 'holiday') stats.holiday += 1;
       return stats;
     },
@@ -822,7 +887,7 @@ function DetailDrawer({
           <Typography sx={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em', lineHeight: 1.1 }}>
             {selected.month() + 1}月{selected.date()}日
           </Typography>
-          <Typography sx={{ mt: 0.25, fontSize: '0.8125rem', color: surfaceTokens.muted }}>{selected.format('dddd')} · 农历{getLunarLabel(selectedDate)}</Typography>
+          <Typography sx={{ mt: 0.25, fontSize: '0.8125rem', color: surfaceTokens.muted }}>{selected.format('dddd')}</Typography>
         </Box>
         <IconButton onClick={onClose} sx={drawerCloseSx}>
           <CloseIcon fontSize="small" />
@@ -869,7 +934,7 @@ function FilterDrawer({
   open: boolean;
   filter: CalendarFilterState;
   sources: CalendarSource[];
-  subscriptions: ReturnType<typeof getSubscriptions>;
+  subscriptions: CalendarSubscription[];
   events: CalendarEvent[];
   onClose: () => void;
   onToggleFilter: (key: keyof CalendarFilterState) => void;
@@ -1114,26 +1179,21 @@ function getSourceLabel(event: CalendarEvent): string {
   if (event.sourceType === 'todo') return '任务';
   if (event.sourceType === 'finance_income') return '收入';
   if (event.sourceType === 'finance_expense') return '支出';
+  if (event.sourceType === 'finance_event') return '记账事件';
   if (event.sourceType === 'bill') return '账单';
   if (event.sourceType === 'holiday') return '节假日';
   return '订阅';
 }
 
-function getLunarLabel(date: string): string {
-  const fixed: Record<string, string> = {
-    '2026-06-19': '初五',
-    '2026-06-20': '初六',
-    '2026-10-04': '十四',
-  };
-  if (fixed[date]) return fixed[date];
-  const labels = ['初一', '初二', '初三', '初四', '初五', '初六', '初七', '初八', '初九', '初十', '十一', '十二', '十三', '十四', '十五', '十六', '十七', '十八', '十九', '二十', '廿一', '廿二', '廿三', '廿四', '廿五', '廿六', '廿七', '廿八', '廿九', '三十'];
-  return labels[(dayjs(date).date() + 18) % labels.length];
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) return error.message;
+  return fallback;
 }
 
 function matchesFilterKey(event: CalendarEvent, key: keyof CalendarFilterState): boolean {
   if (key === 'showManual') return event.sourceType === 'manual';
   if (key === 'showTodo') return event.sourceType === 'todo';
-  if (key === 'showFinance') return event.sourceType === 'finance_income' || event.sourceType === 'finance_expense' || event.sourceType === 'bill';
+  if (key === 'showFinance') return event.sourceType === 'finance_income' || event.sourceType === 'finance_expense' || event.sourceType === 'finance_event' || event.sourceType === 'bill';
   if (key === 'showHoliday') return event.sourceType === 'holiday';
   if (key === 'showSubscription') return event.sourceType === 'subscription';
   return false;
@@ -1165,7 +1225,7 @@ const smallCircleButtonSx = {
   border: `1px solid ${surfaceTokens.outline}`,
   bgcolor: 'transparent',
   color: surfaceTokens.muted,
-  '&:hover': { bgcolor: surfaceTokens.surfaceHover, color: '#1A1A2E' },
+  '&:hover': { bgcolor: surfaceTokens.surfaceHover, color: surfaceTokens.text },
 };
 
 const outlinePillSx = {
@@ -1228,7 +1288,7 @@ const drawerCloseSx = {
   height: 34,
   borderRadius: '50%',
   color: surfaceTokens.muted,
-  '&:hover': { bgcolor: surfaceTokens.surfaceHover, color: '#1A1A2E' },
+  '&:hover': { bgcolor: surfaceTokens.surfaceHover, color: surfaceTokens.text },
 };
 
 const drawerSectionTitleSx = {

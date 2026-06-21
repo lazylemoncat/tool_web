@@ -14,6 +14,30 @@ def test_create_todo(client, auth_headers):
     assert body["children"] == []
 
 
+def test_create_and_update_todo_with_optional_due_time(client, auth_headers):
+    resp = client.post(
+        "/api/v1/todos",
+        json={
+            "title": "Timed Task",
+            "due_date": "2026-06-18",
+            "due_time": "14:30",
+        },
+        headers=auth_headers,
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["due_date"] == "2026-06-18"
+    assert body["due_time"] == "14:30:00"
+
+    updated = client.put(
+        f"/api/v1/todos/{body['id']}",
+        json={"due_time": "16:45"},
+        headers=auth_headers,
+    )
+    assert updated.status_code == 200
+    assert updated.json()["due_time"] == "16:45:00"
+
+
 def test_create_kanban_todo_returns_column_fields(client, auth_headers):
     folder_resp = client.post(
         "/api/v1/folders",

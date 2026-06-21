@@ -1,7 +1,11 @@
 'use client';
 
 import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
+import { DATE_PICKER_DISPLAY_FORMAT } from '@/lib/dateFormats';
 import type { AccountOut, CategoryOut, FinanceTagOut } from '@/lib/financeTypes';
 
 interface FilterBarProps {
@@ -18,6 +22,10 @@ interface FilterBarProps {
   tags: FinanceTagOut[];
   tagFilter: string;
   onTagFilterChange: (v: string) => void;
+  startDate: string;
+  onStartDateChange: (v: string) => void;
+  endDate: string;
+  onEndDateChange: (v: string) => void;
 }
 
 const TYPE_OPTIONS = ['全部', '支出', '收入', '转账'];
@@ -44,6 +52,7 @@ export default function FilterBar({
   accounts, accountFilter, onAccountFilterChange,
   categories, categoryFilter, onCategoryFilterChange,
   tags, tagFilter, onTagFilterChange,
+  startDate, onStartDateChange, endDate, onEndDateChange,
 }: FilterBarProps) {
   return (
     <Box sx={{ bgcolor: 'background.paper', borderRadius: 3, px: 2, py: 1.75, display: 'flex', alignItems: 'center', gap: 1.25, flexWrap: { xs: 'wrap', lg: 'nowrap' }, boxShadow: '0 1px 3px rgba(0,0,0,0.04)', border: '1px solid', borderColor: 'divider' }}>
@@ -65,6 +74,36 @@ export default function FilterBar({
           );
         })}
       </Box>
+
+      <DatePicker
+        label="开始日期"
+        value={startDate ? dayjs(startDate) : null}
+        onChange={(date) => onStartDateChange(date ? date.format('YYYY-MM-DD') : '')}
+        format={DATE_PICKER_DISPLAY_FORMAT}
+        slotProps={{ textField: { size: 'small', sx: { width: 136, flexShrink: 0 } } }}
+      />
+
+      <DatePicker
+        label="结束日期"
+        value={endDate ? dayjs(endDate) : null}
+        onChange={(date) => onEndDateChange(date ? date.format('YYYY-MM-DD') : '')}
+        format={DATE_PICKER_DISPLAY_FORMAT}
+        slotProps={{ textField: { size: 'small', sx: { width: 136, flexShrink: 0 } } }}
+      />
+
+      {(startDate || endDate) && (
+        <Button
+          size="small"
+          variant="text"
+          onClick={() => {
+            onStartDateChange('');
+            onEndDateChange('');
+          }}
+          sx={{ flexShrink: 0, minWidth: 0, px: 1, fontSize: '0.6875rem', color: 'text.secondary' }}
+        >
+          清除日期
+        </Button>
+      )}
 
       {/* Account filter */}
       <Box component="select" value={accountFilter} onChange={(e) => onAccountFilterChange(e.target.value)}

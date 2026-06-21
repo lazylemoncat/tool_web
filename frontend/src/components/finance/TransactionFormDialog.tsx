@@ -18,8 +18,11 @@ import InputLabel from '@mui/material/InputLabel';
 import ListItemText from '@mui/material/ListItemText';
 import Select from '@mui/material/Select';
 import type { SelectChangeEvent } from '@mui/material/Select';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import dayjs from 'dayjs';
 import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import * as api from '@/lib/api';
+import { DATE_PICKER_DISPLAY_FORMAT } from '@/lib/dateFormats';
 import type { AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut, TransactionOut, AttachmentOut } from '@/lib/financeTypes';
 
 interface TransactionFormDialogProps {
@@ -48,12 +51,28 @@ function getAttachmentName(attachment: AttachmentOut): string {
   return parts[parts.length - 1] || `附件 ${attachment.id}`;
 }
 
+function toDateValue(value?: string | null): string {
+  const parsed = value ? dayjs(value) : dayjs();
+  return parsed.isValid() ? parsed.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD');
+}
+
+function toTimeValue(value?: string | null): string {
+  const parsed = value ? dayjs(value) : dayjs();
+  return parsed.isValid() ? parsed.format('HH:mm') : dayjs().format('HH:mm');
+}
+
+function buildDateTime(dateValue: string, timeValue: string): string {
+  return `${dateValue}T${timeValue || '00:00'}:00`;
+}
+
 export default function TransactionFormDialog({
   open, onClose, onSaved, accounts, categories, tags, events, activeLedgerId, editTx,
 }: TransactionFormDialogProps) {
   const isEdit = !!editTx;
   const [formType, setFormType] = useState<'expense' | 'income' | 'transfer'>('expense');
   const [amount, setAmount] = useState('');
+  const [occurredDate, setOccurredDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [occurredTime, setOccurredTime] = useState(dayjs().format('HH:mm'));
   const [note, setNote] = useState('');
   const [accountId, setAccountId] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState<number | ''>('');
@@ -71,6 +90,8 @@ export default function TransactionFormDialog({
     if (editTx) {
       setFormType(editTx.type as 'expense' | 'income' | 'transfer');
       setAmount(Number(editTx.amount).toString());
+      setOccurredDate(toDateValue(editTx.occurred_at));
+      setOccurredTime(toTimeValue(editTx.occurred_at));
       setNote(editTx.note || '');
       setAccountId(editTx.account_id);
       setCategoryId(editTx.category_id || '');
@@ -80,6 +101,8 @@ export default function TransactionFormDialog({
       setOriginalAttachmentIds(editTx.attachments?.map((attachment) => attachment.id) || []);
     } else {
       setFormType('expense'); setAmount(''); setNote('');
+      setOccurredDate(dayjs().format('YYYY-MM-DD'));
+      setOccurredTime(dayjs().format('HH:mm'));
       setAccountId(accounts[0]?.id || ''); setOriginalAttachmentIds([]);
       setCategoryId(''); setTagIds([]); setEventId(''); setAttachments([]);
     }
@@ -94,6 +117,7 @@ export default function TransactionFormDialog({
 
   const handleSave = async () => {
     if (!amount || !accountId || !activeLedgerId) return;
+    if (!occurredDate) { setError('请选择发生日期'); return; }
     setSaving(true);
     setError('');
     try {
@@ -102,6 +126,7 @@ export default function TransactionFormDialog({
         account_id: Number(accountId),
         type: formType,
         amount,
+        occurred_at: buildDateTime(occurredDate, occurredTime),
         note: note || null,
         category_id: categoryId ? Number(categoryId) : null,
         tag_ids: tagIds,
@@ -184,6 +209,25 @@ export default function TransactionFormDialog({
               ¥{n}
             </Typography>
           ))}
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1.5, mb: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
+          <DatePicker
+            label="发生日期"
+            value={occurredDate ? dayjs(occurredDate) : null}
+            onChange={(date) => setOccurredDate(date ? date.format('YYYY-MM-DD') : '')}
+            format={DATE_PICKER_DISPLAY_FORMAT}
+            slotProps={{ textField: { fullWidth: true, size: 'small' } }}
+          />
+          <TextField
+            fullWidth
+            size="small"
+            label="发生时间"
+            type="time"
+            value={occurredTime}
+            onChange={(event) => setOccurredTime(event.target.value)}
+            slotProps={{ inputLabel: { shrink: true } }}
+          />
         </Box>
 
         {/* Account + Category */}

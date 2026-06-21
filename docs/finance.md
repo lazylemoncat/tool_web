@@ -121,7 +121,7 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 
 - 按账户/分类/标签/事件/类型筛选 (可折叠筛选栏)
 - 标签筛选已在 `frontend/src/components/finance/Transactions/FilterBar.tsx` 中提供下拉选择, `frontend/src/components/finance/TransactionsTab.tsx` 按 `TransactionOut.tags[].id` 过滤交易, 并在关键词搜索中匹配标签名称.
-- 按日期范围查询
+- 按日期范围查询,筛选条使用 MUI X `DatePicker` 选择开始/结束日期并按 `occurred_at` 做闭区间过滤
 - 关键词搜索
 - 无限滚动加载 (每页 50 条, 滚动到底自动加载更多)
 - 支持与任务清单一致的拖拽排序, 顺序写入 `Transaction.sort_order`
@@ -152,7 +152,7 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 - 分类管理: 新建、重命名、删除和同级拖拽排序.
 - 标签管理: 新建、重命名、删除交易标签和拖拽排序.
 
-事件字段: 名称、描述、开始/结束时间、颜色.
+事件字段: 名称、描述、开始/结束日期、可选开始/结束时间、颜色. 填写时间后会随 `start_at/end_at` 同步到日历.
 
 ## 记账表单
 
@@ -166,7 +166,8 @@ Relation API 会校验 `from_type/from_id` 与 `to_type/to_id` 指向的资源�
 | 金额 | 支持快捷金额按钮 (10/20/50/100/200/500) |
 | 账户 | 从已创建账户中选择 |
 | 分类 | 树状分类选择, 旁有 "+" 内联创建分类 |
-| 日期 | 日期时间选择器, 默认当前时间 |
+| 发生日期 | MUI X `DatePicker`, 默认当天 |
+| 发生时间 | 可选时间选择, 默认当前时间, 保存后与发生日期组合为 `occurred_at` 并同步到日历 |
 | 标签 | 多选标签 chips, 创建或编辑交易时可关联多个已有标签 |
 | 备注 | 可选文本 |
 | 附件 | 多文件上传, 上传成功后用 `attachment_ids` 关联到交易 |

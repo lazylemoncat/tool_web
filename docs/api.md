@@ -5,6 +5,7 @@ Base URL: `/api/v1`
 ## Todo API 补充说明
 
 - `GET /api/v1/todos` 支持 `due_from` 和 `due_to` 查询参数,格式为 `YYYY-MM-DD`,按 `Todo.due_date` 做闭区间筛选. Todo 侧边栏的今日和即将到来视图使用这两个参数.
+- Todo 请求和响应支持 `due_time`,格式为 `HH:mm` 或 `HH:mm:ss`,可为空. 日历同步时,只有 `due_date` 的任务为全天事件,同时存在 `due_time` 的任务为带时间事件.
 - `POST /api/v1/folders/reorder` 接收 `{ "items": [{ "id": 1, "sort_order": 0 }] }`. 同一次请求中的文件夹必须属于同一个 `parent_id`,否则后端返回 `400`.
 
 前端通过 Next.js 代理访问 API: 浏览器请求 `/api/v1/*`, Next 根据 `API_PROXY_TARGET` 转发到 FastAPI. 本地默认后端地址为 `http://localhost:8004`, Docker Compose 内部地址为 `http://backend:8000`.
@@ -98,7 +99,8 @@ Query 参数:
   "title": "买猫粮",
   "note": "皇家猫粮",
   "priority": 1,
-  "due_date": "2026-05-20"
+  "due_date": "2026-05-20",
+  "due_time": "14:30"
 }
 ```
 
@@ -187,6 +189,65 @@ Query 参数:
 
 ---
 
+## Calendar 日历
+
+日历 API 聚合当前用户的手动日历事件,Todo 到期日,Finance 收支交易和 Finance 记账事件.只有 `source_id = "src-manual"` 的手动日历事件允许通过日历接口创建,更新和删除.
+
+### 获取日历事件
+`GET /api/v1/calendar/events?start=2026-06-01&end=2026-06-30`
+
+Query 参数:
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| start | date | 必填,闭区间开始日期,格式 `YYYY-MM-DD` |
+| end | date | 必填,闭区间结束日期,格式 `YYYY-MM-DD` |
+
+响应项主要字段:
+```json
+{
+  "id": "cal-1",
+  "title": "Project Review",
+  "start_at": "2026-06-17T09:30:00",
+  "end_at": null,
+  "all_day": false,
+  "source_id": "src-manual",
+  "source_type": "manual",
+  "readonly": false,
+  "linked_module": "calendar",
+  "linked_object_id": "1"
+}
+```
+
+聚合事件 ID 使用来源前缀区分,例如 `cal-1`, `todo-1`, `finance-tx-1`, `finance-event-1`.
+
+### 创建手动日历事件
+`POST /api/v1/calendar/events`
+```json
+{
+  "title": "Project Review",
+  "start_at": "2026-06-17T09:30:00",
+  "all_day": false,
+  "source_id": "src-manual",
+  "repeat_rule": "none",
+  "reminder": "15m",
+  "description": "Review persisted calendar event",
+  "location": "Meeting room"
+}
+```
+
+### 更新和删除手动日历事件
+- `PUT /api/v1/calendar/events/{id}`
+- `DELETE /api/v1/calendar/events/{id}`
+
+`id` 支持响应中的 `cal-{id}` 格式.任务,记账,节假日和订阅来源为只读,通过日历接口修改这些来源会返回 `400`.
+
+### 日历来源和订阅
+- `GET /api/v1/calendar/sources`: 返回来源配置,包括手动日历,任务,收入,支出,记账事件,节假日和订阅日历.
+- `GET /api/v1/calendar/subscriptions`: 返回订阅列表,当前未接入外部订阅时为空数组.
+- `POST /api/v1/calendar/subscriptions/{id}/sync`: 同步订阅入口,当前未找到订阅时返回 `404`.
+
+---
+
 ## Finance 记账
 
 ### 账本 (Ledger)
@@ -228,7 +289,7 @@ Query 参数:
 ### 交易 (Transaction)
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/v1/finance/transactions?ledger_id=&skip=&limit=` | 交易列表 (支持筛选/分页) |
+| `GET` | `/api/v1/finance/transactions?ledger_id=&skip=&limit=&start_date=&end_date=` | 交易列表 (支持筛选/分页/日期范围) |
 | `GET` | `/api/v1/finance/transactions/{id}` | 交易详情 |
 | `POST` | `/api/v1/finance/transactions` | 创建交易 (含拆单/标签) |
 | `PUT` | `/api/v1/finance/transactions/{id}` | 更新交易 |

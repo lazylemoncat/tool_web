@@ -46,6 +46,7 @@ def _build_todo_out(t: Todo) -> TodoOut:
         note=t.note,
         priority=t.priority,
         due_date=t.due_date,
+        due_time=t.due_time,
         is_completed=t.is_completed,
         completed_at=t.completed_at,
         sort_order=t.sort_order,
@@ -341,6 +342,7 @@ def toggle_todo(
                 note=todo.note,
                 priority=todo.priority,
                 due_date=next_due,
+                due_time=todo.due_time,
                 sort_order=todo.sort_order,
             )
             # Detach from completed parent if parent is completed

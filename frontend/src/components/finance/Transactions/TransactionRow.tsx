@@ -8,6 +8,7 @@ import { alpha } from '@mui/material/styles';
 import { MarkerIcon } from '@/components/shared/MarkerPicker';
 import type { TransactionOut } from '@/lib/financeTypes';
 import SubTransaction from './SubTransaction';
+import dayjs from 'dayjs';
 
 interface TransactionRowProps {
   transaction: TransactionOut;
@@ -22,6 +23,7 @@ export default function TransactionRow({ transaction }: TransactionRowProps) {
   const amountColor = isIncome ? 'success.main' : 'error.main';
   const amountPrefix = isIncome ? '+' : '-';
   const iconColor: 'success' | 'error' | 'primary' = isIncome ? 'success' : isExpense ? 'error' : 'primary';
+  const occurredAt = transaction.occurred_at ? dayjs(transaction.occurred_at).format('MM-DD HH:mm') : '';
 
   // Determine sub-items: either split_items or children
   const subItems = transaction.split_items || [];
@@ -50,7 +52,7 @@ export default function TransactionRow({ transaction }: TransactionRowProps) {
           <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary', mt: 0.25 }}>{transaction.note || ''}</Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.375 }}>
             <Typography sx={{ fontSize: '0.625rem', color: 'text.secondary' }}>
-              {transaction.occurred_at?.slice(5) || ''} · {transaction.account?.name || ''}
+              {occurredAt} · {transaction.account?.name || ''}
             </Typography>
             {transaction.tags?.map((tag) => (
               <Typography key={tag.id} sx={{ fontSize: '0.5625rem', bgcolor: 'action.selected', color: 'primary.main', px: 0.875, py: 0.125, borderRadius: 1 }}>{tag.name}</Typography>

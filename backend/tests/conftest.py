@@ -12,6 +12,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import src.models.calendar  # noqa: F401  register calendar tables
 import src.models.finance  # noqa: F401  register finance tables with Base.metadata
 import src.models.kanban  # noqa: F401  register kanban tables
 import src.models.kanban_task  # noqa: F401  register kanban_task table

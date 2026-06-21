@@ -7,6 +7,7 @@ import Button from '@mui/material/Button';
 import Divider from '@mui/material/Divider';
 import FilterBar, { ALL_TAG_FILTER_VALUE } from './Transactions/FilterBar';
 import TransactionRow from './Transactions/TransactionRow';
+import dayjs from 'dayjs';
 import type { TransactionOut, AccountOut, CategoryOut, FinanceTagOut, FinanceEventOut } from '@/lib/financeTypes';
 
 interface TransactionsTabProps {
@@ -31,9 +32,14 @@ export default function TransactionsTab({
   const [accountFilter, setAccountFilter] = useState('全部账户');
   const [categoryFilter, setCategoryFilter] = useState('全部分类');
   const [tagFilter, setTagFilter] = useState(ALL_TAG_FILTER_VALUE);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   const filtered = useMemo(() => {
     return transactions.filter((tx) => {
+      const occurredAt = dayjs(tx.occurred_at);
+      if (startDate && occurredAt.isBefore(dayjs(startDate), 'day')) return false;
+      if (endDate && occurredAt.isAfter(dayjs(endDate), 'day')) return false;
       if (typeFilter === '支出' && tx.type !== 'expense') return false;
       if (typeFilter === '收入' && tx.type !== 'income') return false;
       if (typeFilter === '转账' && tx.type !== 'transfer') return false;
@@ -49,7 +55,7 @@ export default function TransactionsTab({
       }
       return true;
     });
-  }, [transactions, typeFilter, accountFilter, categoryFilter, tagFilter, searchQuery]);
+  }, [transactions, typeFilter, accountFilter, categoryFilter, tagFilter, searchQuery, startDate, endDate]);
 
   return (
     <Box sx={{ height: '100%', overflowY: 'auto', bgcolor: 'background.default', px: { xs: 2, sm: 3 }, py: 3 }}>
@@ -81,6 +87,10 @@ export default function TransactionsTab({
           tags={tags}
           tagFilter={tagFilter}
           onTagFilterChange={setTagFilter}
+          startDate={startDate}
+          onStartDateChange={setStartDate}
+          endDate={endDate}
+          onEndDateChange={setEndDate}
         />
       </Box>
 

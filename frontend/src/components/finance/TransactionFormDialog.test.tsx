@@ -1,6 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import * as api from '@/lib/api';
 import type {
   AccountOut,
@@ -43,17 +45,19 @@ function renderDialog(props?: {
   onSaved?: () => void;
 }) {
   return render(
-    <TransactionFormDialog
-      open
-      onClose={vi.fn()}
-      onSaved={props?.onSaved ?? vi.fn()}
-      accounts={[account]}
-      categories={[category]}
-      tags={[]}
-      events={[]}
-      activeLedgerId={1}
-      editTx={props?.editTx ?? null}
-    />,
+    <LocalizationProvider dateAdapter={AdapterDayjs}>
+      <TransactionFormDialog
+        open
+        onClose={vi.fn()}
+        onSaved={props?.onSaved ?? vi.fn()}
+        accounts={[account]}
+        categories={[category]}
+        tags={[]}
+        events={[]}
+        activeLedgerId={1}
+        editTx={props?.editTx ?? null}
+      />
+    </LocalizationProvider>,
   );
 }
 
@@ -68,6 +72,7 @@ describe('TransactionFormDialog', () => {
     vi.mocked(api.createTransaction).mockResolvedValueOnce({} as TransactionOut);
 
     renderDialog({ onSaved });
+    expect(await screen.findByLabelText('发生时间')).toBeInTheDocument();
     const amountInput = await screen.findByPlaceholderText('0.00');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '25.50');
@@ -81,6 +86,7 @@ describe('TransactionFormDialog', () => {
         account_id: 10,
         type: 'expense',
         amount: '25.50',
+        occurred_at: expect.any(String),
         note: null,
         category_id: null,
         tag_ids: [],
@@ -117,6 +123,7 @@ describe('TransactionFormDialog', () => {
     } as TransactionOut;
 
     renderDialog({ editTx, onSaved });
+    expect(await screen.findByLabelText('发生时间')).toBeInTheDocument();
     const amountInput = await screen.findByPlaceholderText('0.00');
     await userEvent.clear(amountInput);
     await userEvent.type(amountInput, '90');
@@ -130,6 +137,7 @@ describe('TransactionFormDialog', () => {
         account_id: 10,
         type: 'income',
         amount: '90',
+        occurred_at: '2026-06-01T00:00:00',
         note: 'Original',
         category_id: 20,
         tag_ids: [],
