@@ -44,6 +44,7 @@ import {
   listKanbanTasks, createKanbanTask, updateKanbanTask, deleteKanbanTask, moveKanbanTask,
 } from '@/lib/api/kanbanTask';
 import { resolveKanbanFields } from '@/components/todo/kanban/templateDefaults';
+import { getLatestSprintId } from '@/components/todo/kanban/sprintSelection';
 import { MARKER_COLORS, type MarkerValue } from '@/components/shared/MarkerPicker';
 
 type TodoQueryParams = NonNullable<Parameters<typeof listTodos>[0]>;
@@ -314,9 +315,10 @@ export default function TodoPage() {
     try {
       const sprintList = await listSprints(folderId);
       setSprints(sprintList);
-      if (sprintList.length > 0) {
-        setActiveSprintId(sprintList[0].id);
-      } else if (sprintList.length === 0) {
+      const latestSprintId = getLatestSprintId(sprintList);
+      if (latestSprintId !== null) {
+        setActiveSprintId(latestSprintId);
+      } else {
         setActiveSprintId(null);
         setKanbanColumns([]);
         setKanbanTasks([]);

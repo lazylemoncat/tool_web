@@ -47,6 +47,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 
 **工作模式**: 创建文件夹时可选择 Todo 列表或 Kanban 看板模式. `kanban` 模式文件夹由后端返回 `mode: "kanban"`, 前端会自动切换到看板视图, 侧边栏文件夹名称右侧显示看板图标.
 
+**Kanban 默认 Sprint**: 进入 Kanban 文件夹时,前端会在 `/api/v1/sprints` 返回的 Sprint 列表中选择 `sort_order` 最大的最新 Sprint;当 `sort_order` 相同时,使用 ID 最大的 Sprint 作为稳定回退.
+
 **Kanban 新建任务**: 在 Kanban 看板第一列点击新增按钮时, 前端打开专用 `KanbanTaskDialog`, 传递当前 `sprint_id` 与目标 `column_id`. 保存后调用 `POST /api/v1/kanban/tasks`, 并按当前 sprint 重新拉取 `kanban_tasks` 与列信息, 新任务会直接显示在第一列.
 
 **Kanban 任务流转**: 看板卡片来自独立 `kanban_tasks` 表. 确认按钮, 拖拽移动, Drawer 中切换列和删除操作分别调用 `/api/v1/kanban/tasks/{id}/move` 与 `/api/v1/kanban/tasks/{id}`, 不再复用普通 `/todos` 接口.
@@ -170,6 +172,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 - 创建时间和更新时间
 
 **关闭方式**: 点击关闭按钮、点击遮罩层或按 `Esc` 键.
+
+**主题适配**: 展开的任务详情面板使用 MUI `background.paper` token,在深色模式下跟随全局主题背景,避免出现固定浅色块.
 
 ### 10. 批量操作
 
@@ -648,6 +652,7 @@ Todo,folder,recurrence 和 tag ORM 模型位于 `backend/src/models/todo.py` 与
 - 文件夹和子文件夹创建都复用 `frontend/src/components/shared/MarkerPicker.tsx`. 文件夹 API payload 包含 `icon_type` (`color` 或 `emoji`) 和 `icon_value`; 侧边栏文件夹行通过 `MarkerIcon` 渲染标识.
 - Todo 任务拖拽排序由 `frontend/src/components/todo/TaskList.tsx` 和 `frontend/src/components/todo/TaskDetail.tsx` 处理. 根任务和展开的子任务只能在同一 `parent_id` 组内排序,页面通过 `POST /api/v1/todos/reorder` 持久化顺序.
 - Kanban 新建任务不再暴露 Sprint 选择器. 新卡片绑定当前 active Sprint 和触发创建的列.
+- 进入 Kanban 文件夹时默认打开排序最新的 Sprint,不再固定打开接口返回的第一个 Sprint.
 - `KanbanBoard` 使用更粗的水平滚动条,便于在宽看板上拖动.
 - 子文件夹创建现在暴露与根文件夹一致的 `todo` / `kanban` 模式选择,并将选中模式写入文件夹创建 payload.
 - `MarkerPicker` 使用固定高度网格菜单渲染 emoji 选项,不再使用长 select 下拉.

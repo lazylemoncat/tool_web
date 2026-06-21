@@ -8,6 +8,7 @@
 
 ### fix
 
+-   修复任务模块展开详情面板在深色模式下仍使用固定浅色背景的问题,改为复用 MUI `background.paper` theme token;进入 Kanban 文件夹时默认选择排序最新的 Sprint.影响范围:Todo 任务详情面板和 Kanban Sprint 初始选择.关联文件: `frontend/src/components/todo/TaskDetail.tsx`, `frontend/src/app/todo/page.tsx`, `frontend/src/components/todo/kanban/sprintSelection.ts`, `docs/todo.md`.
 -   修复 `start-local-dev.bat` 在 `frontend/node_modules` 已存在时被 Windows `cmd` 单行 `if not exist` 解析跳过前端 `npm run dev` 的问题,前端启动命令改为显式 `if exist ... else ...` 分支并使用 `npm.cmd`.影响范围:Windows 本地开发启动流程.关联文件: `start-local-dev.bat`, `README.md`, `changelog.md`.
 
 ### docs

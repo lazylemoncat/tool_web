@@ -73,7 +73,7 @@ export default function TaskDetail({ task, folders, onEdit, onDelete, onReorderT
   };
 
   return (
-    <Box sx={{ mt: 0.25, px: { xs: 2, sm: 8.5 }, py: 2.5, bgcolor: 'oklch(94% 0.005 275)', borderRadius: '0 0 12px 12px' }}>
+    <Box sx={{ mt: 0.25, px: { xs: 2, sm: 8.5 }, py: 2.5, bgcolor: 'background.paper', borderRadius: '0 0 12px 12px' }}>
       <Box sx={{ display: 'flex', gap: 5, flexWrap: 'wrap', mb: 2 }}>
         <Box sx={{ minWidth: 140 }}>
           <Typography component="label" sx={{ display: 'block', fontSize: '0.6875rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.secondary', mb: 0.5 }}>创建时间</Typography>
