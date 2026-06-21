@@ -29,9 +29,9 @@ if errorlevel 1 (
     exit /b 1
 )
 
-where npm >nul 2>nul
+where npm.cmd >nul 2>nul
 if errorlevel 1 (
-    echo ERROR: npm is required to start the frontend.
+    echo ERROR: npm.cmd is required to start the frontend.
     exit /b 1
 )
 
@@ -44,7 +44,7 @@ echo Starting Tool Web backend at http://localhost:8004 ...
 start "Tool Web Backend" /D "%BACKEND_DIR%" cmd /k "uv sync && uv run uvicorn src.main:app --host 0.0.0.0 --port 8004"
 
 echo Starting Tool Web frontend at http://localhost:3000 ...
-start "Tool Web Frontend" /D "%FRONTEND_DIR%" cmd /k "if not exist node_modules (call npm install || exit /b 1) & set API_PROXY_TARGET=http://localhost:8004&& call npm run dev"
+start "Tool Web Frontend" /D "%FRONTEND_DIR%" cmd /k "set API_PROXY_TARGET=http://localhost:8004&& if exist node_modules (call npm.cmd run dev) else (call npm.cmd install && call npm.cmd run dev)"
 
 echo.
 echo Tool Web local dev startup commands were launched.

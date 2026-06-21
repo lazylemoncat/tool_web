@@ -6,6 +6,10 @@
 
 -   新增 Windows 本地开发一键启动脚本 `start-local-dev.bat`,可分别打开后端 FastAPI 和前端 Next.js dev server 命令行窗口,并支持 `--check` 进行启动前依赖检查.影响范围:本地开发启动流程.关联文件: `start-local-dev.bat`, `README.md`.
 
+### fix
+
+-   修复 `start-local-dev.bat` 在 `frontend/node_modules` 已存在时被 Windows `cmd` 单行 `if not exist` 解析跳过前端 `npm run dev` 的问题,前端启动命令改为显式 `if exist ... else ...` 分支并使用 `npm.cmd`.影响范围:Windows 本地开发启动流程.关联文件: `start-local-dev.bat`, `README.md`, `changelog.md`.
+
 ### docs
 
 -   更新本地开发说明,记录 Windows 一键启动脚本的入口,前后端端口和依赖检查行为.影响范围:开发文档.关联文件: `README.md`, `changelog.md`.
