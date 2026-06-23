@@ -13,6 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import src.models.finance  # noqa: F401  register finance tables with Base.metadata
+import src.models.focus  # noqa: F401  register focus timer tables
 import src.models.kanban  # noqa: F401  register kanban tables
 import src.models.kanban_task  # noqa: F401  register kanban_task table
 import src.models.tag  # noqa: F401  register tag tables with Base.metadata

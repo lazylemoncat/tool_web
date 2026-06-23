@@ -27,6 +27,7 @@ from .models.finance import (  # noqa: F401
     SplitItem,
     Transaction,
 )
+from .models.focus import FocusSession  # noqa: F401
 from .models.kanban import KanbanColumn, Sprint  # noqa: F401
 from .models.kanban_task import KanbanTask  # noqa: F401
 from .models.tag import Tag  # noqa: F401

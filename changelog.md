@@ -1,5 +1,20 @@
 # changelog
 
+## 2026-06-22
+
+### feat
+
+-   新增 Focus 专注番茄钟模块, 前端 `/focus` 支持番茄钟,自由计时,暂停/继续,放弃保存,15 分钟休息,本地恢复,归档复盘,数据总览和记录筛选; 关联文件包括 `frontend/src/app/focus/page.tsx`, `frontend/src/components/focus/*`, `frontend/src/lib/focusTypes.ts`, `frontend/src/lib/api/focus.ts`.
+-   新增后端 Focus 持久化能力, `FocusSession` 支持关联 Todo 文件夹和共享标签, 并提供 `/api/v1/focus/sessions` CRUD 与 `/api/v1/focus/summary` 统计接口; 关联文件包括 `backend/src/models/focus.py`, `backend/src/schemas/focus.py`, `backend/src/routers/focus.py`, `backend/migrations/versions/20260622_0003_focus_sessions.py`, `backend/tests/test_focus.py`.
+-   顶部导航新增 `专注` 入口, 与现有导航管理配置合并逻辑兼容; 关联文件为 `frontend/src/components/layout/GlobalNav.tsx`.
+-   完善 Focus 标签和记录管理, 侧边栏新增标签页, 计时/归档/编辑专注记录均支持多标签和新增标签, 记录页新增文件夹侧边栏与编辑弹窗; 关联文件包括 `frontend/src/app/focus/page.tsx`, `frontend/src/components/focus/FocusSidebar.tsx`, `frontend/src/components/focus/FocusTimer.tsx`, `frontend/src/components/focus/FocusArchiveDialog.tsx`, `frontend/src/components/focus/FocusRecords.tsx`, `frontend/src/components/focus/FocusSessionEditDialog.tsx`, `frontend/src/components/focus/FocusTagPicker.tsx`, `frontend/src/components/focus/FocusTags.tsx`.
+-   放大并居中 Focus 90 天热力图, 热力图色阶改为复用 MUI 主题 token; 关联文件为 `frontend/src/components/focus/FocusOverview.tsx`.
+
+### docs
+
+-   新增 `docs/focus.md`, 并更新 `docs/README.md`, `docs/frontend.md`, `docs/api.md`, `README.md`, 记录 Focus 模块入口, 文件位置, API, 主题 token 约束和 MUI X `DatePicker` 日期筛选规范.
+-   更新 `docs/focus.md`, `docs/frontend.md`, `docs/api.md`, 补充 Focus 标签页, 计时标签, 记录编辑, 文件夹侧边栏和热力图尺寸说明.
+
 ## 2026-06-14
 
 ### feat

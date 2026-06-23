@@ -187,6 +187,62 @@ Query 参数:
 
 ---
 
+## Focus 专注
+
+Focus 模块记录番茄钟和自由计时结果. 运行中的秒级状态由前端 localStorage 恢复, 结束, 放弃或归档后写入后端.
+
+### 专注记录
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/v1/focus/sessions` | 获取专注记录, 支持搜索, 模式, 状态, 文件夹, 标签和日期筛选 |
+| `POST` | `/api/v1/focus/sessions` | 创建专注记录 |
+| `PUT` | `/api/v1/focus/sessions/{id}` | 更新专注记录 |
+| `DELETE` | `/api/v1/focus/sessions/{id}` | 删除专注记录 |
+
+`GET /api/v1/focus/sessions` 查询参数:
+
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `search` | string | 按名称和复盘模糊搜索 |
+| `mode` | string | `pomodoro` 或 `free` |
+| `abandoned` | boolean | 是否放弃 |
+| `folder_id` | int | 按 Todo 文件夹筛选 |
+| `tag_id` | int | 按共享 Todo 标签筛选 |
+| `started_from` | date | 开始日期下限 |
+| `started_to` | date | 开始日期上限 |
+| `skip` | int | 分页偏移 |
+| `limit` | int | 每页数量 |
+
+创建记录请求示例:
+
+```json
+{
+  "name": "高数复习",
+  "mode": "pomodoro",
+  "planned_seconds": 1500,
+  "focus_seconds": 1500,
+  "pause_count": 1,
+  "pause_seconds": 30,
+  "rest_seconds": 300,
+  "folder_id": 1,
+  "tag_ids": [1, 2],
+  "summary": "完成积分练习",
+  "started_at": "2026-06-22T09:00:00",
+  "ended_at": "2026-06-22T09:30:00",
+  "abandoned": false
+}
+```
+
+更新记录使用 `PUT /api/v1/focus/sessions/{id}`, 请求字段与创建记录一致, 可局部提交. 前端记录编辑弹窗当前会提交名称, 模式, 计划时长, 专注时长, 暂停信息, 休息时长, 文件夹, 标签, 复盘和放弃状态.
+
+### 专注统计
+
+`GET /api/v1/focus/summary?range=7d`
+
+`range` 支持 `today`, `week`, `month`, `7d`, `30d`, `all`. 响应包含总专注时长, 休息时长, 暂停时长, 完成/放弃次数, 平均时长, 当前/最长连续学习天数, 趋势, 90 天热力图, 标签分布, 文件夹分布和最近记录.
+
+---
+
 ## Finance 记账
 
 ### 账本 (Ledger)

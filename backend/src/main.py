@@ -22,6 +22,7 @@ from .middleware.logging import log_requests
 from .routers import (
     finance,
     folder,
+    focus,
     kanban_column,
     kanban_task,
     sprint,
@@ -105,6 +106,7 @@ app.include_router(sprint.router)
 app.include_router(kanban_column.router)
 app.include_router(kanban_task.router)
 app.include_router(finance.router)
+app.include_router(focus.router)
 
 uploads_dir = os.path.join(os.path.dirname(__file__), "..", "uploads")
 os.makedirs(uploads_dir, exist_ok=True)

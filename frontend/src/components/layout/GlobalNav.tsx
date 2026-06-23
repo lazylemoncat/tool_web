@@ -32,6 +32,7 @@ export const DEFAULT_NAV_ITEMS: NavItem[] = [
   { id: 'home', href: '/', label: '首页', visible: true },
   { id: 'todo', href: '/todo', label: '任务', visible: true },
   { id: 'calendar', href: '/calendar', label: '日历', visible: true },
+  { id: 'focus', href: '/focus', label: '专注', visible: true },
   { id: 'finance', href: '/finance', label: '记账', visible: true },
 ];
 
