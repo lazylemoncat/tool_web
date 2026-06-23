@@ -11,6 +11,7 @@ from src.database import DATABASE_URL
 from src.models.todo import Base
 
 import src.models.finance  # noqa: F401
+import src.models.focus  # noqa: F401
 import src.models.kanban  # noqa: F401
 import src.models.kanban_task  # noqa: F401
 import src.models.tag  # noqa: F401

@@ -1,6 +1,6 @@
 # Tool Web
 
-Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, 用户认证, 自定义主题和帮助文档等模块. 项目面向 Web 用户和自动化 Agent 同时提供能力: 前端提供响应式交互界面, 后端暴露 RESTful API.
+Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, Focus 专注番茄钟, 用户认证, 自定义主题和帮助文档等模块. 项目面向 Web 用户和自动化 Agent 同时提供能力: 前端提供响应式交互界面, 后端暴露 RESTful API.
 
 项目仍处于开发阶段, 当前前端已迁移为 Next.js + React + MUI, 通过 Next rewrites 将 `/api/*` 和 `/uploads/*` 代理到 FastAPI 后端.
 
@@ -9,6 +9,7 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 - **用户认证**: 登录, 注册, cookie-based JWT, token 自动刷新, 偏好设置同步.
 - **Todo 任务管理**: 文件夹, 标签, 优先级, 子任务, 搜索筛选, 拖拽排序, 批量操作.
 - **Finance 个人记账**: 多账本, 账户, 分类, 标签, 交易, 子交易, 预算, 事件, 图表统计.
+- **Focus 专注番茄钟**: 番茄钟, 自由计时, 多标签, 休息, 归档复盘, 记录筛选, 记录编辑和数据总览.
 - **自定义主题**: 亮色/暗色/Matcha/跟随系统, 用户上传 JSON 主题, 页面级 token 覆盖, 自定义按钮和脚本桥接.
 - **国际化**: 中文和英文 TypeScript 词典, 登录页支持语言切换和本地化错误提示.
 - **响应式布局**: 桌面顶部栏, TODO 侧边栏, 移动端顶栏与抽屉式导航.
@@ -35,7 +36,7 @@ tool_web/
 │   │   ├── auth/                # 可复用认证领域逻辑和 FastAPI 适配
 │   │   ├── models/              # SQLAlchemy 模型
 │   │   ├── schemas/             # Pydantic schema
-│   │   ├── routers/             # todo / folder / tag / sprint / kanban / finance / theme
+│   │   ├── routers/             # todo / folder / tag / sprint / kanban / finance / focus / theme
 │   │   ├── middleware/          # 认证和日志中间件
 │   │   └── utils/               # 安全, 限流, 错误工具
 │   ├── migrations/              # Alembic schema 迁移
@@ -46,7 +47,7 @@ tool_web/
 ├── frontend/
 │   ├── src/
 │   │   ├── app/                 # Next App Router 页面
-│   │   ├── components/          # UI, layout, todo, finance, auth, settings
+│   │   ├── components/          # UI, layout, todo, finance, focus, auth, settings
 │   │   ├── context/             # AuthContext 登录态, I18nContext 语言状态
 │   │   ├── i18n/                # 前端中文/英文文案词典
 │   │   ├── lib/                 # API client 与共享类型
@@ -167,6 +168,7 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 - [认证模块](docs/auth.md)
 - [Todo 模块](docs/todo.md)
 - [Finance 模块](docs/finance.md)
+- [Focus 专注模块](docs/focus.md)
 - [Calendar 模块](docs/calendar.md)
 - [主题系统](docs/theme.md)
 - [测试方案](docs/testing.md)
@@ -175,7 +177,6 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 
 ## 未来规划
 
-- 日历模块
 - 联系人模块
 - 周期总结模块
 - 第三方登录, 2FA, CAPTCHA

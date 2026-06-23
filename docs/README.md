@@ -13,6 +13,7 @@
 | 修改 Todo 或 Kanban | [`todo.md`](todo.md), [`api.md`](api.md) |
 | 修改 Finance | [`finance.md`](finance.md), [`api.md`](api.md) |
 | 修改 Calendar | [`calendar.md`](calendar.md), [`frontend.md`](frontend.md) |
+| 修改 Focus 番茄钟 | [`focus.md`](focus.md), [`api.md`](api.md), [`frontend.md`](frontend.md) |
 | 修改主题和语言偏好 | [`theme.md`](theme.md), [`frontend.md`](frontend.md), [`auth.md`](auth.md) |
 | 查看数据模型或组件图 | [`uml/index.md`](uml/index.md) |
 
@@ -36,6 +37,7 @@
 | [`todo.md`](todo.md) | Todo,文件夹,标签,重复任务,Kanban,拖拽排序和相关 API |
 | [`finance.md`](finance.md) | 账本,账户,分类,标签,交易,预算,事件,附件和统计 |
 | [`calendar.md`](calendar.md) | 当前前端日历模块,内存数据层和后续 API 对接建议 |
+| [`focus.md`](focus.md) | 番茄钟,自由计时,专注记录归档,统计总览和 Focus API |
 | [`theme.md`](theme.md) | 当前 MUI 主题,主题偏好,语言偏好和后端主题 API 边界 |
 | [`testing.md`](testing.md) | 后端 pytest,前端 Vitest,通信契约和 CI 验证范围 |
 | [`github-actions.md`](github-actions.md) | dev/release 部署 workflow,Secrets 和 Variables |
