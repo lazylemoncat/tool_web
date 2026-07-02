@@ -1,6 +1,6 @@
 # Tool Web
 
-Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, Focus 专注番茄钟, 用户认证, 自定义主题和帮助文档等模块. 项目面向 Web 用户和自动化 Agent 同时提供能力: 前端提供响应式交互界面, 后端暴露 RESTful API.
+Tool Web 是一个自用为主, 可自部署的个人工具网站, 目前包含 Todo 任务管理, Finance 个人记账, Focus 专注番茄钟, Calendar 日历, 用户认证, 自定义主题和帮助文档等模块. 前端提供响应式交互界面, 后端暴露 RESTful API, 亦可供脚本和 Agent 等外部调用方使用.
 
 项目仍处于开发阶段, 当前前端已迁移为 Next.js + React + MUI, 通过 Next rewrites 将 `/api/*` 和 `/uploads/*` 代理到 FastAPI 后端.
 
@@ -10,6 +10,7 @@ Tool Web 是一个个人工具网站, 目前包含 Todo 任务管理, Finance �
 - **Todo 任务管理**: 文件夹, 标签, 优先级, 子任务, 搜索筛选, 拖拽排序, 批量操作.
 - **Finance 个人记账**: 多账本, 账户, 分类, 标签, 交易, 子交易, 预算, 事件, 图表统计.
 - **Focus 专注番茄钟**: 番茄钟, 自由计时, 多标签, 休息, 归档复盘, 记录筛选, 记录编辑和数据总览.
+- **Calendar 日历**: 月/周/日/日程视图, 手动事件管理, 聚合 Todo 截止日与 Finance 交易和事件的只读展示.
 - **自定义主题**: 亮色/暗色/Matcha/跟随系统, 用户上传 JSON 主题, 页面级 token 覆盖, 自定义按钮和脚本桥接.
 - **国际化**: 中文和英文 TypeScript 词典, 登录页支持语言切换和本地化错误提示.
 - **响应式布局**: 桌面顶部栏, TODO 侧边栏, 移动端顶栏与抽屉式导航.
@@ -58,21 +59,20 @@ tool_web/
 │   └── Dockerfile
 ├── docs/
 │   ├── README.md                # 文档索引
+│   ├── product.md               # 产品文档 (PRD)
+│   ├── architecture.md          # 架构说明
+│   ├── roadmap.md               # 路线图
+│   ├── tech-debt.md             # 技术债清单
 │   ├── frontend.md              # 前端 Next.js 架构说明
 │   ├── api.md
 │   ├── auth.md
 │   ├── calendar.md
 │   ├── finance.md
+│   ├── focus.md
 │   ├── github-actions.md
 │   ├── testing.md
 │   ├── theme.md
-│   ├── todo.md
-│   ├── uml/
-│   └── superpowers/
-├── project_flow/
-│   ├── 1_project_idea.md
-│   ├── 2_architecture.md
-│   └── sprints/
+│   └── todo.md
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 └── .env.example
@@ -160,9 +160,10 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 ## 常用文档
 
 - [文档索引](docs/README.md)
-- [当前 PRD](product2.md)
-- [项目设想](project_flow/1_project_idea.md)
-- [架构说明](project_flow/2_architecture.md)
+- [产品文档 (PRD)](docs/product.md)
+- [架构说明](docs/architecture.md)
+- [路线图](docs/roadmap.md)
+- [技术债清单](docs/tech-debt.md)
 - [前端架构](docs/frontend.md)
 - [API 文档](docs/api.md)
 - [认证模块](docs/auth.md)
@@ -173,56 +174,11 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 - [主题系统](docs/theme.md)
 - [测试方案](docs/testing.md)
 - [GitHub Actions 部署](docs/github-actions.md)
-- [UML 图索引](docs/uml/index.md)
 
 ## 未来规划
 
-- 联系人模块
-- 周期总结模块
-- 第三方登录, 2FA, CAPTCHA
-- 更完整的主题编辑器和主题市场
-- Agent 友好的 API 操作接口
-- PWA 离线能力
+近期与远期规划统一维护在 [docs/roadmap.md](docs/roadmap.md).
 
 ## GitHub Actions
 
-项目包含两个 Docker 部署 workflow:
-
-- `.github/workflows/release-build-run.yml`: 当代码 push 到 `release_*` 分支时触发. 先执行后端质量检查: `uv sync --frozen --extra dev`, `ruff check src tests`, `mypy --ignore-missing-imports src tests`, `pytest tests -q`; 同时执行前端质量检查: `npm ci`, `npm run lint` (当前非阻塞), `npm run test`, `npm run build`. 检查通过后,按 `deploy.sh` 的生产发布方式构建前后端镜像,推送 `${DOCKERHUB_USERNAME}/tool-web-frontend:latest` 和 `${DOCKERHUB_USERNAME}/tool-web-backend:latest`,再通过 SSH 在发布服务器执行 `docker compose -f docker-compose.prod.yml up -d`.
-- `.github/workflows/dev-test-deploy.yml`: 当代码 push 到 `dev` 分支时触发. 先执行同样的后端和前端质量检查. 检查通过后,构建并推送 `:dev` 测试镜像,在测试服务器写入独立的 `docker-compose.test.yml`,使用独立 Compose project 和测试数据目录运行测试环境. 默认测试端口为前端 `18003`,后端 `18004`,可通过 GitHub Variables 调整.
-
-Ruff 配置位于 `backend/pyproject.toml`,当前启用规则前缀为 `E`, `W`, `N`, `I`, `F`, `UP`.
-
-必须配置的 GitHub Secrets:
-
-- `DOCKERHUB_USERNAME`: Docker Hub 用户名.
-- `DOCKERHUB_TOKEN`: Docker Hub 访问令牌.
-- `RELEASE_SSH_HOST`: 发布服务器 SSH host.
-- `RELEASE_SSH_PRIVATE_KEY`: 发布服务器 SSH 私钥.
-- `RELEASE_JWT_SECRET`: 发布环境 JWT secret.
-- `TEST_SSH_HOST`: 测试服务器 SSH host.
-- `TEST_SSH_PRIVATE_KEY`: 测试服务器 SSH 私钥.
-- `TEST_JWT_SECRET`: 测试环境 JWT secret.
-
-可选 GitHub Secrets:
-
-- `RELEASE_SSH_USER`: 发布服务器 SSH 用户,默认 `root`.
-- `RELEASE_ADMIN_PASSWORD`: 发布环境管理员种子密码,为空则由后端按现有逻辑处理.
-- `TEST_SSH_USER`: 测试服务器 SSH 用户,默认 `root`.
-- `TEST_ADMIN_PASSWORD`: 测试环境管理员种子密码,为空则由后端按现有逻辑处理.
-
-常用 GitHub Variables:
-
-- `RELEASE_REMOTE_PATH`: 发布环境远程目录,默认 `/opt/tool_web`.
-- `RELEASE_SSH_PORT`: 发布服务器 SSH 端口,默认 `22`.
-- `RELEASE_ALLOWED_ORIGINS`: 发布环境 CORS origins,默认 `http://localhost:8003,http://localhost:3000`.
-- `RELEASE_DOCKER_API_PROXY_TARGET`: 发布环境前端代理目标,默认 `http://backend:8000`.
-- `RELEASE_RESET_AUTH_SCHEMA`: 发布后是否重置认证 schema,默认 `0`.
-- `TEST_REMOTE_PATH`: 测试环境远程目录,默认 `/opt/tool_web_test`.
-- `TEST_SSH_PORT`: 测试服务器 SSH 端口,默认 `22`.
-- `TEST_FRONTEND_PORT`: 测试环境前端宿主机端口,默认 `18003`.
-- `TEST_BACKEND_PORT`: 测试环境后端宿主机端口,默认 `18004`.
-- `TEST_ALLOWED_ORIGINS`: 测试环境 CORS origins,默认 `http://localhost:${TEST_FRONTEND_PORT}`.
-- `TEST_DOCKER_API_PROXY_TARGET`: 测试环境前端代理目标,默认 `http://backend:8000`.
-- `TEST_COMPOSE_PROJECT`: 测试环境 Docker Compose project 名,默认 `tool-web-test`.
-- `TEST_RESET_AUTH_SCHEMA`: 测试环境部署后是否重置认证 schema,默认 `0`.
+项目包含 release 生产部署和 dev 测试部署两个 Docker workflow, 触发分支, 质量检查, Secrets 与 Variables 配置详见 [docs/github-actions.md](docs/github-actions.md).
