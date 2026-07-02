@@ -16,7 +16,6 @@ export async function listTodos(params?: {
   tag_id?: number;
   skip?: number;
   limit?: number;
-  sprint_id?: number;
   due_from?: string;
   due_to?: string;
 }): Promise<TodoListResponse> {
@@ -26,7 +25,6 @@ export async function listTodos(params?: {
   if (params?.priority) query.set('priority', String(params.priority));
   if (params?.status) query.set('status', params.status);
   if (params?.tag_id) query.set('tag_id', String(params.tag_id));
-  if (params?.sprint_id) query.set('sprint_id', String(params.sprint_id));
   if (params?.due_from) query.set('due_from', params.due_from);
   if (params?.due_to) query.set('due_to', params.due_to);
   if (params?.skip) query.set('skip', String(params.skip));

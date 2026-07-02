@@ -89,11 +89,12 @@
 - 建议: 测试内固定"今天"(monkeypatch utcnow, 参考 `tests/test_todos.py` 的 `_freeze_today`) 或按相对日期构造数据.
 - 验收: 任意日期运行测试均稳定通过.
 
-### TD-14 [P2] Kanban 死代码与未接线的 UI 链路
+### TD-14 [P2] Kanban 未接线的 UI 链路与遗留 DB 列 (双体系已脱钩)
 
-- 现状: `lib/api/kanban.ts` 的 `moveTodoToColumn` 与后端 `POST /todos/{id}/move` 无前端调用点 (看板拖拽走 `/kanban/tasks/{id}/move`); `reorderKanbanColumns`, `ColumnDialog`, `SprintDialog` 已导出但未在 UI 渲染; `page.tsx` 中 `sprintDialogOpen`/`editingSprint` 为死 state; 列编辑器无"新增列"入口而 `onSaveColumns` 也不处理新建. 另外普通 Todo 绑定看板列后不会在任何视图渲染 (看板只渲染 KanbanTask), 属潜在数据黑洞.
-- 建议: 明确 Kanban 双任务体系的最终形态后, 删除死链路或补齐 UI (列的新增/拖拽排序, Sprint 编辑); 评估是否禁止普通 Todo 绑定 `column_id`.
-- 验收: 无导出而未使用的 Kanban API 函数与组件; 普通 Todo 与看板列的关系有明确约定并文档化.
+- 已解决 (2026-07-02, 决策: 看板统一走 KanbanTask, 普通 Todo 不绑定看板): 移除 `moveTodoToColumn` 与后端 `POST /todos/{id}/move`, `/todos` 的创建/更新/筛选不再接受 `sprint_id`/`column_id`.
+- 剩余现状: `reorderKanbanColumns`, `ColumnDialog`, `SprintDialog` 已导出但未在 UI 渲染; `page.tsx` 中 `sprintDialogOpen`/`editingSprint` 为死 state; 列编辑器无"新增列"入口而 `onSaveColumns` 也不处理新建; `todos` 表的 `sprint_id`/`column_id` 列仍在 (含历史遗留数据), TodoOut 仍输出这两个字段.
+- 建议: 补齐列的新增/拖拽排序与 Sprint 编辑 UI 或删除对应死代码; 新增 Alembic 迁移 (编号 `_0005`, 见 TD-08) 清理 `todos.sprint_id/column_id` 列与遗留数据, 同步收敛 TodoOut.
+- 验收: 无导出而未使用的 Kanban API 函数与组件; `todos` 表无看板字段.
 
 ### TD-09 [P2] 两套限流器职责疑似重叠
 

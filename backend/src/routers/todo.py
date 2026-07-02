@@ -10,16 +10,14 @@ from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrulestr
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
-from sqlalchemy import func, or_
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, selectinload
 
 from ..database import get_db
 from ..middleware.auth import get_current_user
-from ..models.kanban import KanbanColumn
 from ..models.tag import Tag
 from ..models.todo import Folder, RecurrenceRule, Todo
 from ..models.user import User
-from ..schemas.kanban import MoveTaskRequest
 from ..schemas.tag import TagOut
 from ..schemas.todo import (
     BulkAction,
@@ -75,8 +73,6 @@ def list_todos(
     priority: int | None = Query(None),
     status: str | None = Query(None),
     tag_id: int | None = Query(None),
-    sprint_id: int | None = Query(None),
-    column_id: int | None = Query(None),
     due_from: date | None = Query(None),
     due_to: date | None = Query(None),
     skip: int = Query(0, ge=0),
@@ -101,10 +97,6 @@ def list_todos(
         q = q.filter(or_(Todo.title.ilike(pattern), Todo.note.ilike(pattern)))
     if tag_id is not None:
         q = q.filter(Todo.tags.any(Tag.id == tag_id))
-    if sprint_id is not None:
-        q = q.filter(Todo.sprint_id == sprint_id)
-    if column_id is not None:
-        q = q.filter(Todo.column_id == column_id)
     if due_from is not None:
         q = q.filter(Todo.due_date >= due_from)
     if due_to is not None:
@@ -154,26 +146,6 @@ def create_todo(
     data = body.model_dump()
     tag_ids = data.pop("tag_ids", [])
     rrule_strings = data.pop("recurrence_rules", [])
-    if body.column_id is not None:
-        column = (
-            db.query(KanbanColumn)
-            .filter(
-                KanbanColumn.id == body.column_id,
-                KanbanColumn.user_id == current_user.id,
-            )
-            .first()
-        )
-        if not column:
-            raise BadRequestError("Kanban column not found")
-        if body.sprint_id is not None and body.sprint_id != column.sprint_id:
-            raise BadRequestError("Kanban column does not belong to sprint")
-        if (
-            body.folder_id is not None
-            and body.folder_id != column.sprint.folder_id
-        ):
-            raise BadRequestError("Kanban column does not belong to folder")
-        data["sprint_id"] = column.sprint_id
-        data["folder_id"] = column.sprint.folder_id
     todo = Todo(**data, user_id=current_user.id)
     if tag_ids:
         tags = (
@@ -538,52 +510,3 @@ def bulk_action(
     return {"code": 0, "message": "ok"}
 
 
-@router.post("/{todo_id}/move", response_model=TodoOut)
-def move_todo(
-    todo_id: int,
-    body: MoveTaskRequest,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    todo = (
-        db.query(Todo)
-        .filter(Todo.id == todo_id, Todo.user_id == current_user.id)
-        .first()
-    )
-    if not todo:
-        raise HTTPException(404, "任务不存在")
-
-    target_col = (
-        db.query(KanbanColumn)
-        .filter(
-            KanbanColumn.id == body.target_column_id,
-            KanbanColumn.user_id == current_user.id,
-        )
-        .first()
-    )
-    if not target_col:
-        raise HTTPException(404, "目标列不存在")
-
-    # Check capacity
-    if target_col.capacity is not None:
-        current_count = (
-            db.query(func.count(Todo.id))
-            .filter(
-                Todo.column_id == target_col.id,
-                Todo.sprint_id == target_col.sprint_id,
-                Todo.user_id == current_user.id,
-                Todo.is_completed.is_(False),
-                Todo.parent_id.is_(None),
-            )
-            .scalar()
-        )
-        if current_count >= target_col.capacity:
-            raise BadRequestError(
-                f"列「{target_col.name}」容量已满（{current_count}/{target_col.capacity}）"
-            )
-
-    todo.column_id = target_col.id
-    todo.sprint_id = target_col.sprint_id
-    db.commit()
-    db.refresh(todo)
-    return _build_todo_out(todo)

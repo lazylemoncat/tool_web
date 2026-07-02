@@ -1,5 +1,11 @@
 # changelog
 
+## 2026-07-02
+
+### refactor
+
+-   落地看板单体系决策 (TD-14 部分): 看板统一使用 KanbanTask 体系, 普通 Todo 与看板彻底脱钩.移除后端 `POST /todos/{id}/move` 端点与创建任务时的看板列绑定逻辑, `TodoCreate`/`TodoUpdate` 与 `GET /todos` 不再接受 `sprint_id`/`column_id`; 移除前端 `moveTodoToColumn` 与 `TaskDialog`/`createTodo` 链路中的看板字段.`todos` 表的看板列与 TodoOut 输出暂留, 待迁移清理 (见 TD-14 剩余项).影响范围:Todo API 契约, 看板体系边界.关联文件: `backend/src/routers/todo.py`, `backend/src/schemas/todo.py`, `backend/tests/test_todos.py`, `frontend/src/lib/api/kanban.ts`, `frontend/src/lib/api/todo.ts`, `frontend/src/lib/types.ts`, `frontend/src/lib/api.test.ts`, `frontend/src/app/todo/page.tsx`, `frontend/src/components/todo/TaskDialog.tsx`, `docs/todo.md`, `docs/api.md`, `docs/tech-debt.md`.
+
 ## 2026-07-01
 
 ### fix

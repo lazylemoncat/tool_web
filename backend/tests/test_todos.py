@@ -54,7 +54,8 @@ def test_create_and_update_todo_with_optional_due_time(client, auth_headers):
     assert updated.json()["due_time"] == "16:45:00"
 
 
-def test_create_kanban_todo_returns_column_fields(client, auth_headers):
+def test_create_todo_ignores_kanban_binding(client, auth_headers):
+    """普通 Todo 与看板脱钩: 传入 column_id/sprint_id 被忽略, 不建立绑定."""
     folder_resp = client.post(
         "/api/v1/folders",
         json={"name": "Board", "mode": "kanban"},
@@ -81,24 +82,16 @@ def test_create_kanban_todo_returns_column_fields(client, auth_headers):
         "/api/v1/todos",
         json={
             "folder_id": folder_id,
+            "sprint_id": sprint_id,
             "column_id": column_id,
-            "title": "Kanban Task",
+            "title": "Plain Task",
         },
         headers=auth_headers,
     )
     assert create_resp.status_code == 201
     created = create_resp.json()
-    assert created["sprint_id"] == sprint_id
-    assert created["column_id"] == column_id
-
-    list_resp = client.get(
-        f"/api/v1/todos?folder_id={folder_id}&sprint_id={sprint_id}",
-        headers=auth_headers,
-    )
-    assert list_resp.status_code == 200
-    listed = list_resp.json()["items"][0]
-    assert listed["sprint_id"] == sprint_id
-    assert listed["column_id"] == column_id
+    assert created["sprint_id"] is None
+    assert created["column_id"] is None
 
 
 def test_list_todos(client, auth_headers):

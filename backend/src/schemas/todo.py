@@ -80,8 +80,6 @@ class FolderOut(BaseModel):
 
 class TodoCreate(BaseModel):
     folder_id: int | None = None
-    sprint_id: int | None = None  # new
-    column_id: int | None = None  # new
     parent_id: int | None = None
     title: str = Field(min_length=1, max_length=500)
     note: str | None = Field(None, max_length=10000)
@@ -110,8 +108,6 @@ class TodoCreate(BaseModel):
 
 class TodoUpdate(BaseModel):
     folder_id: int | None = None
-    sprint_id: int | None = None  # new
-    column_id: int | None = None  # new
     parent_id: int | None = None
     title: str | None = Field(None, min_length=1, max_length=500)
     note: str | None = None

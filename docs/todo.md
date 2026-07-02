@@ -373,8 +373,6 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `priority` | int | 按优先级筛选 (1/2/3) |
 | `status` | string | `active` 或 `completed` |
 | `tag_id` | int | 按标签筛选 |
-| `sprint_id` | int | 按 Kanban Sprint 筛选 |
-| `column_id` | int | 按 Kanban 列筛选 |
 | `skip` | int | 分页偏移 (默认 0, ≥0) |
 | `limit` | int | 每页数量 (默认 100, 1-500) |
 
@@ -403,8 +401,6 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 ```json
 {
   "folder_id": 1,
-  "sprint_id": 1,
-  "column_id": 1,
   "parent_id": null,
   "title": "买猫粮",
   "note": "皇家猫粮",
@@ -424,8 +420,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
   "data": {
     "id": 42,
     "folder_id": 1,
-    "sprint_id": 1,
-    "column_id": 1,
+    "sprint_id": null,
+    "column_id": null,
     "parent_id": null,
     "title": "买猫粮",
     "note": "皇家猫粮",
