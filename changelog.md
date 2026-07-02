@@ -2,6 +2,10 @@
 
 ## 2026-07-01
 
+### fix
+
+-   修复 Focus 计时恢复与归档流程的两个数据问题: 番茄钟在页面关闭期间走完时,恢复路径未清理 localStorage 计时状态,归档保存后刷新会再次弹出恢复提示并可能重复归档;归档弹窗被取消后待归档数据无入口找回,现已在已完成状态下新增"归档记录"按钮可重新打开弹窗.同时修复 `handleResume` 中暂停时长依赖 ref 在 setState 更新函数执行前被置空的隐患,恢复横幅补充会话名称,模式和已专注时长;休息状态下行为完全相同的"结束休息"和"跳过休息"两个按钮合并为一个"结束休息".新增组件测试 `FocusTimer.test.tsx` 覆盖恢复与归档流程.影响范围:Focus 计时恢复,归档流程,前端测试.关联文件: `frontend/src/components/focus/FocusTimer.tsx`, `frontend/src/components/focus/FocusTimer.test.tsx`, `docs/focus.md`.
+
 ### docs
 
 -   文档重构: 确立单一事实来源 (SSOT) 结构.新增 `docs/product.md` (新 PRD,取代 `product2.md`,定位更新为自用为主的个人工具,Agent-ready 降为不排期的远期愿景), `docs/architecture.md` (取代 `project_flow/2_architecture.md`), `docs/roadmap.md` (路线图唯一来源,近期重心为现有模块打磨,代码质量与约定统一,测试与发布基础), `docs/tech-debt.md` (代码技术债立案 TD-01~TD-10).影响范围:项目文档结构.

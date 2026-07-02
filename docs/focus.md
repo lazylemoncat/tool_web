@@ -30,6 +30,7 @@ Focus 模块提供持久化番茄钟和自由计时能力. 前端位于 `/focus`
 | `backend/src/routers/focus.py` | `/api/v1/focus` 路由,包含文件夹,标签,记录 CRUD 和统计 |
 | `backend/migrations/versions/20260622_0003_focus_sessions.py` | Focus 专属表结构迁移 |
 | `backend/tests/test_focus.py` | Focus API 契约和跨用户隔离测试 |
+| `frontend/src/components/focus/FocusTimer.test.tsx` | 计时恢复与归档流程组件测试 |
 
 ## 数据模型
 
@@ -100,6 +101,12 @@ Focus 记录通过 `focus_session_tags` 关联 Focus 自己的 `focus_tags`,后�
 | `PUT` | `/api/v1/focus/sessions/{id}` | 更新专注记录 |
 | `DELETE` | `/api/v1/focus/sessions/{id}` | 删除专注记录 |
 | `GET` | `/api/v1/focus/summary` | 获取专注统计 |
+
+## 计时恢复与归档流程
+
+- 计时进行中或暂停时,状态持续写入 localStorage (`toolweb-focus-timer-state`);页面重新打开时展示恢复横幅,横幅包含会话名称,模式和已专注时长,供用户选择继续,结束或放弃.
+- 番茄钟在页面关闭期间已走完时,恢复操作直接进入已完成状态并打开归档弹窗,同时清理 localStorage 中的计时状态,避免归档后刷新再次提示恢复.
+- 归档弹窗被取消后,待归档数据仍保留在页面上,已完成状态下可通过"归档记录"按钮重新打开弹窗;点击"重置"才会丢弃本次待归档数据.
 
 ## 开发约束
 

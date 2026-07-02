@@ -22,6 +22,7 @@ import PauseRoundedIcon from '@mui/icons-material/PauseRounded';
 import StopRoundedIcon from '@mui/icons-material/StopRounded';
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
+import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { createFocusSession } from '@/lib/api/focus';
 import type { FocusFolderOut, FocusMode, FocusSessionCreate, FocusTag } from '@/lib/focusTypes';
@@ -299,7 +300,8 @@ export default function FocusTimer({ folders, tags, onSessionSaved, onCreateTag 
 
   const handleResume = () => {
     if (pauseStartedAtRef.current !== null) {
-      setPauseSeconds((value) => value + Math.floor((Date.now() - pauseStartedAtRef.current!) / 1000));
+      const pausedDelta = Math.floor((Date.now() - pauseStartedAtRef.current) / 1000);
+      setPauseSeconds((value) => value + pausedDelta);
       pauseStartedAtRef.current = null;
     }
     setStatus('counting');
@@ -390,6 +392,7 @@ export default function FocusTimer({ folders, tags, onSessionSaved, onCreateTag 
     setRecoverable(null);
 
     if (recoverable.mode === 'pomodoro' && restoredRemaining <= 0) {
+      clearSavedState();
       setStatus('completed');
       setPending({
         name: recoverable.name || '未命名专注',
@@ -458,7 +461,11 @@ export default function FocusTimer({ folders, tags, onSessionSaved, onCreateTag 
               </Stack>
             )}
           >
-            检测到未完成的计时
+            检测到未完成的计时: {recoverable.name.trim() || '未命名专注'}
+            ({recoverable.mode === 'pomodoro' ? '番茄钟' : '自由计时'},
+            已专注 {formatDuration(recoverable.mode === 'pomodoro'
+              ? Math.max(0, recoverable.plannedSeconds - recoverable.remainingSeconds)
+              : recoverable.elapsedSeconds)})
           </Alert>
         )}
         {error && (
@@ -560,13 +567,15 @@ export default function FocusTimer({ folders, tags, onSessionSaved, onCreateTag 
             </>
           )}
           {status === 'rest' && (
-            <>
-              <Button variant="contained" color="success" onClick={handleRestDone}>结束休息</Button>
-              <Button variant="outlined" onClick={handleRestDone}>跳过休息</Button>
-            </>
+            <Button variant="contained" color="success" onClick={handleRestDone}>结束休息</Button>
           )}
           {status === 'completed' && (
-            <Button variant="outlined" startIcon={<ReplayRoundedIcon />} onClick={resetTimer}>重置</Button>
+            <>
+              {pending && !archiveOpen && (
+                <Button variant="contained" startIcon={<SaveRoundedIcon />} onClick={() => setArchiveOpen(true)}>归档记录</Button>
+              )}
+              <Button variant="outlined" startIcon={<ReplayRoundedIcon />} onClick={resetTimer}>重置</Button>
+            </>
           )}
         </Stack>
 
