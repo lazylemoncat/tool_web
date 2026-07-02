@@ -6,28 +6,66 @@ from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import or_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from ..database import get_db
 from ..middleware.auth import get_current_user
-from ..models.focus import FocusSession
-from ..models.tag import Tag
-from ..models.todo import Folder
+from ..models.focus import FocusFolder, FocusSession, FocusTag
 from ..models.user import User
 from ..schemas.focus import (
     FocusDistributionItem,
+    FocusFolderCreate,
+    FocusFolderOut,
+    FocusFolderUpdate,
     FocusHeatmapItem,
+    FocusReorderBatch,
     FocusSessionCreate,
     FocusSessionListResponse,
     FocusSessionOut,
     FocusSessionUpdate,
     FocusSummaryResponse,
+    FocusTagCreate,
+    FocusTagOut,
     FocusTrendItem,
 )
-from ..schemas.tag import TagOut
 
 router = APIRouter(prefix="/api/v1/focus", tags=["focus"])
+
+
+def _build_tag_out(tag: FocusTag) -> FocusTagOut:
+    return FocusTagOut.model_validate(tag)
+
+
+def _count_folder_sessions(folder: FocusFolder, db: Session) -> int:
+    return (
+        db.query(func.count(FocusSession.id))
+        .filter(
+            FocusSession.folder_id == folder.id,
+            FocusSession.user_id == folder.user_id,
+        )
+        .scalar()
+        or 0
+    )
+
+
+def _build_folder_out(folder: FocusFolder, db: Session) -> FocusFolderOut:
+    children = sorted(
+        folder.children or [], key=lambda item: (item.sort_order, item.id)
+    )
+    return FocusFolderOut(
+        id=folder.id,
+        parent_id=folder.parent_id,
+        name=folder.name,
+        color=folder.color,
+        icon_type=folder.icon_type,
+        icon_value=folder.icon_value,
+        sort_order=folder.sort_order,
+        created_at=folder.created_at,
+        updated_at=folder.updated_at,
+        session_count=_count_folder_sessions(folder, db),
+        children=[_build_folder_out(child, db) for child in children],
+    )
 
 
 def _build_session_out(session: FocusSession) -> FocusSessionOut:
@@ -46,7 +84,7 @@ def _build_session_out(session: FocusSession) -> FocusSessionOut:
         ended_at=session.ended_at,
         abandoned=session.abandoned,
         summary=session.summary,
-        tags=[TagOut.model_validate(tag) for tag in (session.tags or [])],
+        tags=[_build_tag_out(tag) for tag in (session.tags or [])],
         created_at=session.created_at,
         updated_at=session.updated_at,
     )
@@ -99,31 +137,52 @@ def _date_bounds(
     return start_dt, end_dt, start, end
 
 
+def _get_folder(
+    db: Session,
+    user_id: int,
+    folder_id: int,
+) -> FocusFolder:
+    folder = (
+        db.query(FocusFolder)
+        .filter(FocusFolder.id == folder_id, FocusFolder.user_id == user_id)
+        .first()
+    )
+    if not folder:
+        raise HTTPException(404, "focus folder not found")
+    return folder
+
+
+def _validate_parent_folder(
+    db: Session,
+    user_id: int,
+    parent_id: int | None,
+) -> None:
+    if parent_id is None:
+        return
+    _get_folder(db, user_id, parent_id)
+
+
 def _validate_folder(
     db: Session, user_id: int, folder_id: int | None
 ) -> None:
     if folder_id is None:
         return
-    folder = (
-        db.query(Folder)
-        .filter(Folder.id == folder_id, Folder.user_id == user_id)
-        .first()
-    )
-    if not folder:
-        raise HTTPException(404, "folder not found")
+    _get_folder(db, user_id, folder_id)
 
 
-def _load_tags(db: Session, user_id: int, tag_ids: list[int]) -> list[Tag]:
+def _load_tags(
+    db: Session, user_id: int, tag_ids: list[int]
+) -> list[FocusTag]:
     if not tag_ids:
         return []
     unique_ids = list(dict.fromkeys(tag_ids))
     tags = (
-        db.query(Tag)
-        .filter(Tag.id.in_(unique_ids), Tag.user_id == user_id)
+        db.query(FocusTag)
+        .filter(FocusTag.id.in_(unique_ids), FocusTag.user_id == user_id)
         .all()
     )
     if len(tags) != len(unique_ids):
-        raise HTTPException(404, "tag not found")
+        raise HTTPException(404, "focus tag not found")
     tags_by_id = {tag.id: tag for tag in tags}
     return [tags_by_id[tag_id] for tag_id in unique_ids]
 
@@ -154,7 +213,7 @@ def _apply_filters(
     if folder_id is not None:
         query = query.filter(FocusSession.folder_id == folder_id)
     if tag_id is not None:
-        query = query.filter(FocusSession.tags.any(Tag.id == tag_id))
+        query = query.filter(FocusSession.tags.any(FocusTag.id == tag_id))
     if started_from is not None:
         query = query.filter(
             FocusSession.started_at >= datetime.combine(started_from, time.min)
@@ -165,6 +224,161 @@ def _apply_filters(
             < datetime.combine(started_to + timedelta(days=1), time.min)
         )
     return query
+
+
+@router.get("/folders", response_model=list[FocusFolderOut])
+def list_folders(
+    parent_id: int | None = Query(None),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(FocusFolder).filter(FocusFolder.user_id == current_user.id)
+    if parent_id is not None:
+        query = query.filter(FocusFolder.parent_id == parent_id)
+    else:
+        query = query.filter(FocusFolder.parent_id.is_(None))
+    folders = (
+        query.order_by(FocusFolder.sort_order, FocusFolder.id)
+        .options(selectinload(FocusFolder.children))
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+    return [_build_folder_out(folder, db) for folder in folders]
+
+
+@router.post("/folders", response_model=FocusFolderOut, status_code=201)
+def create_folder(
+    body: FocusFolderCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _validate_parent_folder(db, current_user.id, body.parent_id)
+    folder = FocusFolder(**body.model_dump(), user_id=current_user.id)
+    db.add(folder)
+    db.commit()
+    db.refresh(folder)
+    return _build_folder_out(folder, db)
+
+
+@router.put("/folders/{folder_id}", response_model=FocusFolderOut)
+def update_folder(
+    folder_id: int,
+    body: FocusFolderUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    folder = _get_folder(db, current_user.id, folder_id)
+    data = body.model_dump(exclude_unset=True)
+    parent_id = data.get("parent_id")
+    if parent_id == folder_id:
+        raise HTTPException(400, "folder cannot be its own parent")
+    if "parent_id" in data:
+        _validate_parent_folder(db, current_user.id, parent_id)
+    for key, value in data.items():
+        setattr(folder, key, value)
+    db.commit()
+    db.refresh(folder)
+    return _build_folder_out(folder, db)
+
+
+@router.delete("/folders/{folder_id}", status_code=204)
+def delete_folder(
+    folder_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    folder = _get_folder(db, current_user.id, folder_id)
+    (
+        db.query(FocusSession)
+        .filter(
+            FocusSession.folder_id == folder.id,
+            FocusSession.user_id == current_user.id,
+        )
+        .update({"folder_id": None})
+    )
+    db.delete(folder)
+    db.commit()
+
+
+@router.post("/folders/reorder", status_code=204)
+def reorder_folders(
+    body: FocusReorderBatch,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    ids = [item.id for item in body.items]
+    if not ids:
+        return
+    folders = (
+        db.query(FocusFolder)
+        .filter(FocusFolder.id.in_(ids), FocusFolder.user_id == current_user.id)
+        .all()
+    )
+    if len(folders) != len(set(ids)):
+        raise HTTPException(404, "focus folder not found")
+    parent_ids = {folder.parent_id for folder in folders}
+    if len(parent_ids) > 1:
+        raise HTTPException(
+            400,
+            "folders can only be reordered within the same parent",
+        )
+    folder_map = {folder.id: folder for folder in folders}
+    for item in body.items:
+        folder_map[item.id].sort_order = item.sort_order
+    db.commit()
+
+
+@router.get("/tags", response_model=list[FocusTagOut])
+def list_tags(
+    search: str | None = Query(None),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    query = db.query(FocusTag).filter(FocusTag.user_id == current_user.id)
+    if search:
+        query = query.filter(FocusTag.name.ilike(f"%{search}%"))
+    return query.order_by(FocusTag.name).all()
+
+
+@router.post("/tags", response_model=FocusTagOut, status_code=201)
+def create_tag(
+    body: FocusTagCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    name = body.name.strip()
+    existing = (
+        db.query(FocusTag)
+        .filter(FocusTag.user_id == current_user.id, FocusTag.name == name)
+        .first()
+    )
+    if existing:
+        return existing
+    tag = FocusTag(user_id=current_user.id, name=name)
+    db.add(tag)
+    db.commit()
+    db.refresh(tag)
+    return tag
+
+
+@router.delete("/tags/{tag_id}", status_code=204)
+def delete_tag(
+    tag_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    tag = (
+        db.query(FocusTag)
+        .filter(FocusTag.id == tag_id, FocusTag.user_id == current_user.id)
+        .first()
+    )
+    if not tag:
+        raise HTTPException(404, "focus tag not found")
+    db.delete(tag)
+    db.commit()
 
 
 @router.get("/sessions", response_model=FocusSessionListResponse)
@@ -181,6 +395,10 @@ def list_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if folder_id is not None:
+        _validate_folder(db, current_user.id, folder_id)
+    if tag_id is not None:
+        _load_tags(db, current_user.id, [tag_id])
     query = _apply_filters(
         _session_query(db, current_user.id),
         search=search,
@@ -381,15 +599,16 @@ def _distribution_items(
     for session in sessions:
         if session.abandoned:
             continue
+        entries: list[tuple[int | None, str]]
         if by == "tag":
             entries = [(tag.id, tag.name) for tag in session.tags]
             if not entries:
-                entries = [(None, "未标记")]
+                entries = [(None, "Untagged")]
         else:
             entries = [
                 (
                     session.folder_id,
-                    session.folder.name if session.folder else "未整理",
+                    session.folder.name if session.folder else "Unfiled",
                 )
             ]
         for key in entries:

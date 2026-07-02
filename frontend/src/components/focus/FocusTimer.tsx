@@ -24,8 +24,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { createFocusSession } from '@/lib/api/focus';
-import type { APITag, FolderOut } from '@/lib/types';
-import type { FocusMode, FocusSessionCreate } from '@/lib/focusTypes';
+import type { FocusFolderOut, FocusMode, FocusSessionCreate, FocusTag } from '@/lib/focusTypes';
 import FocusArchiveDialog, { type PendingFocusSession } from './FocusArchiveDialog';
 import FocusTagPicker from './FocusTagPicker';
 import { flattenFolders, formatClock, formatDuration, formatElapsed } from './focusUtils';
@@ -33,10 +32,10 @@ import { flattenFolders, formatClock, formatDuration, formatElapsed } from './fo
 type TimerStatus = 'idle' | 'counting' | 'paused' | 'completed' | 'rest';
 
 interface FocusTimerProps {
-  folders: FolderOut[];
-  tags: APITag[];
+  folders: FocusFolderOut[];
+  tags: FocusTag[];
   onSessionSaved: (message: string) => void;
-  onCreateTag: (name: string) => Promise<APITag>;
+  onCreateTag: (name: string) => Promise<FocusTag>;
 }
 
 interface SavedTimerState {

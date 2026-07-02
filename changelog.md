@@ -1,5 +1,12 @@
 # changelog
 
+## 2026-06-23
+
+### fix
+
+-   修复 Focus 专注模块误用 Todo 文件夹和 Todo 标签的问题,改为使用 `focus_folders`, `focus_tags` 和 Focus 专属 API; 前端 `/focus` 改为加载 `listFocusFolders`, `listFocusTags`, 并新增 Focus 文件夹管理页.影响范围:Focus 计时,归档,记录筛选,记录编辑,标签和文件夹管理.关联文件: `backend/src/models/focus.py`, `backend/src/schemas/focus.py`, `backend/src/routers/focus.py`, `backend/migrations/versions/20260622_0003_focus_sessions.py`, `backend/tests/test_focus.py`, `frontend/src/app/focus/page.tsx`, `frontend/src/components/focus/*`, `frontend/src/lib/focusTypes.ts`, `frontend/src/lib/api/focus.ts`.
+-   新增项目开发规则: 文件夹和标签默认按业务模块独立建模,除非需求或设计文档明确说明共享,不得跨模块复用其他模块的文件夹或标签表,接口,状态或组件数据源.影响范围:模块边界和后续开发流程.关联文件: `AGENTS.md`, `project_flow/2_architecture.md`, `docs/focus.md`, `docs/api.md`, `docs/frontend.md`.
+
 ## 2026-06-22
 
 ### feat
@@ -14,6 +21,10 @@
 
 -   新增 `docs/focus.md`, 并更新 `docs/README.md`, `docs/frontend.md`, `docs/api.md`, `README.md`, 记录 Focus 模块入口, 文件位置, API, 主题 token 约束和 MUI X `DatePicker` 日期筛选规范.
 -   更新 `docs/focus.md`, `docs/frontend.md`, `docs/api.md`, 补充 Focus 标签页, 计时标签, 记录编辑, 文件夹侧边栏和热力图尺寸说明.
+
+### fix
+
+-   修复 Focus 迁移合并到 develop 后从 `20260610_0002` 分叉导致 Alembic 多 head, 后端启动执行 `upgrade head` 直接退出的问题.影响范围:后端启动迁移流程.关联文件: `backend/migrations/versions/20260622_0003_focus_sessions.py`.
 
 ## 2026-06-21
 

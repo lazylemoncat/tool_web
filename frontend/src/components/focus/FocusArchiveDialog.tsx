@@ -14,8 +14,12 @@ import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import Typography from '@mui/material/Typography';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
-import type { APITag, FolderOut } from '@/lib/types';
-import type { FocusMode, FocusSessionCreate } from '@/lib/focusTypes';
+import type {
+  FocusFolderOut,
+  FocusMode,
+  FocusSessionCreate,
+  FocusTag,
+} from '@/lib/focusTypes';
 import FocusTagPicker from './FocusTagPicker';
 import { flattenFolders, formatDuration } from './focusUtils';
 
@@ -36,13 +40,13 @@ export interface PendingFocusSession {
 interface FocusArchiveDialogProps {
   open: boolean;
   pending: PendingFocusSession | null;
-  folders: FolderOut[];
-  tags: APITag[];
+  folders: FocusFolderOut[];
+  tags: FocusTag[];
   initialTagIds?: string[];
   saving: boolean;
   onClose: () => void;
   onSave: (payload: FocusSessionCreate) => Promise<void>;
-  onCreateTag: (name: string) => Promise<APITag>;
+  onCreateTag: (name: string) => Promise<FocusTag>;
 }
 
 export default function FocusArchiveDialog({

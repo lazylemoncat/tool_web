@@ -1,6 +1,6 @@
 """
-Focus timer Pydantic schemas for persisted sessions, list responses, and
-dashboard summaries.
+Focus timer Pydantic schemas for module-owned metadata, persisted sessions,
+list responses, and dashboard summaries.
 """
 
 from __future__ import annotations
@@ -9,11 +9,63 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, Field, model_validator
 
-from .tag import TagOut
+
+class FocusReorderItem(BaseModel):
+    id: int
+    sort_order: int
+
+
+class FocusReorderBatch(BaseModel):
+    items: list[FocusReorderItem]
+
+
+class FocusFolderCreate(BaseModel):
+    parent_id: int | None = None
+    name: str = Field(min_length=1, max_length=50)
+    color: str = "#6366f1"
+    icon_type: str = Field(default="color", pattern="^(color|emoji)$")
+    icon_value: str = Field(default="#6366f1", min_length=1, max_length=20)
+    sort_order: int = 0
+
+
+class FocusFolderUpdate(BaseModel):
+    parent_id: int | None = None
+    name: str | None = Field(None, min_length=1, max_length=50)
+    color: str | None = None
+    icon_type: str | None = Field(None, pattern="^(color|emoji)$")
+    icon_value: str | None = Field(None, min_length=1, max_length=20)
+    sort_order: int | None = None
+
+
+class FocusFolderOut(BaseModel):
+    id: int
+    parent_id: int | None = None
+    name: str
+    color: str
+    icon_type: str
+    icon_value: str
+    sort_order: int
+    created_at: datetime
+    updated_at: datetime
+    session_count: int = 0
+    children: list["FocusFolderOut"] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
+
+
+class FocusTagCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+
+
+class FocusTagOut(BaseModel):
+    id: int
+    name: str
+
+    model_config = {"from_attributes": True}
 
 
 class FocusSessionCreate(BaseModel):
-    name: str = Field(default="未命名专注", min_length=1, max_length=120)
+    name: str = Field(default="Untitled focus", min_length=1, max_length=120)
     mode: str = Field(default="pomodoro", pattern="^(pomodoro|free)$")
     planned_seconds: int | None = Field(None, ge=0, le=86_400)
     focus_seconds: int = Field(ge=0, le=86_400)
@@ -21,14 +73,14 @@ class FocusSessionCreate(BaseModel):
     pause_seconds: int = Field(default=0, ge=0, le=86_400)
     rest_seconds: int = Field(default=0, ge=0, le=86_400)
     folder_id: int | None = None
-    tag_ids: list[int] = []
+    tag_ids: list[int] = Field(default_factory=list)
     summary: str | None = Field(None, max_length=5000)
     started_at: datetime = Field(default_factory=datetime.utcnow)
     ended_at: datetime | None = None
     abandoned: bool = False
 
     @model_validator(mode="after")
-    def validate_time_order(self) -> FocusSessionCreate:
+    def validate_time_order(self) -> "FocusSessionCreate":
         if self.ended_at and self.ended_at < self.started_at:
             raise ValueError("ended_at must be after started_at")
         return self
@@ -50,7 +102,7 @@ class FocusSessionUpdate(BaseModel):
     abandoned: bool | None = None
 
     @model_validator(mode="after")
-    def validate_time_order(self) -> FocusSessionUpdate:
+    def validate_time_order(self) -> "FocusSessionUpdate":
         if (
             self.started_at
             and self.ended_at
@@ -75,7 +127,7 @@ class FocusSessionOut(BaseModel):
     ended_at: datetime | None = None
     abandoned: bool
     summary: str | None = None
-    tags: list[TagOut] = []
+    tags: list[FocusTagOut] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 

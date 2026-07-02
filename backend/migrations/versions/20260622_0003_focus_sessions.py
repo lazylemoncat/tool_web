@@ -1,4 +1,4 @@
-"""Add focus timer sessions."""
+"""Add focus timer module tables."""
 
 from collections.abc import Sequence
 
@@ -7,7 +7,7 @@ from alembic import op
 from sqlalchemy import inspect
 
 revision: str = "20260622_0003"
-down_revision: str | None = "20260610_0002"
+down_revision: str | None = "20260618_0004"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None
 
@@ -18,6 +18,73 @@ def _has_table(table_name: str) -> bool:
 
 
 def upgrade() -> None:
+    if not _has_table("focus_folders"):
+        op.create_table(
+            "focus_folders",
+            sa.Column(
+                "id", sa.Integer(), primary_key=True, autoincrement=True
+            ),
+            sa.Column(
+                "user_id",
+                sa.Integer(),
+                sa.ForeignKey("auth_users.id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+            sa.Column(
+                "parent_id",
+                sa.Integer(),
+                sa.ForeignKey("focus_folders.id", ondelete="CASCADE"),
+                nullable=True,
+            ),
+            sa.Column("name", sa.String(length=50), nullable=False),
+            sa.Column("color", sa.String(length=9), nullable=True),
+            sa.Column("icon_type", sa.String(length=10), nullable=True),
+            sa.Column("icon_value", sa.String(length=20), nullable=True),
+            sa.Column(
+                "sort_order",
+                sa.Integer(),
+                nullable=True,
+                server_default="0",
+            ),
+            sa.Column(
+                "created_at",
+                sa.DateTime(),
+                nullable=True,
+                server_default=sa.func.now(),
+            ),
+            sa.Column(
+                "updated_at",
+                sa.DateTime(),
+                nullable=True,
+                server_default=sa.func.now(),
+            ),
+        )
+        op.create_index(
+            "ix_focus_folders_user_id", "focus_folders", ["user_id"]
+        )
+        op.create_index(
+            "idx_focus_folders_user_parent",
+            "focus_folders",
+            ["user_id", "parent_id"],
+        )
+
+    if not _has_table("focus_tags"):
+        op.create_table(
+            "focus_tags",
+            sa.Column(
+                "id", sa.Integer(), primary_key=True, autoincrement=True
+            ),
+            sa.Column(
+                "user_id",
+                sa.Integer(),
+                sa.ForeignKey("auth_users.id", ondelete="CASCADE"),
+                nullable=False,
+            ),
+            sa.Column("name", sa.String(length=50), nullable=False),
+            sa.UniqueConstraint("user_id", "name"),
+        )
+        op.create_index("ix_focus_tags_user_id", "focus_tags", ["user_id"])
+
     if not _has_table("focus_sessions"):
         op.create_table(
             "focus_sessions",
@@ -33,7 +100,7 @@ def upgrade() -> None:
             sa.Column(
                 "folder_id",
                 sa.Integer(),
-                sa.ForeignKey("folders.id", ondelete="SET NULL"),
+                sa.ForeignKey("focus_folders.id", ondelete="SET NULL"),
                 nullable=True,
             ),
             sa.Column("name", sa.String(length=120), nullable=False),
@@ -121,7 +188,7 @@ def upgrade() -> None:
             sa.Column(
                 "tag_id",
                 sa.Integer(),
-                sa.ForeignKey("tags.id", ondelete="CASCADE"),
+                sa.ForeignKey("focus_tags.id", ondelete="CASCADE"),
                 primary_key=True,
             ),
         )
@@ -145,3 +212,13 @@ def downgrade() -> None:
         )
         op.drop_index("ix_focus_sessions_user_id", table_name="focus_sessions")
         op.drop_table("focus_sessions")
+    if _has_table("focus_tags"):
+        op.drop_index("ix_focus_tags_user_id", table_name="focus_tags")
+        op.drop_table("focus_tags")
+    if _has_table("focus_folders"):
+        op.drop_index(
+            "idx_focus_folders_user_parent",
+            table_name="focus_folders",
+        )
+        op.drop_index("ix_focus_folders_user_id", table_name="focus_folders")
+        op.drop_table("focus_folders")

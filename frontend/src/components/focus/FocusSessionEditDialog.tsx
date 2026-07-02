@@ -16,20 +16,25 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import SaveRoundedIcon from '@mui/icons-material/SaveRounded';
-import type { APITag, FolderOut } from '@/lib/types';
-import type { FocusMode, FocusSessionOut, FocusSessionUpdate } from '@/lib/focusTypes';
+import type {
+  FocusFolderOut,
+  FocusMode,
+  FocusSessionOut,
+  FocusSessionUpdate,
+  FocusTag,
+} from '@/lib/focusTypes';
 import FocusTagPicker from './FocusTagPicker';
 import { flattenFolders } from './focusUtils';
 
 interface FocusSessionEditDialogProps {
   open: boolean;
   session: FocusSessionOut | null;
-  folders: FolderOut[];
-  tags: APITag[];
+  folders: FocusFolderOut[];
+  tags: FocusTag[];
   saving: boolean;
   onClose: () => void;
   onSave: (payload: FocusSessionUpdate) => Promise<void>;
-  onCreateTag: (name: string) => Promise<APITag>;
+  onCreateTag: (name: string) => Promise<FocusTag>;
 }
 
 function secondsToMinutes(seconds: number | null | undefined): string {

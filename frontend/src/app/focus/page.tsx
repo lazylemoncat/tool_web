@@ -10,24 +10,35 @@ import FocusSidebar, { type FocusTab } from '@/components/focus/FocusSidebar';
 import FocusTimer from '@/components/focus/FocusTimer';
 import FocusOverview from '@/components/focus/FocusOverview';
 import FocusRecords from '@/components/focus/FocusRecords';
+import FocusFolders from '@/components/focus/FocusFolders';
 import FocusTags from '@/components/focus/FocusTags';
-import { getFocusSummary } from '@/lib/api/focus';
-import { createTag, listFolders, listTags } from '@/lib/api';
-import type { APITag, FolderOut } from '@/lib/types';
-import type { FocusRange, FocusSummaryResponse } from '@/lib/focusTypes';
+import {
+  createFocusFolder,
+  createFocusTag,
+  getFocusSummary,
+  listFocusFolders,
+  listFocusTags,
+} from '@/lib/api/focus';
+import type {
+  FocusFolderOut,
+  FocusRange,
+  FocusSummaryResponse,
+  FocusTag,
+} from '@/lib/focusTypes';
 
 const TAB_LABELS: Record<FocusTab, string> = {
   timer: '计时',
   overview: '数据总览',
   records: '记录',
+  folders: '文件夹',
   tags: '标签',
 };
 
 export default function FocusPage() {
   const [activeTab, setActiveTab] = useState<FocusTab>('timer');
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [folders, setFolders] = useState<FolderOut[]>([]);
-  const [tags, setTags] = useState<APITag[]>([]);
+  const [folders, setFolders] = useState<FocusFolderOut[]>([]);
+  const [tags, setTags] = useState<FocusTag[]>([]);
   const [summary, setSummary] = useState<FocusSummaryResponse | null>(null);
   const [summaryRange, setSummaryRange] = useState<FocusRange>('7d');
   const [loadingMeta, setLoadingMeta] = useState(true);
@@ -41,8 +52,8 @@ export default function FocusPage() {
     setError(null);
     try {
       const [folderData, tagData] = await Promise.all([
-        listFolders(),
-        listTags(),
+        listFocusFolders(),
+        listFocusTags(),
       ]);
       setFolders(folderData);
       setTags(tagData);
@@ -81,14 +92,24 @@ export default function FocusPage() {
     if (message) setSnackbar({ message, severity: 'success' });
   }, []);
 
-  const handleCreateTag = useCallback(async (name: string): Promise<APITag> => {
-    const tag = await createTag({ name });
+  const handleCreateTag = useCallback(async (name: string): Promise<FocusTag> => {
+    const tag = await createFocusTag({ name });
     setTags((previous) => {
       const merged = previous.some((item) => item.id === tag.id) ? previous : [...previous, tag];
       return [...merged].sort((left, right) => left.name.localeCompare(right.name, 'zh-Hans-CN'));
     });
     setSnackbar({ message: '标签已保存', severity: 'success' });
     return tag;
+  }, []);
+
+  const handleCreateFolder = useCallback(async (name: string): Promise<FocusFolderOut> => {
+    const folder = await createFocusFolder({ name });
+    setFolders((previous) => {
+      const merged = previous.some((item) => item.id === folder.id) ? previous : [...previous, folder];
+      return [...merged].sort((left, right) => left.sort_order - right.sort_order || left.id - right.id);
+    });
+    setSnackbar({ message: '文件夹已保存', severity: 'success' });
+    return folder;
   }, []);
 
   return (
@@ -103,7 +124,7 @@ export default function FocusPage() {
       <Box component="main" sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <ContentHeader
           title={TAB_LABELS[activeTab]}
-          subtitle="· 番茄钟"
+          subtitle="番茄钟, 记录, 复盘"
           showMenu
           onMenuClick={() => setMobileSidebarOpen(true)}
         />
@@ -144,6 +165,12 @@ export default function FocusPage() {
                 refreshKey={refreshKey}
                 onChanged={() => handleSessionChanged('记录已更新')}
                 onCreateTag={handleCreateTag}
+              />
+            )}
+            {activeTab === 'folders' && (
+              <FocusFolders
+                folders={folders}
+                onCreateFolder={handleCreateFolder}
               />
             )}
             {activeTab === 'tags' && (

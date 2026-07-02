@@ -65,6 +65,7 @@ SQLite database
 -   前端 API 调用统一经过 `frontend/src/lib/api.ts`,避免页面组件直接散落请求细节.
 -   前端日期选择控件必须使用 MUI X `DatePicker`,日期显示格式通过共享常量和 `format` 属性控制.
 -   后端新增接口必须进入对应 `backend/src/routers/` 模块,并配套 Pydantic schema 和 pytest 覆盖.
+-   文件夹和标签默认属于各自业务模块,新模块必须使用独立数据表,API client,前端类型和状态管理.只有需求或设计文档明确写明共享时,才允许跨模块复用文件夹或标签能力.
 -   后端质量检查以 `ruff`, `mypy` 和 `pytest` 为准,避免新增未类型化或未格式化代码.
 -   当前阶段不引入 Redis,消息队列或微服务拆分,除非 Agent/Webhook 的实际需求证明有必要.
 -   `.env` 保存本地敏感配置,公开文档只维护 `.env.example` 和必要说明.

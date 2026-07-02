@@ -13,15 +13,15 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
-import type { APITag } from '@/lib/types';
+import type { FocusTag } from '@/lib/focusTypes';
 
 interface FocusTagPickerProps {
   id: string;
   label: string;
-  tags: APITag[];
+  tags: FocusTag[];
   selectedTagIds: string[];
   onChange: (tagIds: string[]) => void;
-  onCreateTag?: (name: string) => Promise<APITag>;
+  onCreateTag?: (name: string) => Promise<FocusTag>;
   disabled?: boolean;
 }
 

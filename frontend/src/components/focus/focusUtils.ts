@@ -1,4 +1,4 @@
-import type { FolderOut } from '@/lib/types';
+import type { FocusFolderOut } from '@/lib/focusTypes';
 
 export interface FolderOption {
   id: number;
@@ -31,7 +31,7 @@ export function formatDuration(totalSeconds: number): string {
   return `${seconds}s`;
 }
 
-export function flattenFolders(folders: FolderOut[], prefix = ''): FolderOption[] {
+export function flattenFolders(folders: FocusFolderOut[], prefix = ''): FolderOption[] {
   return folders.flatMap((folder) => {
     const label = prefix ? `${prefix} / ${folder.name}` : folder.name;
     return [

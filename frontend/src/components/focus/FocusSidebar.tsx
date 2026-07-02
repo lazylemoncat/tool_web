@@ -7,8 +7,9 @@ import TimerRoundedIcon from '@mui/icons-material/TimerRounded';
 import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 import ListAltRoundedIcon from '@mui/icons-material/ListAltRounded';
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
+import FolderRoundedIcon from '@mui/icons-material/FolderRounded';
 
-export type FocusTab = 'timer' | 'overview' | 'records' | 'tags';
+export type FocusTab = 'timer' | 'overview' | 'records' | 'folders' | 'tags';
 
 interface FocusSidebarProps {
   activeTab: FocusTab;
@@ -21,6 +22,7 @@ const NAV_ITEMS: { id: FocusTab; label: string; icon: React.ReactNode }[] = [
   { id: 'timer', label: '计时', icon: <TimerRoundedIcon fontSize="small" /> },
   { id: 'overview', label: '数据总览', icon: <InsightsRoundedIcon fontSize="small" /> },
   { id: 'records', label: '记录', icon: <ListAltRoundedIcon fontSize="small" /> },
+  { id: 'folders', label: '文件夹', icon: <FolderRoundedIcon fontSize="small" /> },
   { id: 'tags', label: '标签', icon: <LocalOfferRoundedIcon fontSize="small" /> },
 ];
 

@@ -25,17 +25,22 @@ import dayjs, { type Dayjs } from 'dayjs';
 import ConfirmDialog from '@/components/shared/ConfirmDialog';
 import { DATE_PICKER_DISPLAY_FORMAT } from '@/lib/dateFormats';
 import { deleteFocusSession, listFocusSessions, updateFocusSession } from '@/lib/api/focus';
-import type { APITag, FolderOut } from '@/lib/types';
-import type { FocusMode, FocusSessionOut, FocusSessionUpdate } from '@/lib/focusTypes';
+import type {
+  FocusFolderOut,
+  FocusMode,
+  FocusSessionOut,
+  FocusSessionUpdate,
+  FocusTag,
+} from '@/lib/focusTypes';
 import FocusSessionEditDialog from './FocusSessionEditDialog';
 import { formatDuration } from './focusUtils';
 
 interface FocusRecordsProps {
-  folders: FolderOut[];
-  tags: APITag[];
+  folders: FocusFolderOut[];
+  tags: FocusTag[];
   refreshKey: number;
   onChanged: () => void;
-  onCreateTag: (name: string) => Promise<APITag>;
+  onCreateTag: (name: string) => Promise<FocusTag>;
 }
 
 type ModeFilter = 'all' | FocusMode;
@@ -51,7 +56,7 @@ interface FolderNavItem {
   depth: number;
 }
 
-function buildFolderNavItems(folders: FolderOut[], depth = 0): FolderNavItem[] {
+function buildFolderNavItems(folders: FocusFolderOut[], depth = 0): FolderNavItem[] {
   return folders.flatMap((folder) => [
     { id: String(folder.id), label: folder.name, depth },
     ...buildFolderNavItems(folder.children ?? [], depth + 1),

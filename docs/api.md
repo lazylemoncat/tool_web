@@ -252,6 +252,21 @@ Query 参数:
 
 Focus 模块记录番茄钟和自由计时结果. 运行中的秒级状态由前端 localStorage 恢复, 结束, 放弃或归档后写入后端.
 
+### 专注文件夹和标签
+
+Focus 文件夹和标签为模块独立数据,不复用 Todo 文件夹或 Todo 标签.
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| `GET` | `/api/v1/focus/folders` | 获取 Focus 文件夹树 |
+| `POST` | `/api/v1/focus/folders` | 创建 Focus 文件夹 |
+| `PUT` | `/api/v1/focus/folders/{id}` | 更新 Focus 文件夹 |
+| `DELETE` | `/api/v1/focus/folders/{id}` | 删除 Focus 文件夹,已有记录置为未整理 |
+| `POST` | `/api/v1/focus/folders/reorder` | 同级 Focus 文件夹排序 |
+| `GET` | `/api/v1/focus/tags?search=` | 获取 Focus 标签 |
+| `POST` | `/api/v1/focus/tags` | 创建 Focus 标签,同名幂等返回已有标签 |
+| `DELETE` | `/api/v1/focus/tags/{id}` | 删除 Focus 标签 |
+
 ### 专注记录
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -267,8 +282,8 @@ Focus 模块记录番茄钟和自由计时结果. 运行中的秒级状态由前
 | `search` | string | 按名称和复盘模糊搜索 |
 | `mode` | string | `pomodoro` 或 `free` |
 | `abandoned` | boolean | 是否放弃 |
-| `folder_id` | int | 按 Todo 文件夹筛选 |
-| `tag_id` | int | 按共享 Todo 标签筛选 |
+| `folder_id` | int | 按 Focus 文件夹筛选 |
+| `tag_id` | int | 按 Focus 标签筛选 |
 | `started_from` | date | 开始日期下限 |
 | `started_to` | date | 开始日期上限 |
 | `skip` | int | 分页偏移 |

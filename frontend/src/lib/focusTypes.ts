@@ -1,7 +1,42 @@
-import type { APITag } from './types';
-
 export type FocusMode = 'pomodoro' | 'free';
 export type FocusRange = 'today' | 'week' | 'month' | '7d' | '30d' | 'all';
+
+export interface FocusTag {
+  id: number;
+  name: string;
+}
+
+export interface FocusFolderOut {
+  id: number;
+  parent_id: number | null;
+  name: string;
+  color: string;
+  icon_type: 'color' | 'emoji';
+  icon_value: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+  session_count: number;
+  children: FocusFolderOut[];
+}
+
+export interface FocusFolderCreate {
+  parent_id?: number | null;
+  name: string;
+  color?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
+  sort_order?: number;
+}
+
+export interface FocusFolderUpdate {
+  parent_id?: number | null;
+  name?: string;
+  color?: string;
+  icon_type?: 'color' | 'emoji';
+  icon_value?: string;
+  sort_order?: number;
+}
 
 export interface FocusSessionOut {
   id: number;
@@ -18,7 +53,7 @@ export interface FocusSessionOut {
   ended_at: string | null;
   abandoned: boolean;
   summary: string | null;
-  tags: APITag[];
+  tags: FocusTag[];
   created_at: string;
   updated_at: string;
 }

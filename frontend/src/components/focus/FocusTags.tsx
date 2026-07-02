@@ -11,11 +11,11 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import LocalOfferRoundedIcon from '@mui/icons-material/LocalOfferRounded';
-import type { APITag } from '@/lib/types';
+import type { FocusTag } from '@/lib/focusTypes';
 
 interface FocusTagsProps {
-  tags: APITag[];
-  onCreateTag: (name: string) => Promise<APITag>;
+  tags: FocusTag[];
+  onCreateTag: (name: string) => Promise<FocusTag>;
 }
 
 export default function FocusTags({ tags, onCreateTag }: FocusTagsProps) {

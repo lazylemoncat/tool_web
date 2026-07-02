@@ -1,49 +1,62 @@
-# Tool Web 专注番茄钟模块文档
+# Tool Web Focus 专注模块文档
 
 ## 功能概述
 
-Focus 模块提供持久化番茄钟和自由计时能力. 前端位于 `/focus`, 复用全局顶部导航, `ContentHeader`, MUI 主题 token, 以及 Finance 风格的模块侧边栏和记录筛选栏. 后端 `/api/v1/focus` 路由将完成或放弃的计时记录保存到数据库, 支持记录更新, 文件夹筛选和共享标签关联.
+Focus 模块提供持久化番茄钟和自由计时能力. 前端位于 `/focus`, 后端统一挂载在 `/api/v1/focus`. 专注记录,文件夹和标签均属于 Focus 模块自身,不复用 Todo 的 `/api/v1/folders` 或 `/api/v1/tags`.
 
-## 前端文件清单
+## 前端文件
 
 | 文件 | 作用 |
 |------|------|
-| `frontend/src/app/focus/page.tsx` | Focus 页面入口, 管理模块 tab, 侧边栏, 基础数据, 统计刷新和提示 |
-| `frontend/src/components/focus/FocusSidebar.tsx` | 专注模块侧边栏, 桌面固定栏和移动端抽屉 |
-| `frontend/src/components/focus/FocusTimer.tsx` | 番茄钟/自由计时器, 暂停, 继续, 放弃, 休息, 本地恢复, 计时标签和归档触发 |
-| `frontend/src/components/focus/FocusArchiveDialog.tsx` | 计时结束后的归档弹窗, 可填写文件夹, 标签, 新增标签和复盘 |
-| `frontend/src/components/focus/FocusOverview.tsx` | 专注统计总览, 包含范围筛选, 统计卡片, 趋势, 居中热力图和分布 |
-| `frontend/src/components/focus/FocusRecords.tsx` | 专注记录列表, 支持文件夹侧边栏, 搜索, 模式, 状态, 标签, 日期范围筛选和编辑 |
-| `frontend/src/components/focus/FocusSessionEditDialog.tsx` | 专注记录编辑弹窗, 支持更新名称, 模式, 时长, 文件夹, 标签, 复盘和放弃状态 |
-| `frontend/src/components/focus/FocusTagPicker.tsx` | Focus 共享标签选择与新增控件 |
-| `frontend/src/components/focus/FocusTags.tsx` | Focus 标签页, 支持新增共享标签并展示当前标签集合 |
-| `frontend/src/components/focus/focusUtils.ts` | 时长格式化和文件夹拍平工具 |
+| `frontend/src/app/focus/page.tsx` | Focus 页面入口,加载 Focus 文件夹,标签和统计数据 |
+| `frontend/src/components/focus/FocusSidebar.tsx` | Focus 模块侧边栏,包含计时,总览,记录,文件夹和标签页 |
+| `frontend/src/components/focus/FocusTimer.tsx` | 番茄钟和自由计时器,支持暂停,继续,放弃,休息,本地恢复和归档 |
+| `frontend/src/components/focus/FocusArchiveDialog.tsx` | 计时结束后的归档弹窗,可选择 Focus 文件夹和 Focus 标签 |
+| `frontend/src/components/focus/FocusRecords.tsx` | 专注记录列表,支持 Focus 文件夹侧栏,标签,模式,状态和日期范围筛选 |
+| `frontend/src/components/focus/FocusFolders.tsx` | Focus 文件夹管理页,支持新增专注文件夹 |
+| `frontend/src/components/focus/FocusTags.tsx` | Focus 标签管理页,支持新增专注标签 |
+| `frontend/src/components/focus/FocusTagPicker.tsx` | Focus 标签选择与新增控件 |
+| `frontend/src/components/focus/FocusSessionEditDialog.tsx` | 专注记录编辑弹窗 |
+| `frontend/src/components/focus/focusUtils.ts` | 时长格式化和 Focus 文件夹扁平化工具 |
 | `frontend/src/lib/focusTypes.ts` | Focus 前端类型 |
 | `frontend/src/lib/api/focus.ts` | Focus API client |
 
-## 后端文件清单
+## 后端文件
 
 | 文件 | 作用 |
 |------|------|
-| `backend/src/models/focus.py` | `FocusSession` ORM 和 `focus_session_tags` 关联表 |
-| `backend/src/schemas/focus.py` | Focus 请求, 响应, 列表和统计 Pydantic schema |
-| `backend/src/routers/focus.py` | `/api/v1/focus` 路由, 记录 CRUD 和统计汇总 |
-| `backend/migrations/versions/20260622_0003_focus_sessions.py` | Focus 表结构迁移 |
-| `backend/tests/test_focus.py` | Focus API 契约和用户隔离测试 |
-
-## 计时流程
-
-1. 用户进入 `/focus`, 默认展示 `计时` tab.
-2. 选择 `番茄钟` 或 `自由计时`. 番茄钟支持 5/15/25/30/45/60 分钟预设.
-3. 计时中状态写入 `localStorage` 的 `toolweb-focus-timer-state`, 用于刷新页面后恢复, 不向后端发送秒级请求.
-4. 计时界面可选择一个或多个标签, 也可直接新增标签并自动选中; 运行中补充的标签会写入本地恢复状态并随归档保存.
-5. 点击结束后打开归档弹窗. 用户可补充名称, 文件夹, 标签, 新增标签和复盘内容.
-6. 点击保存或稍后整理后调用 `POST /api/v1/focus/sessions`.
-7. 点击放弃时也会保存记录并携带当前标签, 但后端统计默认排除 `abandoned=true` 的记录.
-8. 开启自动休息时, 番茄钟结束后进入 15 分钟休息, 休息完成或跳过后再归档.
-9. 记录页可通过文件夹侧边栏筛选, 并通过编辑弹窗调用 `PUT /api/v1/focus/sessions/{id}` 更新记录.
+| `backend/src/models/focus.py` | `FocusFolder`, `FocusTag`, `FocusSession` 和 `focus_session_tags` ORM |
+| `backend/src/schemas/focus.py` | Focus 文件夹,标签,记录,列表和统计 Pydantic schema |
+| `backend/src/routers/focus.py` | `/api/v1/focus` 路由,包含文件夹,标签,记录 CRUD 和统计 |
+| `backend/migrations/versions/20260622_0003_focus_sessions.py` | Focus 专属表结构迁移 |
+| `backend/tests/test_focus.py` | Focus API 契约和跨用户隔离测试 |
 
 ## 数据模型
+
+### focus_folders
+
+| 列名 | 类型 | 说明 |
+|------|------|------|
+| `id` | Integer | 主键 |
+| `user_id` | Integer | 所属用户 |
+| `parent_id` | Integer, nullable | 父级 Focus 文件夹 |
+| `name` | String(50) | 文件夹名称 |
+| `color` | String(9) | 标记颜色 |
+| `icon_type` | String(10) | `color` 或 `emoji` |
+| `icon_value` | String(20) | 标记值 |
+| `sort_order` | Integer | 排序值 |
+| `created_at` | DateTime | 创建时间 |
+| `updated_at` | DateTime | 更新时间 |
+
+### focus_tags
+
+| 列名 | 类型 | 说明 |
+|------|------|------|
+| `id` | Integer | 主键 |
+| `user_id` | Integer | 所属用户 |
+| `name` | String(50) | 标签名称 |
+
+`focus_tags` 对 `(user_id, name)` 做唯一约束,同名创建幂等返回已有标签.
 
 ### focus_sessions
 
@@ -51,10 +64,10 @@ Focus 模块提供持久化番茄钟和自由计时能力. 前端位于 `/focus`
 |------|------|------|
 | `id` | Integer | 主键 |
 | `user_id` | Integer | 所属用户 |
-| `folder_id` | Integer, nullable | 关联 Todo 文件夹, 文件夹删除后置空 |
+| `folder_id` | Integer, nullable | 关联 Focus 文件夹,删除文件夹后置空 |
 | `name` | String(120) | 专注名称 |
 | `mode` | String(20) | `pomodoro` 或 `free` |
-| `planned_seconds` | Integer, nullable | 番茄钟计划时长 |
+| `planned_seconds` | Integer, nullable | 计划时长 |
 | `focus_seconds` | Integer | 实际专注秒数 |
 | `pause_count` | Integer | 暂停次数 |
 | `pause_seconds` | Integer | 暂停秒数 |
@@ -68,40 +81,29 @@ Focus 模块提供持久化番茄钟和自由计时能力. 前端位于 `/focus`
 
 ### focus_session_tags
 
-Focus 记录复用 Todo `tags` 表, 通过 `focus_session_tags` 建立多对多关系. 后端会校验标签必须属于当前用户.
+Focus 记录通过 `focus_session_tags` 关联 Focus 自己的 `focus_tags`,后端会校验标签必须属于当前用户.
 
 ## API
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| `GET` | `/api/v1/focus/sessions` | 获取专注记录, 支持搜索和筛选 |
+| `GET` | `/api/v1/focus/folders` | 获取 Focus 文件夹树 |
+| `POST` | `/api/v1/focus/folders` | 创建 Focus 文件夹 |
+| `PUT` | `/api/v1/focus/folders/{id}` | 更新 Focus 文件夹 |
+| `DELETE` | `/api/v1/focus/folders/{id}` | 删除 Focus 文件夹,已有记录置为未整理 |
+| `POST` | `/api/v1/focus/folders/reorder` | 同级 Focus 文件夹排序 |
+| `GET` | `/api/v1/focus/tags` | 获取 Focus 标签 |
+| `POST` | `/api/v1/focus/tags` | 创建 Focus 标签 |
+| `DELETE` | `/api/v1/focus/tags/{id}` | 删除 Focus 标签 |
+| `GET` | `/api/v1/focus/sessions` | 获取专注记录 |
 | `POST` | `/api/v1/focus/sessions` | 创建专注记录 |
 | `PUT` | `/api/v1/focus/sessions/{id}` | 更新专注记录 |
 | `DELETE` | `/api/v1/focus/sessions/{id}` | 删除专注记录 |
-| `GET` | `/api/v1/focus/summary` | 获取统计汇总 |
+| `GET` | `/api/v1/focus/summary` | 获取专注统计 |
 
-### 记录筛选参数
+## 开发约束
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `search` | string | 按名称和复盘模糊搜索 |
-| `mode` | string | `pomodoro` 或 `free` |
-| `abandoned` | boolean | 按放弃状态筛选 |
-| `folder_id` | int | 按文件夹筛选 |
-| `tag_id` | int | 按标签筛选 |
-| `started_from` | date | 开始日期下限 |
-| `started_to` | date | 开始日期上限 |
-| `skip` | int | 分页偏移 |
-| `limit` | int | 每页数量 |
-
-### 统计范围
-
-`GET /api/v1/focus/summary?range=7d` 支持 `today`, `week`, `month`, `7d`, `30d`, `all`.
-
-## 主题和交互约束
-
-- Focus 页面使用 MUI `background`, `text`, `divider`, `action`, `primary`, `success`, `warning`, `error` token.
-- 原型中的 `#6C5CE7` 与当前主题 `primary.main` 一致, 不在 Focus 组件内复制独立 CSS 变量体系.
-- 90 天热力图使用主题 token 色阶, 格子尺寸 20px, 间距 5px, 在统计卡片内居中显示.
-- 日期范围筛选使用 MUI X `DatePicker`, 显示格式复用 `DATE_PICKER_DISPLAY_FORMAT`.
-- 计时器只在运行中使用 localStorage 做恢复; 业务记录以后端数据库为准.
+- Focus 文件夹和标签必须使用 `FocusFolderOut` 和 `FocusTag` 类型.
+- Focus 页面不得调用 Todo 的 `listFolders`, `createFolder`, `listTags` 或 `createTag`.
+- 记录筛选和归档中的 `folder_id` 与 `tag_ids` 均指向 Focus 专属表.
+- 日期范围筛选继续使用 MUI X `DatePicker`,显示格式复用 `DATE_PICKER_DISPLAY_FORMAT`.
