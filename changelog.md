@@ -8,6 +8,7 @@
 -   删除历史文档: `docs/superpowers/` (15 份历史 plan/spec), `todo/login.md`, `todo/register.md`, `project_flow/` 整目录 (含 sprints), `product2.md`.历史内容靠 git 历史追溯.
 -   重写 `README.md` (GitHub Actions 详情和未来规划改为链接 `docs/github-actions.md` 与 `docs/roadmap.md`,功能清单补 Calendar,修复 `docs/uml/index.md` 断链) 和 `docs/README.md` (移除 `product.md`, `uml/`, `dist/` 失效条目,维护规则改为 SSOT 与历史文档直接删除).
 -   范围外说明: `frontend/dist/help/*.md` 为构建产物, `skills/`, `.codex/`, `.od-skills/` 为本地 AI 技能定义,均不属产品文档,不删除不索引.
+-   在 `AGENTS.md` git flow 规范中新增第 11 条: 除非用户明确要求,commit 信息不添加共同创作者或其他署名信息.影响范围:提交流程.关联文件: `AGENTS.md`.
 
 ### fix
 
