@@ -1,6 +1,14 @@
 # changelog
 
-## 2026-06-23
+## 2026-07-01
+
+### docs
+
+-   文档重构: 确立单一事实来源 (SSOT) 结构.新增 `docs/product.md` (新 PRD,取代 `product2.md`,定位更新为自用为主的个人工具,Agent-ready 降为不排期的远期愿景), `docs/architecture.md` (取代 `project_flow/2_architecture.md`), `docs/roadmap.md` (路线图唯一来源,近期重心为现有模块打磨,代码质量与约定统一,测试与发布基础), `docs/tech-debt.md` (代码技术债立案 TD-01~TD-10).影响范围:项目文档结构.
+-   删除历史文档: `docs/superpowers/` (15 份历史 plan/spec), `todo/login.md`, `todo/register.md`, `project_flow/` 整目录 (含 sprints), `product2.md`.历史内容靠 git 历史追溯.
+-   重写 `README.md` (GitHub Actions 详情和未来规划改为链接 `docs/github-actions.md` 与 `docs/roadmap.md`,功能清单补 Calendar,修复 `docs/uml/index.md` 断链) 和 `docs/README.md` (移除 `product.md`, `uml/`, `dist/` 失效条目,维护规则改为 SSOT 与历史文档直接删除).
+-   范围外说明: `frontend/dist/help/*.md` 为构建产物, `skills/`, `.codex/`, `.od-skills/` 为本地 AI 技能定义,均不属产品文档,不删除不索引.
+-   在 `AGENTS.md` git flow 规范中新增第 11 条: 除非用户明确要求,commit 信息不添加共同创作者或其他署名信息.影响范围:提交流程.关联文件: `AGENTS.md`.
 
 ### fix
 
