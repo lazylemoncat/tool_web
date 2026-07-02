@@ -53,6 +53,12 @@ export default function KanbanTaskDrawer({
   open, task, columns, fields, onClose, onMove, onDelete, onEdit, onAddSubtask, onToggleSubtask,
 }: KanbanTaskDrawerProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('');
+  const [lastTaskId, setLastTaskId] = useState<number | null>(null);
+  // 换卡时清空子任务输入框, 避免上一张卡未提交的输入残留
+  if (task && task.id !== lastTaskId) {
+    setLastTaskId(task.id);
+    setNewSubtaskTitle('');
+  }
   if (!task) return null;
 
   const detailFields = [...fields].sort((a, b) => a.order - b.order);

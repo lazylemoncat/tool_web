@@ -4,6 +4,14 @@
 
 ### fix
 
+-   修复 Kanban 看板的八处交互与数据缺陷: (1) 保存看板模板后, 仅更新 `custom_fields` 的部分更新会误触系统必填校验且丢弃 `__subtasks` 等内部字段, 导致子任务保存失败或静默丢失——改为按更新后的完整状态校验, `__` 前缀内部字段不受模板约束; (2) 删除 Sprint 遗留 `sprint_id/column_id` 置空, 任何列表都查不到的孤儿看板任务——改为连同删除; (3) 快速切换 Sprint/文件夹时旧响应覆盖新数据的竞态——前端加载加序号守卫; (4) 跨列移动不更新 `sort_order` 导致目标列顺序退化——未指定位置时自动排到列末尾; (5) 删除非空列后其任务在界面上消失直到刷新——保存列设置后强制刷新看板; (6) 从详情抽屉编辑保存后抽屉仍显示旧快照——保存后同步抽屉数据; (7) 列编辑器连续删除两列时闭包旧数组使已删列复活; (8) 详情抽屉子任务输入框跨卡残留, 列容量为 0 时仍显示 n/0 计数. 新增 3 个后端回归测试.影响范围:Kanban 看板交互与数据一致性.关联文件: `backend/src/routers/kanban_task.py`, `backend/src/routers/sprint.py`, `backend/tests/test_kanban_task.py`, `frontend/src/app/todo/page.tsx`, `frontend/src/components/todo/kanban/ColumnListEditor.tsx`, `frontend/src/components/todo/kanban/KanbanTaskDrawer.tsx`, `frontend/src/components/todo/kanban/KanbanColumn.tsx`, `docs/todo.md`.
+
+### docs
+
+-   技术债清单新增 TD-14 (Kanban 死代码与未接线 UI 链路: moveTodoToColumn/reorderKanbanColumns/ColumnDialog/SprintDialog 等无调用点, 普通 Todo 绑定看板列后不可见).关联文件: `docs/tech-debt.md`.
+
+### fix
+
 -   修复重复任务的四个边界缺陷: 下一次到期日改为锚定原到期日推算,"每周一"等规则不再因完成日不同而漂移; 预设的每月/每年规则在短月裁剪到月末 (如 1 月 31 日 → 2 月 28 日), 不再跳过短月; 生成下一次实例后清空原实例的重复规则,"完成→取消→再完成"不再重复生成; 生成实例时复制完整子任务树 (未完成,不带到期日),重复清单不再丢失子任务. 提前完成未来任务从原到期日往后推算,不生成同日实例. 新增 5 个边界场景测试.影响范围:Todo 重复任务完成流程.关联文件: `backend/src/routers/todo.py`, `backend/tests/test_todos.py`, `docs/todo.md`.
 
 -   修复 Focus 计时恢复与归档流程的两个数据问题: 番茄钟在页面关闭期间走完时,恢复路径未清理 localStorage 计时状态,归档保存后刷新会再次弹出恢复提示并可能重复归档;归档弹窗被取消后待归档数据无入口找回,现已在已完成状态下新增"归档记录"按钮可重新打开弹窗.同时修复 `handleResume` 中暂停时长依赖 ref 在 setState 更新函数执行前被置空的隐患,恢复横幅补充会话名称,模式和已专注时长;休息状态下行为完全相同的"结束休息"和"跳过休息"两个按钮合并为一个"结束休息".新增组件测试 `FocusTimer.test.tsx` 覆盖恢复与归档流程.影响范围:Focus 计时恢复,归档流程,前端测试.关联文件: `frontend/src/components/focus/FocusTimer.tsx`, `frontend/src/components/focus/FocusTimer.test.tsx`, `docs/focus.md`.

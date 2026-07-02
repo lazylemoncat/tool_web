@@ -388,6 +388,17 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `DELETE` | `/api/v1/kanban/tasks/{id}` | Cookie/Token | 删除 Kanban 任务 |
 | `PUT` | `/api/v1/kanban/tasks/{id}/move` | Cookie/Token | 移动 Kanban 任务到目标列, 校验目标列容量和归属 |
 
+**模板校验语义**:
+
+- 部分更新 (PUT) 按"更新后的完整状态"校验模板必填项与类型: 只更新 `custom_fields` 不会误触系统字段的必填校验, 也不会丢失既有字段.
+- `custom_fields` 中 `__` 前缀为内部字段命名空间 (如子任务 `__subtasks`), 不受模板字段配置约束, 始终保留.
+
+**排序与删除语义**:
+
+- 换列移动 (move 或 PUT 带 `column_id`) 未显式指定 `sort_order` 时, 任务自动排到目标列末尾.
+- 删除 Sprint 时连同其下的 Todo 与 KanbanTask 一并删除, 不遗留孤儿看板任务.
+- 后端把列容量 `capacity<=0` 视为不限容量, 列头不显示容量计数.
+
 **POST /api/v1/todos 请求体**:
 ```json
 {

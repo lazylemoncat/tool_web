@@ -25,7 +25,10 @@ export default function KanbanColumn({
 }: KanbanColumnProps) {
   const [dragOver, setDragOver] = useState(false);
   const isFirstColumn = column.sort_order === 0;
-  const capBar = column.capacity != null ? `${tasks.length}/${column.capacity}` : null;
+  // 后端把 capacity<=0 视为不限容量, 显示口径保持一致
+  const capBar = column.capacity != null && column.capacity > 0
+    ? `${tasks.length}/${column.capacity}`
+    : null;
 
   return (
     <Box sx={{

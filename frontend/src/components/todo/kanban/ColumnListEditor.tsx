@@ -32,8 +32,11 @@ export default function ColumnListEditor({ columns, onSave }: ColumnListEditorPr
     onSave(updated);
   };
   const handleDelete = (id: number) => {
-    setLocalCols(prev => prev.filter(c => c.id !== id));
-    onSave(localCols.filter(c => c.id !== id));
+    // 基于同一份 next 更新本地与回传, 连续删除时闭包里的旧数组
+    // 会让已删的列在下一次 onSave 中"复活"
+    const next = localCols.filter(c => c.id !== id);
+    setLocalCols(next);
+    onSave(next);
   };
 
   return (
