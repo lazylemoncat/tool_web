@@ -155,7 +155,7 @@ JWT_SECRET=test uv run python -m pytest tests/ -v
 - Next App Router 页面集中在 `frontend/src/app`.
 - 全局 Provider, 主题注册和鉴权壳层放在 `frontend/src/app/layout.tsx`.
 - 页面组件放在 `frontend/src/app`, 通用组件放在 `frontend/src/components`.
-- API 统一通过 `frontend/src/lib/api.ts` 调用, 由 `frontend/next.config.ts` 代理到后端.
+- API 统一通过 `frontend/src/lib/api/` 下的模块化 client 调用 (通用请求层为 `lib/api/client.ts`), 由 `frontend/next.config.ts` 代理到后端.
 
 ## 常用文档
 

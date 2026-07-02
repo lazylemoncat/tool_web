@@ -1,4 +1,4 @@
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from './client';
 import type {
   KanbanTaskOut, KanbanTaskCreate, KanbanTaskUpdate, MoveKanbanTaskRequest,
 } from '@/lib/types';

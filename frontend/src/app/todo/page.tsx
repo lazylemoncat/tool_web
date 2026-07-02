@@ -31,14 +31,15 @@ import {
   listTodos, createTodo, updateTodo, deleteTodo, toggleTodo, bulkAction,
   reorderTodos,
   listFolders, createFolder, deleteFolder as apiDeleteFolder, updateFolder, reorderFolders,
-  listTags, createTag, ApiError,
-} from '@/lib/api';
+  listTags, createTag,
+} from '@/lib/api/todo';
+import { ApiError } from '@/lib/api/client';
 import {
   listSprints,
   createSprint, updateSprint, deleteSprint,
   listKanbanColumns,
   createKanbanColumn, updateKanbanColumn, deleteKanbanColumn,
-} from '@/lib/api';
+} from '@/lib/api/kanban';
 import dayjs from 'dayjs';
 import {
   listKanbanTasks, createKanbanTask, updateKanbanTask, deleteKanbanTask, moveKanbanTask,
