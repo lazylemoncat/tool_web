@@ -4,10 +4,18 @@
 
 ### fix
 
+-   修复重复任务的四个边界缺陷: 下一次到期日改为锚定原到期日推算,"每周一"等规则不再因完成日不同而漂移; 预设的每月/每年规则在短月裁剪到月末 (如 1 月 31 日 → 2 月 28 日), 不再跳过短月; 生成下一次实例后清空原实例的重复规则,"完成→取消→再完成"不再重复生成; 生成实例时复制完整子任务树 (未完成,不带到期日),重复清单不再丢失子任务. 提前完成未来任务从原到期日往后推算,不生成同日实例. 新增 5 个边界场景测试.影响范围:Todo 重复任务完成流程.关联文件: `backend/src/routers/todo.py`, `backend/tests/test_todos.py`, `docs/todo.md`.
+
 -   修复 Focus 计时恢复与归档流程的两个数据问题: 番茄钟在页面关闭期间走完时,恢复路径未清理 localStorage 计时状态,归档保存后刷新会再次弹出恢复提示并可能重复归档;归档弹窗被取消后待归档数据无入口找回,现已在已完成状态下新增"归档记录"按钮可重新打开弹窗.同时修复 `handleResume` 中暂停时长依赖 ref 在 setState 更新函数执行前被置空的隐患,恢复横幅补充会话名称,模式和已专注时长;休息状态下行为完全相同的"结束休息"和"跳过休息"两个按钮合并为一个"结束休息".新增组件测试 `FocusTimer.test.tsx` 覆盖恢复与归档流程.影响范围:Focus 计时恢复,归档流程,前端测试.关联文件: `frontend/src/components/focus/FocusTimer.tsx`, `frontend/src/components/focus/FocusTimer.test.tsx`, `docs/focus.md`.
+
+### refactor
+
+-   偿还 TD-01 (局部): 前端通用请求层抽出为 `lib/api/client.ts`, Todo 与 Kanban 的 API 函数迁出为 `lib/api/todo.ts` 和 `lib/api/kanban.ts`; `lib/api.ts` 保留 auth/finance 并对已迁出模块做兼容再导出,行为不变. Todo 模块内引用点已切换到新模块.影响范围:前端 API 客户端组织.关联文件: `frontend/src/lib/api/client.ts`, `frontend/src/lib/api/todo.ts`, `frontend/src/lib/api/kanban.ts`, `frontend/src/lib/api.ts`, `frontend/src/lib/api/focus.ts`, `frontend/src/lib/api/kanbanTask.ts`, `frontend/src/app/todo/page.tsx`, `frontend/src/components/todo/kanban/ColumnDialog.tsx`, `frontend/src/components/todo/kanban/SprintDialog.tsx`, `docs/frontend.md`, `docs/tech-debt.md`, `README.md`.
 
 ### docs
 
+-   修正 `docs/todo.md` 与实现不符的描述: 移除不存在的"工作日"预设与"90 天安全限制",标注多规则仅后端支持,补充下一次到期日推算规则,幂等保护与子任务复制行为.
+-   技术债清单新增 TD-11 (批量完成不触发重复生成), TD-12 (时区处理不统一), TD-13 (focus summary 测试对运行日期敏感).关联文件: `docs/tech-debt.md`.
 -   文档重构: 确立单一事实来源 (SSOT) 结构.新增 `docs/product.md` (新 PRD,取代 `product2.md`,定位更新为自用为主的个人工具,Agent-ready 降为不排期的远期愿景), `docs/architecture.md` (取代 `project_flow/2_architecture.md`), `docs/roadmap.md` (路线图唯一来源,近期重心为现有模块打磨,代码质量与约定统一,测试与发布基础), `docs/tech-debt.md` (代码技术债立案 TD-01~TD-10).影响范围:项目文档结构.
 -   删除历史文档: `docs/superpowers/` (15 份历史 plan/spec), `todo/login.md`, `todo/register.md`, `project_flow/` 整目录 (含 sprints), `product2.md`.历史内容靠 git 历史追溯.
 -   重写 `README.md` (GitHub Actions 详情和未来规划改为链接 `docs/github-actions.md` 与 `docs/roadmap.md`,功能清单补 Calendar,修复 `docs/uml/index.md` 断链) 和 `docs/README.md` (移除 `product.md`, `uml/`, `dist/` 失效条目,维护规则改为 SSOT 与历史文档直接删除).

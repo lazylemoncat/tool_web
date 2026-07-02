@@ -3,8 +3,10 @@
 支持层级子任务、搜索过滤、完成切换、排序.
 """
 
+from collections.abc import Callable
 from datetime import UTC, date, datetime
 
+from dateutil.relativedelta import relativedelta
 from dateutil.rrule import rrulestr
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -282,6 +284,62 @@ class ToggleBody(BaseModel):
     complete_children: bool = False
 
 
+_SIMPLE_FREQ_STEPS: dict[str, Callable[[int], relativedelta]] = {
+    "FREQ=DAILY": lambda k: relativedelta(days=k),
+    "FREQ=WEEKLY": lambda k: relativedelta(weeks=k),
+    "FREQ=MONTHLY": lambda k: relativedelta(months=k),
+    "FREQ=YEARLY": lambda k: relativedelta(years=k),
+}
+_MAX_SIMPLE_STEPS = 20000
+
+
+def _next_occurrence(
+    rrule_string: str, anchor: datetime, after: datetime
+) -> date | None:
+    """按重复规则求 after 之后的下一次到期日.
+
+    锚点为任务原到期日, 避免"每周一/每月 5 号"因完成日不同而漂移.
+    预设的简单 FREQ 规则用 relativedelta 从锚点按倍数推算,
+    月末日期在短月裁剪到月末 (rrule 的 FREQ=MONTHLY 会直接跳过
+    没有对应日期的月份, 如 1 月 31 日的下一次会漏掉 2 月).
+    """
+    rule = rrule_string.strip().upper().removeprefix("RRULE:")
+    make_step = _SIMPLE_FREQ_STEPS.get(rule)
+    if make_step:
+        for step in range(1, _MAX_SIMPLE_STEPS + 1):
+            candidate = anchor + make_step(step)
+            if candidate > after:
+                return candidate.date()
+        return None
+    try:
+        rr = rrulestr(rrule_string, dtstart=anchor)
+        next_dt = rr.after(after, inc=False)
+    except (ValueError, TypeError):
+        return None
+    return next_dt.date() if next_dt else None
+
+
+def _copy_children_to(
+    db: Session, source: Todo, target_parent: Todo, user_id: int
+) -> None:
+    """把重复任务的子任务树复制到新实例下, 复制为未完成且不带到期日."""
+    for child in source.children:
+        clone = Todo(
+            user_id=user_id,
+            folder_id=child.folder_id,
+            parent_id=target_parent.id,
+            title=child.title,
+            note=child.note,
+            priority=child.priority,
+            sort_order=child.sort_order,
+        )
+        db.add(clone)
+        db.flush()
+        if child.tags:
+            clone.tags = child.tags[:]
+        _copy_children_to(db, child, clone, user_id)
+
+
 @router.patch("/{todo_id}/toggle", status_code=200)
 def toggle_todo(
     todo_id: int,
@@ -322,15 +380,18 @@ def toggle_todo(
         today = datetime.utcnow().replace(
             hour=0, minute=0, second=0, microsecond=0
         )
+        # 锚定在原到期日; 提前完成时从原到期日之后推算, 避免生成同日重复实例
+        anchor = (
+            datetime.combine(todo.due_date, datetime.min.time())
+            if todo.due_date
+            else today
+        )
+        after = max(today, anchor)
         next_dates = []
         for rule in todo.recurrence_rules:
-            try:
-                rr = rrulestr(rule.rrule_string, dtstart=today)
-                next_dt = rr.after(today, inc=False)
-                if next_dt:
-                    next_dates.append(next_dt.date())
-            except (ValueError, TypeError):
-                continue  # skip invalid RRULE strings
+            next_date = _next_occurrence(rule.rrule_string, anchor, after)
+            if next_date:
+                next_dates.append(next_date)
 
         if next_dates:
             next_due = min(next_dates)
@@ -362,6 +423,11 @@ def toggle_todo(
                 new_todo.recurrence_rules.append(
                     RecurrenceRule(rrule_string=rule.rrule_string)
                 )
+            # 复制子任务树 (未完成, 不带到期日)
+            _copy_children_to(db, todo, new_todo, current_user.id)
+            # 重复链交由新实例延续; 清空本实例的规则,
+            # 防止"完成→取消→再完成"重复生成下一次实例
+            todo.recurrence_rules.clear()
 
     db.commit()
     db.refresh(todo)
