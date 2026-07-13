@@ -6,6 +6,7 @@ KanbanTask CRUD 路由: /api/v1/kanban/tasks
 from datetime import date
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
@@ -56,8 +57,11 @@ def _validate_against_template(fields_config: list[dict], data: dict) -> dict:
 
     for key, value in incoming_custom_fields.items():
         field_config = config_map.get(key)
-        if not fields_config or (
-            field_config and not field_config.get("system", True)
+        # "__" 前缀为内部字段 (如 __subtasks), 不受模板约束, 始终保留
+        if (
+            key.startswith("__")
+            or not fields_config
+            or (field_config and not field_config.get("system", True))
         ):
             custom_fields[key] = value
 
@@ -185,6 +189,23 @@ def _ensure_column_capacity(
         raise BadRequestError(
             f"Column '{col.name}' has reached its capacity limit"
         )
+
+
+def _next_sort_order(
+    db: Session,
+    current_user: User,
+    column_id: int,
+    exclude_task_id: int | None = None,
+) -> int:
+    """目标列末尾的下一个 sort_order."""
+    q = db.query(func.max(KanbanTask.sort_order)).filter(
+        KanbanTask.column_id == column_id,
+        KanbanTask.user_id == current_user.id,
+    )
+    if exclude_task_id is not None:
+        q = q.filter(KanbanTask.id != exclude_task_id)
+    max_sort = q.scalar()
+    return (max_sort or 0) + 1
 
 
 def _build_out(task: KanbanTask) -> KanbanTaskOut:
@@ -317,7 +338,19 @@ def update_kanban_task(
     if body_data:
         config = folder.kanban_config or {}
         fields_config = config.get("kanban_template", {}).get("fields", [])
-        validated = _validate_against_template(fields_config, body_data)
+        # 部分更新按"更新后的完整状态"校验: 只更新 custom_fields 时
+        # 不应误触系统必填项校验, 也不应丢失既有字段
+        incoming_custom = body_data.get("custom_fields") or {}
+        if not isinstance(incoming_custom, dict):
+            raise BadRequestError("custom_fields must be an object")
+        merged_custom = dict(task.custom_fields or {})
+        merged_custom.update(incoming_custom)
+        effective_data = {
+            key: body_data.get(key, getattr(task, key))
+            for key in SYSTEM_FIELDS
+        }
+        effective_data["custom_fields"] = merged_custom
+        validated = _validate_against_template(fields_config, effective_data)
         sys_fields = validated["system_fields"]
 
         for key, val in sys_fields.items():
@@ -343,12 +376,20 @@ def update_kanban_task(
     elif "sprint_id" in body_data and target_sprint_id is not None:
         _get_sprint(target_sprint_id, task.folder_id, db, current_user)
 
+    column_changed = (
+        "column_id" in body_data and target_column_id != task.column_id
+    )
     if "sprint_id" in body_data or "column_id" in body_data:
         task.sprint_id = target_sprint_id
     if "column_id" in body_data:
         task.column_id = target_column_id
     if "sort_order" in body_data:
         task.sort_order = body_data["sort_order"]
+    elif column_changed and target_column_id is not None:
+        # 换列且未指定位置时排到目标列末尾
+        task.sort_order = _next_sort_order(
+            db, current_user, target_column_id, exclude_task_id=task_id
+        )
 
     db.commit()
     db.refresh(task)
@@ -411,10 +452,17 @@ def move_kanban_task(
         exclude_task_id=task_id,
     )
 
+    column_changed = body.target_column_id != task.column_id
     task.column_id = body.target_column_id
     task.sprint_id = target_col.sprint_id
     if body.sort_order is not None:
         task.sort_order = body.sort_order
+    elif column_changed:
+        # 未指定位置时排到目标列末尾, 避免沿用旧列的 sort_order 与
+        # 目标列既有任务冲突导致顺序退化
+        task.sort_order = _next_sort_order(
+            db, current_user, body.target_column_id, exclude_task_id=task_id
+        )
 
     db.commit()
     db.refresh(task)

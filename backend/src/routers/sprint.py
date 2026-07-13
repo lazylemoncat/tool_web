@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..middleware.auth import get_current_user
 from ..models.kanban import KanbanColumn, Sprint
+from ..models.kanban_task import KanbanTask
 from ..models.todo import Folder, Todo
 from ..models.user import User
 from ..schemas.kanban import SprintCreate, SprintOut, SprintUpdate
@@ -148,6 +149,19 @@ def delete_sprint(
     )
     for t in todos:
         db.delete(t)
+
+    # KanbanTask 的 FK 同为 SET NULL, 不显式删除会遗留
+    # sprint_id/column_id 为空, 任何列表都查不到的孤儿看板任务
+    kanban_tasks = (
+        db.query(KanbanTask)
+        .filter(
+            KanbanTask.sprint_id == sprint_id,
+            KanbanTask.user_id == current_user.id,
+        )
+        .all()
+    )
+    for kt in kanban_tasks:
+        db.delete(kt)
 
     # Columns cascade-deleted via relationship, sprint deleted
     db.delete(sprint)

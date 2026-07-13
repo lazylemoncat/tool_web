@@ -143,15 +143,14 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 |------|------------|
 | 每天 | `FREQ=DAILY` |
 | 每周 | `FREQ=WEEKLY` |
-| 工作日 | `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR` |
 | 每月 | `FREQ=MONTHLY` |
 | 每年 | `FREQ=YEARLY` |
 
-**自定义规则**: 选择 "自定义 RRULE" 后手动输入 RFC 5545 格式的 RRULE 字符串, 如 `FREQ=WEEKLY;INTERVAL=2`.
+**自定义规则**: 选择 "自定义 RRULE" 后手动输入 RFC 5545 格式的 RRULE 字符串, 如 `FREQ=WEEKLY;INTERVAL=2` 或工作日 `FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR`.
 
-**多规则**: 一个任务可添加多个重复规则 (如 "每个工作日 + 每月 1 号").
+**多规则**: 后端模型和 API 支持一个任务挂多条重复规则 (取最早的下一个日期生成), 当前前端 UI 每个任务只配置一条.
 
-**自动生成**: 完成重复任务时自动创建下一个实例, 截止日期为下一个匹配日期.
+**自动生成**: 完成重复任务时自动创建下一个实例, 截止日期为下一个匹配日期 (推算规则见下方"重复任务流程序列").
 
 **重复标识**: 设置了重复规则的任务在列表中显示重复 Chip 和规则标签.
 
@@ -374,8 +373,6 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `priority` | int | 按优先级筛选 (1/2/3) |
 | `status` | string | `active` 或 `completed` |
 | `tag_id` | int | 按标签筛选 |
-| `sprint_id` | int | 按 Kanban Sprint 筛选 |
-| `column_id` | int | 按 Kanban 列筛选 |
 | `skip` | int | 分页偏移 (默认 0, ≥0) |
 | `limit` | int | 每页数量 (默认 100, 1-500) |
 
@@ -389,12 +386,21 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
 | `DELETE` | `/api/v1/kanban/tasks/{id}` | Cookie/Token | 删除 Kanban 任务 |
 | `PUT` | `/api/v1/kanban/tasks/{id}/move` | Cookie/Token | 移动 Kanban 任务到目标列, 校验目标列容量和归属 |
 
+**模板校验语义**:
+
+- 部分更新 (PUT) 按"更新后的完整状态"校验模板必填项与类型: 只更新 `custom_fields` 不会误触系统字段的必填校验, 也不会丢失既有字段.
+- `custom_fields` 中 `__` 前缀为内部字段命名空间 (如子任务 `__subtasks`), 不受模板字段配置约束, 始终保留.
+
+**排序与删除语义**:
+
+- 换列移动 (move 或 PUT 带 `column_id`) 未显式指定 `sort_order` 时, 任务自动排到目标列末尾.
+- 删除 Sprint 时连同其下的 Todo 与 KanbanTask 一并删除, 不遗留孤儿看板任务.
+- 后端把列容量 `capacity<=0` 视为不限容量, 列头不显示容量计数.
+
 **POST /api/v1/todos 请求体**:
 ```json
 {
   "folder_id": 1,
-  "sprint_id": 1,
-  "column_id": 1,
   "parent_id": null,
   "title": "买猫粮",
   "note": "皇家猫粮",
@@ -414,8 +420,8 @@ Tool Web 提供完整的任务管理系统和个人记账系统, 支持以下功
   "data": {
     "id": 42,
     "folder_id": 1,
-    "sprint_id": 1,
-    "column_id": 1,
+    "sprint_id": null,
+    "column_id": null,
     "parent_id": null,
     "title": "买猫粮",
     "note": "皇家猫粮",
@@ -561,17 +567,26 @@ Todo page (状态中心)
   → PATCH /api/v1/todos/{id}/toggle
     → 后端检查: is_completed 从 false → true ?
     → 后端检查: todo.recurrence_rules 非空 ?
-    → 解析每个 RRULE 字符串 (dateutil rrulestr)
-    → 计算下一个匹配日期 (rr.after(today))
+    → 以原 due_date 为锚点推算每条规则的下一个日期 (_next_occurrence)
     → 取最早的下一个日期 (min(next_dates))
-    → 创建新 Todo (复制标题/文件夹/优先级/备注/标签/重复规则)
+    → 创建新 Todo (复制标题/文件夹/优先级/备注/标签/重复规则/子任务树)
     → 设置新 Todo.due_date = 下一个匹配日期,保留原 Todo.due_time
+    → 清空原 Todo 的重复规则 (重复链由新实例延续)
     → 原 Todo 保持已完成状态
   → 返回原 Todo 的更新后状态
   → 前端刷新任务列表 (新实例出现在列表中)
 ```
 
-**安全限制**: 如果最近的下一个匹配日期超过 90 天, 不会生成新实例.
+**推算规则** (`_next_occurrence`):
+
+- 锚点为任务原 `due_date` (无到期日时为完成当天), 因此 "每周一" 的任务过期几天后完成, 下一次仍是周一, 不随完成日漂移.
+- 预设的简单 FREQ 规则 (每天/每周/每月/每年) 用 `relativedelta` 从锚点按倍数推算: 每月 31 号在短月裁剪到当月最后一天 (如 1 月 31 日 → 2 月 28 日), 不会跳过短月.
+- 其余自定义 RRULE 走 `dateutil rrulestr` 语义.
+- 下一个日期严格晚于"今天"与原到期日中的较晚者: 完成已过期任务不会生成仍过期的实例, 提前完成未来任务也不会生成同日实例.
+
+**幂等保护**: 生成后原实例的重复规则被清空, "完成→取消完成→再完成" 不会重复生成实例.
+
+**子任务**: 生成下一次实例时复制完整子任务树, 复制出的子任务为未完成且不带到期日. 新实例不继承 Sprint 和看板列归属.
 
 ---
 

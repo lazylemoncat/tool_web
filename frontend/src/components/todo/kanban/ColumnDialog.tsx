@@ -8,7 +8,7 @@ import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { createKanbanColumn, updateKanbanColumn } from '@/lib/api';
+import { createKanbanColumn, updateKanbanColumn } from '@/lib/api/kanban';
 import type { KanbanColumnData } from '@/lib/types';
 
 const COLORS = ['#6750A4', '#0288D1', '#F57C00', '#7B1FA2', '#388E3C', '#1B5E20', '#616161', '#D32F2F'];

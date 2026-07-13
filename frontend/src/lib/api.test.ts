@@ -119,7 +119,6 @@ describe('apiFetch', () => {
       priority: 1,
       status: 'active',
       tag_id: 7,
-      sprint_id: 9,
       due_from: '2026-06-01',
       due_to: '2026-06-30',
       skip: 10,
@@ -135,7 +134,7 @@ describe('apiFetch', () => {
     expect(requestUrl.searchParams.get('priority')).toBe('1');
     expect(requestUrl.searchParams.get('status')).toBe('active');
     expect(requestUrl.searchParams.get('tag_id')).toBe('7');
-    expect(requestUrl.searchParams.get('sprint_id')).toBe('9');
+    expect(requestUrl.searchParams.get('sprint_id')).toBeNull();
     expect(requestUrl.searchParams.get('due_from')).toBe('2026-06-01');
     expect(requestUrl.searchParams.get('due_to')).toBe('2026-06-30');
     expect(requestUrl.searchParams.get('skip')).toBe('10');

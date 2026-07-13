@@ -9,7 +9,7 @@ import Button from '@mui/material/Button';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import type { Sprint } from '@/lib/types';
-import { createSprint, updateSprint } from '@/lib/api';
+import { createSprint, updateSprint } from '@/lib/api/kanban';
 import dayjs from 'dayjs';
 
 interface SprintDialogProps {

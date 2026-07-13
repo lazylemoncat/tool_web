@@ -566,3 +566,139 @@ def test_delete_kanban_task(
 
     resp = client.get(f"/api/v1/kanban/tasks/{task_id}")
     assert resp.status_code == 404
+
+
+def test_partial_update_keeps_internal_custom_fields_with_template(
+    client, override_auth, db_session, test_user, test_folder, test_sprint
+):
+    """保存过模板后, 仅更新 custom_fields 不应触发必填校验或丢失内部字段."""
+    folder = test_folder(mode="kanban")
+    sprint = test_sprint(folder_id=folder.id)
+    col = KanbanColumn(
+        sprint_id=sprint.id,
+        user_id=test_user.id,
+        name="Backlog",
+        capacity=None,
+        sort_order=0,
+        is_archived=False,
+    )
+    db_session.add(col)
+    db_session.commit()
+
+    created = client.post(
+        "/api/v1/kanban/tasks",
+        json={
+            "folder_id": folder.id,
+            "sprint_id": sprint.id,
+            "column_id": col.id,
+            "title": "Task with subtasks",
+            "priority": "P1",
+        },
+    )
+    assert created.status_code == 201
+    task_id = created.json()["id"]
+
+    subtasks = [{"id": "s1", "title": "step 1", "completed": False}]
+    resp = client.put(
+        f"/api/v1/kanban/tasks/{task_id}",
+        json={"custom_fields": {"__subtasks": subtasks}},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["custom_fields"]["__subtasks"] == subtasks
+    # 原有系统字段不受影响
+    assert resp.json()["title"] == "Task with subtasks"
+    assert resp.json()["priority"] == "P1"
+
+
+def test_delete_sprint_removes_kanban_tasks(
+    client, override_auth, db_session, test_user, test_folder, test_sprint
+):
+    """删除 Sprint 应连同其看板任务一起删除, 不留孤儿行."""
+    folder = test_folder(mode="kanban")
+    sprint = test_sprint(folder_id=folder.id)
+    col = KanbanColumn(
+        sprint_id=sprint.id,
+        user_id=test_user.id,
+        name="Backlog",
+        capacity=None,
+        sort_order=0,
+        is_archived=False,
+    )
+    db_session.add(col)
+    db_session.commit()
+
+    created = client.post(
+        "/api/v1/kanban/tasks",
+        json={
+            "folder_id": folder.id,
+            "sprint_id": sprint.id,
+            "column_id": col.id,
+            "title": "Doomed task",
+            "priority": "P1",
+        },
+    )
+    assert created.status_code == 201
+
+    resp = client.delete(f"/api/v1/sprints/{sprint.id}")
+    assert resp.status_code == 204
+
+    db_session.expire_all()
+    assert db_session.query(KanbanTask).count() == 0
+
+
+def test_move_kanban_task_appends_to_target_column(
+    client, override_auth, db_session, test_user, test_folder, test_sprint
+):
+    """未指定 sort_order 的跨列移动应排到目标列末尾."""
+    folder = test_folder(mode="kanban")
+    sprint = test_sprint(folder_id=folder.id)
+    col1 = KanbanColumn(
+        sprint_id=sprint.id,
+        user_id=test_user.id,
+        name="Backlog",
+        capacity=None,
+        sort_order=0,
+        is_archived=False,
+    )
+    col2 = KanbanColumn(
+        sprint_id=sprint.id,
+        user_id=test_user.id,
+        name="Ready",
+        capacity=None,
+        sort_order=1,
+        is_archived=False,
+    )
+    db_session.add_all([col1, col2])
+    db_session.commit()
+
+    moving = client.post(
+        "/api/v1/kanban/tasks",
+        json={
+            "folder_id": folder.id,
+            "sprint_id": sprint.id,
+            "column_id": col1.id,
+            "title": "Mover",
+            "priority": "P1",
+            "sort_order": 1,
+        },
+    )
+    existing = client.post(
+        "/api/v1/kanban/tasks",
+        json={
+            "folder_id": folder.id,
+            "sprint_id": sprint.id,
+            "column_id": col2.id,
+            "title": "Resident",
+            "priority": "P2",
+            "sort_order": 5,
+        },
+    )
+    assert moving.status_code == 201
+    assert existing.status_code == 201
+
+    resp = client.put(
+        f"/api/v1/kanban/tasks/{moving.json()['id']}/move",
+        json={"target_column_id": col2.id},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["sort_order"] == 6

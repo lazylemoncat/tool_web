@@ -31,14 +31,15 @@ import {
   listTodos, createTodo, updateTodo, deleteTodo, toggleTodo, bulkAction,
   reorderTodos,
   listFolders, createFolder, deleteFolder as apiDeleteFolder, updateFolder, reorderFolders,
-  listTags, createTag, ApiError,
-} from '@/lib/api';
+  listTags, createTag,
+} from '@/lib/api/todo';
+import { ApiError } from '@/lib/api/client';
 import {
   listSprints,
   createSprint, updateSprint, deleteSprint,
   listKanbanColumns,
   createKanbanColumn, updateKanbanColumn, deleteKanbanColumn,
-} from '@/lib/api';
+} from '@/lib/api/kanban';
 import dayjs from 'dayjs';
 import {
   listKanbanTasks, createKanbanTask, updateKanbanTask, deleteKanbanTask, moveKanbanTask,
@@ -328,28 +329,37 @@ export default function TodoPage() {
     }
   }, []);
 
-  const fetchColumns = useCallback(async (sprintId: number) => {
+  // 看板加载序号: 丢弃过期响应, 防止快速切换 Sprint/文件夹时
+  // 先发后到的旧数据覆盖当前选择
+  const kanbanLoadSeq = useRef(0);
+
+  const fetchColumns = useCallback(async (sprintId: number, seq: number) => {
     try {
       const cols = await listKanbanColumns(sprintId);
+      if (seq !== kanbanLoadSeq.current) return;
       setKanbanColumns(cols);
     } catch (err) {
+      if (seq !== kanbanLoadSeq.current) return;
       showSnackbar('加载看板列失败', 'error');
     }
   }, []);
 
-  const fetchKanbanTasks = useCallback(async (folderId: number, sprintId: number) => {
+  const fetchKanbanTasks = useCallback(async (folderId: number, sprintId: number, seq: number) => {
     try {
       const tasks = await listKanbanTasks(folderId, sprintId);
+      if (seq !== kanbanLoadSeq.current) return;
       setKanbanTasks(tasks);
     } catch (err) {
+      if (seq !== kanbanLoadSeq.current) return;
       showSnackbar(err instanceof ApiError ? err.message : '加载看板任务失败', 'error');
     }
   }, []);
 
   const refreshKanbanBoard = useCallback(async (folderId: number, sprintId: number) => {
+    const seq = ++kanbanLoadSeq.current;
     await Promise.all([
-      fetchColumns(sprintId),
-      fetchKanbanTasks(folderId, sprintId),
+      fetchColumns(sprintId, seq),
+      fetchKanbanTasks(folderId, sprintId, seq),
     ]);
   }, [fetchColumns, fetchKanbanTasks]);
 
@@ -397,6 +407,7 @@ export default function TodoPage() {
   // Load kanban data when entering a kanban folder
   useEffect(() => {
     if (currentFolder?.mode === 'kanban' && activeFolder !== null) {
+      kanbanLoadSeq.current += 1; // 使在途的旧看板请求失效
       setActiveSprintId(null);
       setKanbanColumns([]);
       setKanbanTasks([]);
@@ -413,6 +424,7 @@ export default function TodoPage() {
     if (activeSprintId) {
       refreshKanbanBoard(activeFolder, activeSprintId);
     } else {
+      kanbanLoadSeq.current += 1;
       setKanbanColumns([]);
       setKanbanTasks([]);
     }
@@ -556,8 +568,6 @@ export default function TodoPage() {
           due_date: data.due_date || null,
           due_time: data.due_date && data.due_time ? data.due_time : null,
           folder_id: data.folder_id,
-          sprint_id: data.sprint_id,
-          column_id: data.column_id,
           parent_id: data.parent_id,
           tag_ids: data.tag_ids,
           recurrence_rules: rrule ? [rrule] : [],
@@ -589,8 +599,6 @@ export default function TodoPage() {
         due_date: data.due_date || null,
         due_time: data.due_date && data.due_time ? data.due_time : null,
         folder_id: data.folder_id,
-        sprint_id: data.sprint_id,
-        column_id: data.column_id,
         parent_id: data.parent_id,
         tag_ids: data.tag_ids,
         recurrence_rules: rrule ? [rrule] : [],
@@ -874,7 +882,7 @@ export default function TodoPage() {
       if (editingKanbanTask) {
         // Edit mode
         const targetSprintId = data.sprint_id ?? activeSprintId ?? editingKanbanTask.sprint_id;
-        await updateKanbanTask(editingKanbanTask.id, {
+        const updatedTask = await updateKanbanTask(editingKanbanTask.id, {
           title: data.title,
           version: data.version || undefined,
           task_type: data.task_type || undefined,
@@ -888,6 +896,8 @@ export default function TodoPage() {
         setKanbanTaskDialogOpen(false);
         setEditingKanbanTask(null);
         setKanbanNewTaskCol(null);
+        // 若详情抽屉正展示这张卡, 同步为保存后的数据, 避免显示旧快照
+        setDrawerTask((prev) => (prev && prev.id === updatedTask.id ? updatedTask : prev));
         showSnackbar('✅ 任务已更新', 'success');
         if (activeFolder !== null && activeSprintId !== null) {
           await refreshKanbanBoard(activeFolder, activeSprintId);
@@ -1219,6 +1229,11 @@ export default function TodoPage() {
                 try { await updateKanbanColumn(col.id, { name: col.name, capacity: col.capacity, color: col.color ?? undefined }); }
                 catch (err) { showSnackbar(err instanceof ApiError ? err.message : '更新列失败', 'error'); }
               }
+            }
+            // 删除非空列时后端会把任务迁移到兜底列, 必须重新拉取,
+            // 否则这些任务因 column_id 指向已删除的列而在界面上消失
+            if (activeFolder !== null && activeSprintId !== null) {
+              await refreshKanbanBoard(activeFolder, activeSprintId);
             }
           }}
           onSaveFields={async (fields) => {

@@ -85,8 +85,6 @@ export interface TodoOut {
 
 export interface TodoCreate {
   folder_id?: number | null;
-  sprint_id?: number | null;
-  column_id?: number | null;
   parent_id?: number | null;
   title: string;
   note?: string | null;
@@ -100,8 +98,6 @@ export interface TodoCreate {
 
 export interface TodoUpdate {
   folder_id?: number | null;
-  sprint_id?: number | null;
-  column_id?: number | null;
   parent_id?: number | null;
   title?: string;
   note?: string | null;

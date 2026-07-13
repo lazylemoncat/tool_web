@@ -30,7 +30,7 @@ frontend/
 
 ## 前后端通信
 
-前端统一使用 `frontend/src/lib/api.ts` 的 `apiFetch` 调用后端. 请求默认携带 `credentials: "include"`, 以支持后端 httpOnly cookie 认证. 非认证接口遇到 401 会尝试调用 `/api/v1/auth/refresh` 后重试一次; 登录接口自身的 401 会直接透传后端错误消息, 不触发自动 refresh.
+前端统一使用 `frontend/src/lib/api/client.ts` 的 `apiFetch` 调用后端, 各业务模块的 API 函数按模块放在 `frontend/src/lib/api/<模块>.ts` (Todo 为 `todo.ts`, Kanban 为 `kanban.ts` 与 `kanbanTask.ts`, Focus 为 `focus.ts`). Auth 与 Finance 的 API 函数暂仍在 `frontend/src/lib/api.ts` 中, 该文件同时对已迁出模块做兼容再导出, 完整收敛计划见 [`tech-debt.md`](tech-debt.md) TD-01. 请求默认携带 `credentials: "include"`, 以支持后端 httpOnly cookie 认证. 非认证接口遇到 401 会尝试调用 `/api/v1/auth/refresh` 后重试一次; 登录接口自身的 401 会直接透传后端错误消息, 不触发自动 refresh.
 
 Next.js 代理规则在 `frontend/next.config.ts`:
 

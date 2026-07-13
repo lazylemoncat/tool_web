@@ -85,16 +85,14 @@ Query 参数:
 | priority | int | 按优先级筛选 (1/2/3) |
 | status | string | active / completed |
 | tag_id | int | 按标签筛选 |
-| sprint_id | int | 按 Kanban Sprint 筛选 |
-| column_id | int | 按 Kanban 列筛选 |
+
+普通 Todo 与看板脱钩: 看板任务走 `/api/v1/kanban/tasks`, `/todos` 不再接受或筛选 `sprint_id`/`column_id`.
 
 ### 创建任务
 `POST /api/v1/todos`
 ```json
 {
   "folder_id": 1,
-  "sprint_id": 1,
-  "column_id": 1,
   "parent_id": null,
   "title": "买猫粮",
   "note": "皇家猫粮",

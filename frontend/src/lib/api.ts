@@ -1,13 +1,10 @@
+// 兼容入口 (TD-01 收敛中): 通用 client 与已迁出的 Todo/Kanban 模块 API 从此处再导出,
+// 旧引用点无需改动. Auth 与 Finance 部分尚未迁出, 全量收敛后本文件将移除.
+import { apiFetch, getCsrfToken, extractErrorMessage, refreshToken, ApiError } from './api/client';
 import type {
   AuthResponse, LoginRequest, LoginResponse, MeResponse, MfaVerifyRequest,
   PasswordResetRequest,
   UsernameAvailabilityResponse,
-  TodoOut, TodoCreate, TodoUpdate, TodoListResponse, BulkTodoRequest, TodoToggleBody,
-  FolderOut, FolderCreate, FolderUpdate,
-  ReorderItem,
-  APITag,
-  Sprint, SprintCreate, SprintUpdate,
-  KanbanColumnData, KanbanColumnCreate, KanbanColumnUpdate,
 } from './types';
 import type {
   LedgerOut, LedgerCreate, LedgerUpdate,
@@ -19,131 +16,12 @@ import type {
   TransactionOut, TransactionCreate, TransactionUpdate, TransactionListResponse, AttachmentOut,
   DashboardSummary, StatsResponse,
 } from './financeTypes';
+import type { ReorderItem } from './types';
 
-type ApiFetchOptions = {
-  skipCsrf?: boolean;
-  skipAuthRefresh?: boolean;
-};
-
-export class ApiError extends Error {
-  status: number;
-  detail?: unknown;
-  constructor(status: number, message: string, detail?: unknown) {
-    super(message);
-    this.name = 'ApiError';
-    this.status = status;
-    this.detail = detail;
-  }
-}
-
-function getCsrfToken(): string {
-  const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]*)/);
-  return match ? decodeURIComponent(match[1]) : '';
-}
-
-let isRefreshing = false;
-let refreshPromise: Promise<void> | null = null;
-
-async function doRefresh(): Promise<void> {
-  const res = await fetch('/api/v1/auth/refresh', { method: 'POST', credentials: 'include' });
-  if (!res.ok) throw new ApiError(res.status, '刷新登录失败');
-}
-
-async function refreshToken(): Promise<void> {
-  if (isRefreshing && refreshPromise) return refreshPromise;
-  isRefreshing = true;
-  refreshPromise = doRefresh().finally(() => { isRefreshing = false; refreshPromise = null; });
-  return refreshPromise;
-}
-
-function extractErrorMessage(data: unknown, fallback: string): string {
-  if (!data || typeof data !== 'object') return fallback;
-
-  const payload = data as Record<string, unknown>;
-  const detail = payload.detail;
-  const message = payload.message;
-  const error = payload.error;
-
-  if (typeof detail === 'string' && detail.trim()) return detail;
-  if (typeof message === 'string' && message.trim()) return message;
-  if (typeof error === 'string' && error.trim()) return error;
-  return fallback;
-}
-
-export async function apiFetch<T>(
-  method: string,
-  path: string,
-  body?: unknown,
-  options?: ApiFetchOptions,
-): Promise<T> {
-  const url = path.startsWith('http') ? path : path;
-  const headers: Record<string, string> = {};
-
-  if (body !== undefined) {
-    headers['Content-Type'] = 'application/json';
-  }
-
-  // CSRF token for mutating requests
-  if (!options?.skipCsrf && method !== 'GET' && method !== 'HEAD') {
-    const csrf = getCsrfToken();
-    if (csrf) headers['X-CSRF-Token'] = csrf;
-  }
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method,
-      headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-      credentials: 'include',
-    });
-  } catch {
-    throw new ApiError(0, '网络连接失败，请检查网络');
-  }
-
-  // 401 → refresh → retry once
-  if (res.status === 401 && !options?.skipAuthRefresh) {
-    try {
-      await refreshToken();
-    } catch {
-      throw new ApiError(401, '未认证，请先登录');
-    }
-    // Retry with new CSRF token
-    const retryHeaders: Record<string, string> = { ...headers };
-    if (method !== 'GET' && method !== 'HEAD') {
-      const csrf = getCsrfToken();
-      if (csrf) retryHeaders['X-CSRF-Token'] = csrf;
-    }
-    try {
-      res = await fetch(url, {
-        method,
-        headers: retryHeaders,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-        credentials: 'include',
-      });
-    } catch {
-      throw new ApiError(0, '网络连接失败');
-    }
-  }
-
-  // 204 No Content
-  if (res.status === 204) return undefined as T;
-
-  // Parse JSON response
-  let data: unknown;
-  const text = await res.text();
-  try {
-    data = JSON.parse(text);
-  } catch {
-    throw new ApiError(res.status, res.status >= 500 ? '后端服务不可用，请确认后端已启动' : '服务器返回格式错误');
-  }
-
-  if (!res.ok) {
-    throw new ApiError(res.status, extractErrorMessage(data, `请求失败 (${res.status})`), data);
-  }
-
-  return data as T;
-}
+export { ApiError, apiFetch } from './api/client';
+export type { ApiFetchOptions } from './api/client';
+export * from './api/todo';
+export * from './api/kanban';
 
 // ===== Auth =====
 export async function login(body: LoginRequest): Promise<LoginResponse> {
@@ -193,144 +71,6 @@ export async function checkUsernameAvailability(
     undefined,
     { skipAuthRefresh: true },
   );
-}
-
-// ===== Todos =====
-export async function listTodos(params?: {
-  folder_id?: number;
-  search?: string;
-  priority?: number;
-  status?: 'active' | 'completed';
-  tag_id?: number;
-  skip?: number;
-  limit?: number;
-  sprint_id?: number;
-  due_from?: string;
-  due_to?: string;
-}): Promise<TodoListResponse> {
-  const query = new URLSearchParams();
-  if (params?.folder_id !== undefined) query.set('folder_id', String(params.folder_id));
-  if (params?.search) query.set('search', params.search);
-  if (params?.priority) query.set('priority', String(params.priority));
-  if (params?.status) query.set('status', params.status);
-  if (params?.tag_id) query.set('tag_id', String(params.tag_id));
-  if (params?.sprint_id) query.set('sprint_id', String(params.sprint_id));
-  if (params?.due_from) query.set('due_from', params.due_from);
-  if (params?.due_to) query.set('due_to', params.due_to);
-  if (params?.skip) query.set('skip', String(params.skip));
-  if (params?.limit) query.set('limit', String(params.limit));
-  const qs = query.toString();
-  return apiFetch<TodoListResponse>('GET', `/api/v1/todos${qs ? '?' + qs : ''}`);
-}
-
-export async function createTodo(body: TodoCreate): Promise<TodoOut> {
-  return apiFetch<TodoOut>('POST', '/api/v1/todos', body);
-}
-
-export async function updateTodo(id: number, body: TodoUpdate): Promise<TodoOut> {
-  return apiFetch<TodoOut>('PUT', `/api/v1/todos/${id}`, body);
-}
-
-export async function deleteTodo(id: number): Promise<void> {
-  return apiFetch<void>('DELETE', `/api/v1/todos/${id}`);
-}
-
-export async function toggleTodo(id: number, body?: TodoToggleBody): Promise<TodoOut> {
-  return apiFetch<TodoOut>('PATCH', `/api/v1/todos/${id}/toggle`, body);
-}
-
-export async function bulkAction(body: BulkTodoRequest): Promise<void> {
-  return apiFetch<void>('POST', '/api/v1/todos/bulk', body);
-}
-
-export async function reorderTodos(items: ReorderItem[]): Promise<void> {
-  return apiFetch<void>('POST', '/api/v1/todos/reorder', { items });
-}
-
-// ===== Folders =====
-export async function listFolders(params?: { parent_id?: number; skip?: number; limit?: number }): Promise<FolderOut[]> {
-  const query = new URLSearchParams();
-  if (params?.parent_id !== undefined) query.set('parent_id', String(params.parent_id));
-  if (params?.skip) query.set('skip', String(params.skip));
-  if (params?.limit) query.set('limit', String(params.limit));
-  const qs = query.toString();
-  return apiFetch<FolderOut[]>('GET', `/api/v1/folders${qs ? '?' + qs : ''}`);
-}
-
-export async function createFolder(body: FolderCreate): Promise<FolderOut> {
-  return apiFetch<FolderOut>('POST', '/api/v1/folders', body);
-}
-
-export async function updateFolder(id: number, body: FolderUpdate): Promise<FolderOut> {
-  return apiFetch<FolderOut>('PUT', `/api/v1/folders/${id}`, body);
-}
-
-export async function deleteFolder(id: number): Promise<void> {
-  return apiFetch<void>('DELETE', `/api/v1/folders/${id}`);
-}
-
-export async function reorderFolders(items: ReorderItem[]): Promise<void> {
-  return apiFetch<void>('POST', '/api/v1/folders/reorder', { items });
-}
-
-// ===== Sprints =====
-export async function listSprints(folderId: number): Promise<Sprint[]> {
-  return apiFetch<Sprint[]>('GET', `/api/v1/sprints?folder_id=${folderId}`);
-}
-
-export async function createSprint(body: SprintCreate): Promise<Sprint> {
-  return apiFetch<Sprint>('POST', '/api/v1/sprints', body);
-}
-
-export async function updateSprint(id: number, body: SprintUpdate): Promise<Sprint> {
-  return apiFetch<Sprint>('PUT', `/api/v1/sprints/${id}`, body);
-}
-
-export async function deleteSprint(id: number): Promise<void> {
-  return apiFetch<void>('DELETE', `/api/v1/sprints/${id}`);
-}
-
-// ===== Kanban Columns =====
-export async function listKanbanColumns(sprintId: number): Promise<KanbanColumnData[]> {
-  return apiFetch<KanbanColumnData[]>('GET', `/api/v1/kanban-columns?sprint_id=${sprintId}`);
-}
-
-export async function createKanbanColumn(body: KanbanColumnCreate): Promise<KanbanColumnData> {
-  return apiFetch<KanbanColumnData>('POST', '/api/v1/kanban-columns', body);
-}
-
-export async function updateKanbanColumn(id: number, body: KanbanColumnUpdate): Promise<KanbanColumnData> {
-  return apiFetch<KanbanColumnData>('PUT', `/api/v1/kanban-columns/${id}`, body);
-}
-
-export async function deleteKanbanColumn(id: number): Promise<void> {
-  return apiFetch<void>('DELETE', `/api/v1/kanban-columns/${id}`);
-}
-
-export async function reorderKanbanColumns(items: { id: number; sort_order: number }[]): Promise<void> {
-  return apiFetch<void>('POST', '/api/v1/kanban-columns/reorder', { items });
-}
-
-// ===== Kanban Task Move =====
-export async function moveTodoToColumn(todoId: number, targetColumnId: number): Promise<TodoOut> {
-  return apiFetch<TodoOut>('POST', `/api/v1/todos/${todoId}/move`, { target_column_id: targetColumnId });
-}
-
-// ===== Tags =====
-export async function listTags(params?: { search?: string; folder_id?: number }): Promise<APITag[]> {
-  const query = new URLSearchParams();
-  if (params?.search) query.set('search', params.search);
-  if (params?.folder_id !== undefined) query.set('folder_id', String(params.folder_id));
-  const qs = query.toString();
-  return apiFetch<APITag[]>('GET', `/api/v1/tags${qs ? '?' + qs : ''}`);
-}
-
-export async function createTag(body: { name: string }): Promise<APITag> {
-  return apiFetch<APITag>('POST', '/api/v1/tags', body);
-}
-
-export async function deleteTag(id: number): Promise<void> {
-  return apiFetch<void>('DELETE', `/api/v1/tags/${id}`);
 }
 
 // ===== Finance: Ledgers =====

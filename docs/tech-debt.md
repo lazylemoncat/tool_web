@@ -10,11 +10,11 @@
 
 ## 前端
 
-### TD-01 [P1] API 客户端三套组织方式并存
+### TD-01 [P1] API 客户端三套组织方式并存 (部分已偿还)
 
-- 现状: `frontend/src/lib/api.ts` (约 20KB, 含 auth/todo/folder/tag/sprint/kanban-column/finance) 与 `frontend/src/lib/api/focus.ts`, `frontend/src/lib/api/kanbanTask.ts` 子目录, 以及 `frontend/src/components/calendar/calendarService.ts` (与组件同目录) 三种方式并存.
+- 现状: 通用请求层已抽出为 `lib/api/client.ts`, Todo/Kanban 已迁出为 `lib/api/todo.ts` 与 `lib/api/kanban.ts` (2026-07-01). `lib/api.ts` 仍保留 auth 与 finance 部分并对已迁出模块做兼容再导出; `components/calendar/calendarService.ts` 仍与组件同目录.
 - 影响: 新模块无所适从, 每次新增都在加剧分裂; 巨型文件难以审阅.
-- 建议: 统一收敛到 `lib/api/<模块>.ts`; `lib/api.ts` 按模块拆散后移除; `calendarService.ts` 迁入 `lib/api/calendar.ts`.
+- 建议: 剩余工作: auth 迁入 `lib/api/auth.ts`, finance 迁入 `lib/api/finance.ts`, `calendarService.ts` 迁入 `lib/api/calendar.ts`, 更新全部引用点后移除 `lib/api.ts`.
 - 验收: `lib/api.ts` 不复存在; `components/` 下无 API service 文件; 所有模块的请求层位于 `lib/api/`.
 
 ### TD-02 [P1] 类型定义分裂
@@ -70,6 +70,31 @@
 - 影响: 新迁移编号有歧义, 有再次 multi-head 的风险.
 - 建议: **不回改已应用迁移的文件名与 revision**; 在 `backend/migrations/README.md` 明确后续编号规则 (全局递增, 下一个为 `_0005`), 新迁移创建前先查看当前 head.
 - 验收: 编号规则写入迁移目录 README; 后续新迁移遵守.
+
+### TD-11 [P2] 批量完成不触发重复任务生成
+
+- 现状: `routers/todo.py` 的 `bulk_action` complete 分支只置 `is_completed=True`, 不走 toggle 中的重复实例生成逻辑, 与单个 toggle 行为不一致.
+- 建议: 抽出共享的"完成并生成下一次"函数, bulk 与 toggle 共用.
+- 验收: 批量完成重复任务与单个完成行为一致, 有测试覆盖.
+
+### TD-12 [P3] 重复任务与 completed_at 的时区处理不统一
+
+- 现状: toggle 中 `datetime.utcnow()` (naive, 已被 Python 标记 deprecated) 与 `_complete_children`/`bulk_action` 中 `datetime.now(UTC)` (aware) 混用; 重复任务"今天"的判定用 UTC 而非用户本地时区, 对非 UTC 用户存在 ±1 天偏差.
+- 建议: 统一为 aware UTC; 用户本地时区需要先有用户时区设置 (功能项, 见 roadmap 远期区).
+- 验收: 后端不再出现 `datetime.utcnow()`; 时区偏差问题在用户时区设置落地后一并解决.
+
+### TD-13 [P2] focus summary 测试对运行日期敏感
+
+- 现状: `backend/tests/test_focus.py::test_focus_session_create_list_and_summary` 在特定日期/时区下失败 (2026-07-01 复现, 与本地-UTC 跨日有关), 属基线 flaky 测试.
+- 建议: 测试内固定"今天"(monkeypatch utcnow, 参考 `tests/test_todos.py` 的 `_freeze_today`) 或按相对日期构造数据.
+- 验收: 任意日期运行测试均稳定通过.
+
+### TD-14 [P2] Kanban 未接线的 UI 链路与遗留 DB 列 (双体系已脱钩)
+
+- 已解决 (2026-07-02, 决策: 看板统一走 KanbanTask, 普通 Todo 不绑定看板): 移除 `moveTodoToColumn` 与后端 `POST /todos/{id}/move`, `/todos` 的创建/更新/筛选不再接受 `sprint_id`/`column_id`.
+- 剩余现状: `reorderKanbanColumns`, `ColumnDialog`, `SprintDialog` 已导出但未在 UI 渲染; `page.tsx` 中 `sprintDialogOpen`/`editingSprint` 为死 state; 列编辑器无"新增列"入口而 `onSaveColumns` 也不处理新建; `todos` 表的 `sprint_id`/`column_id` 列仍在 (含历史遗留数据), TodoOut 仍输出这两个字段.
+- 建议: 补齐列的新增/拖拽排序与 Sprint 编辑 UI 或删除对应死代码; 新增 Alembic 迁移 (编号 `_0005`, 见 TD-08) 清理 `todos.sprint_id/column_id` 列与遗留数据, 同步收敛 TodoOut.
+- 验收: 无导出而未使用的 Kanban API 函数与组件; `todos` 表无看板字段.
 
 ### TD-09 [P2] 两套限流器职责疑似重叠
 

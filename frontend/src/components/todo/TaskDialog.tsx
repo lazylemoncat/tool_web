@@ -40,8 +40,6 @@ export interface TaskFormData {
   recurrence: string;
   id?: number;
   parent_id?: number;
-  sprint_id?: number | null;
-  column_id?: number | null;
 }
 
 const RECUR_OPTIONS = ['不重复', '每天', '每周', '每月', '每年'];
@@ -108,8 +106,6 @@ export default function TaskDialog({
     recurrence: recurrence === CUSTOM_RECUR_OPTION ? customRrule.trim() : recurrence,
     ...(initialData?.id ? { id: initialData.id } : {}),
     ...(initialData?.parent_id ? { parent_id: initialData.parent_id } : {}),
-    ...(initialData?.sprint_id ? { sprint_id: initialData.sprint_id } : {}),
-    ...(initialData?.column_id ? { column_id: initialData.column_id } : {}),
   });
 
   const handleSave = async () => {

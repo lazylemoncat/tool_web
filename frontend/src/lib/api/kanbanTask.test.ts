@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { apiFetch } from '@/lib/api';
+import { apiFetch } from './client';
 import {
   createKanbanTask,
   deleteKanbanTask,
@@ -9,7 +9,7 @@ import {
   updateKanbanTask,
 } from './kanbanTask';
 
-vi.mock('@/lib/api', () => ({
+vi.mock('./client', () => ({
   apiFetch: vi.fn(),
 }));
 
